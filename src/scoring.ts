@@ -1,4 +1,4 @@
-import type { Profile, Result, Standing } from "./types.ts";
+import type { Game, Profile, Result, Standing } from "./types.ts";
 export function standings(profiles: Profile[], results: Result[]): Standing[] {
   const best = new Map<string, number>();
   for (const r of results)
@@ -58,4 +58,45 @@ export function parseEuropeanDate(value: string): string | null {
     parsed.toISOString().slice(0, 10) === iso
     ? iso
     : null;
+}
+
+export const periodLabels = {
+  all: "All time",
+  today: "Today",
+  week: "This week",
+  month: "This month",
+  year: "This year",
+  last7: "Last 7 days",
+  last30: "Last 30 days",
+} as const;
+export type StandingsPeriod = keyof typeof periodLabels;
+
+export function resultsForPeriod(
+  games: Game[],
+  results: Result[],
+  period: StandingsPeriod,
+  now = new Date(),
+): Result[] {
+  if (period === "all") return results;
+  const today = madridToday(now);
+  const start = new Date(`${today}T12:00:00Z`);
+  if (period === "week")
+    start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
+  else if (period === "month") start.setUTCDate(1);
+  else if (period === "year") start.setUTCMonth(0, 1);
+  else if (period === "last7" || period === "last30")
+    start.setUTCDate(start.getUTCDate() - (period === "last7" ? 6 : 29));
+  const from = start.toISOString().slice(0, 10);
+  const gameIds = new Set(
+    games
+      .filter((game) => {
+        const date =
+          game.kind === "daily"
+            ? game.daily_date!
+            : madridToday(new Date(game.created_at));
+        return date >= from && date <= today;
+      })
+      .map((game) => game.id),
+  );
+  return results.filter((result) => gameIds.has(result.game_id));
 }

@@ -6,7 +6,10 @@ import {
   standings,
   europeanDate,
   parseEuropeanDate,
+  resultsForPeriod,
+  type StandingsPeriod,
 } from "./scoring.ts";
+import type { Game } from "./types.ts";
 const profiles = ["a", "b", "c"].map((id) => ({
   id,
   username: id,
@@ -76,4 +79,112 @@ test("European dates round-trip and reject impossible or ambiguous input", () =>
     "",
   ])
     assert.equal(parseEuropeanDate(value), null);
+});
+
+test("standings periods filter by challenge date, Madrid dates and Monday-based calendar weeks", () => {
+  const dates = [
+    "2025-12-31",
+    "2026-01-01",
+    "2026-09-09",
+    "2026-09-10",
+    "2026-09-30",
+    "2026-10-01",
+    "2026-10-02",
+    "2026-10-03",
+    "2026-10-04",
+    "2026-10-05",
+    "2026-10-09",
+    "2026-10-10",
+  ];
+  const games: Game[] = dates.map((date) => ({
+    id: date,
+    kind: "daily",
+    daily_date: date,
+    name: null,
+    created_at: "2026-10-09T12:00:00Z",
+  }));
+  games.push(
+    {
+      id: "customToday",
+      kind: "custom",
+      daily_date: null,
+      name: "night",
+      created_at: "2026-10-08T22:30:00Z",
+    },
+    {
+      id: "customYesterday",
+      kind: "custom",
+      daily_date: null,
+      name: "evening",
+      created_at: "2026-10-08T21:30:00Z",
+    },
+  );
+  const results = games.map((game) => ({
+    game_id: game.id,
+    player_id: "a",
+    points: 100,
+  }));
+  const now = new Date("2026-10-09T12:00:00Z");
+  const ids = (period: StandingsPeriod) =>
+    resultsForPeriod(games, results, period, now).map((row) => row.game_id);
+  assert.equal(resultsForPeriod(games, results, "all", now), results);
+  assert.deepEqual(ids("today"), ["2026-10-09", "customToday"]);
+  assert.deepEqual(ids("week"), [
+    "2026-10-05",
+    "2026-10-09",
+    "customToday",
+    "customYesterday",
+  ]);
+  assert.deepEqual(ids("month"), [
+    ...dates.slice(5, 11),
+    "customToday",
+    "customYesterday",
+  ]);
+  assert.deepEqual(ids("year"), [
+    ...dates.slice(1, 11),
+    "customToday",
+    "customYesterday",
+  ]);
+  assert.deepEqual(ids("last7"), [
+    ...dates.slice(7, 11),
+    "customToday",
+    "customYesterday",
+  ]);
+  assert.deepEqual(ids("last30"), [
+    ...dates.slice(3, 11),
+    "customToday",
+    "customYesterday",
+  ]);
+  const seasonal: Game[] = ["2026-12-27", "2026-12-28", "2027-01-01"].map(
+    (date) => ({
+      id: date,
+      kind: "daily",
+      daily_date: date,
+      name: null,
+      created_at: "2027-01-01T12:00:00Z",
+    }),
+  );
+  const seasonalResults = seasonal.map((game) => ({
+    game_id: game.id,
+    player_id: "a",
+    points: 100,
+  }));
+  assert.equal(
+    resultsForPeriod(
+      seasonal,
+      seasonalResults,
+      "week",
+      new Date("2027-01-01T12:00:00Z"),
+    ).length,
+    2,
+  );
+  assert.equal(
+    resultsForPeriod(
+      seasonal,
+      seasonalResults,
+      "year",
+      new Date("2027-01-01T12:00:00Z"),
+    ).length,
+    1,
+  );
 });

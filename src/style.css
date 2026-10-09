@@ -1231,3 +1231,34 @@ textarea:focus-visible {
     font-size: 11px;
   }
 }
+
+.standings-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.period-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.period-picker select {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+}
+@media (max-width: 680px) {
+  .standings-heading {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .standings-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -421,3 +421,87 @@ test("zero-picture shame record appears only while a zero-point picture exists",
   await page.getByRole("button", { name: "Refresh standings" }).click();
   await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
 });
+
+test("standings periods update both boards and their per-game denominators", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-10-09T12:00:00Z") });
+  const periodGames = [
+    "2026-09-30",
+    "2026-10-05",
+    "2026-10-06",
+    "2026-10-09",
+  ].map((date, i) => ({
+    id: `period-${i}`,
+    kind: "daily",
+    daily_date: date,
+    name: null,
+    created_at: `${date}T12:00:00Z`,
+  }));
+  const periodResults = [
+    { game_id: "period-0", player_id: "alice", points: 1000 },
+    { game_id: "period-1", player_id: "bob", points: 600 },
+    { game_id: "period-2", player_id: "alice", points: 400 },
+    { game_id: "period-3", player_id: "alice", points: 300 },
+  ];
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const data = url.includes("/profiles")
+      ? profiles
+      : url.includes("/games")
+        ? periodGames
+        : url.includes("/results")
+          ? periodResults
+          : [];
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./");
+  const picker = page.getByLabel("Standings period");
+  const boards = page.locator(".boards .board");
+  const alice = (board: number) =>
+    boards.nth(board).locator(".player-row").filter({ hasText: "Alice" });
+  const bob = (board: number) =>
+    boards.nth(board).locator(".player-row").filter({ hasText: "Bob" });
+  await expect(picker).toHaveValue("all");
+  await expect(alice(1).locator(".score")).toHaveText("1,700");
+  await picker.selectOption("week");
+  await expect(alice(0).locator(".score")).toHaveText("2");
+  await expect(alice(1).locator(".score")).toHaveText("700");
+  await expect(alice(1).locator(".played")).toHaveText("2");
+  await expect(boards.nth(0).locator(".board-foot")).toContainText("This week");
+  await boards.nth(1).getByRole("switch").check();
+  await expect(boards.nth(1).locator(".player-row").first()).toContainText(
+    "Bob",
+  );
+  await expect(alice(1).locator(".score")).toHaveText("350");
+  await boards.nth(0).getByRole("switch").check();
+  await expect(alice(0).locator(".score")).toHaveText("100.0%");
+  await picker.selectOption("today");
+  await expect(alice(1).locator(".score")).toHaveText("300");
+  await expect(bob(0).locator(".played")).toHaveText("0");
+  await expect(bob(0).locator(".score")).toHaveText("—");
+  await expect(page.locator(".history .game")).toHaveCount(4);
+  await picker.selectOption("month");
+  await expect(alice(1).locator(".score")).toHaveText("350");
+  await picker.selectOption("year");
+  await expect(alice(1).locator(".played")).toHaveText("3");
+  await picker.selectOption("last7");
+  await expect(alice(1).locator(".played")).toHaveText("2");
+  await picker.selectOption("last30");
+  await expect(alice(1).locator(".played")).toHaveText("3");
+  await boards.nth(1).getByRole("switch").uncheck();
+  await picker.selectOption("all");
+  await expect(alice(1).locator(".score")).toHaveText("1,700");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-periods-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+});

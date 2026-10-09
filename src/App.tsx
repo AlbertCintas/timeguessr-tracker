@@ -26,6 +26,9 @@ import {
   standings,
   europeanDate,
   parseEuropeanDate,
+  periodLabels,
+  resultsForPeriod,
+  type StandingsPeriod,
 } from "./scoring";
 import type { Game, Profile, Result, Standing, PictureResult } from "./types";
 import { parseTimeguessrResults } from "./importResults";
@@ -81,7 +84,15 @@ function Avatar({
     </span>
   );
 }
-function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
+function Board({
+  rows,
+  kind,
+  period,
+}: {
+  rows: Standing[];
+  kind: "wins" | "points";
+  period: StandingsPeriod;
+}) {
   const [relative, setRelative] = useState(false);
   const metric =
     kind === "wins"
@@ -177,7 +188,7 @@ function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
         ))
       )}
       <div className="board-foot">
-        <span className="dot" /> All-time standings
+        <span className="dot" /> {periodLabels[period]} standings
         {relative && <span> · No minimum games</span>}
       </div>
     </section>
@@ -345,6 +356,8 @@ export default function App() {
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
+  const [standingsPeriod, setStandingsPeriod] =
+    useState<StandingsPeriod>("all");
   const [scoreMode, setScoreMode] = useState<"manual" | "paste">("paste");
   const [shareText, setShareText] = useState("");
   const [importRead, setImportRead] = useState(false);
@@ -620,7 +633,10 @@ export default function App() {
       setNotice("New face. Same questionable guesses.");
     });
   }
-  const rows = standings(profiles, results),
+  const rows = standings(
+      profiles,
+      resultsForPeriod(games, results, standingsPeriod),
+    ),
     playedGames = games.filter((g) => results.some((r) => r.game_id === g.id));
   const historyPages = Math.max(1, Math.ceil(playedGames.length / 10));
   const currentHistoryPage = Math.min(historyPage, historyPages - 1);
@@ -744,25 +760,41 @@ export default function App() {
             {notice}
           </div>
         )}
-        <div className="section-heading">
+        <div className="section-heading standings-heading">
           <div>
-            <h2>
-              The standings <span className="pill">ALL TIME</span>
-            </h2>
+            <h2>The standings</h2>
             <p>Someone has to finish last. We’re keeping receipts.</p>
           </div>
-          <button
-            className="icon-button"
-            aria-label="Refresh standings"
-            onClick={() => void load()}
-            disabled={loading || !configured}
-          >
-            <RefreshCw size={18} className={loading ? "spin" : ""} />
-          </button>
+          <div className="standings-controls">
+            <label className="period-picker">
+              <span>Period</span>
+              <select
+                aria-label="Standings period"
+                value={standingsPeriod}
+                onChange={(e) =>
+                  setStandingsPeriod(e.target.value as StandingsPeriod)
+                }
+              >
+                {Object.entries(periodLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              className="icon-button"
+              aria-label="Refresh standings"
+              onClick={() => void load()}
+              disabled={loading || !configured}
+            >
+              <RefreshCw size={18} className={loading ? "spin" : ""} />
+            </button>
+          </div>
         </div>
         <div className="boards" aria-busy={loading}>
-          <Board rows={rows} kind="wins" />
-          <Board rows={rows} kind="points" />
+          <Board rows={rows} kind="wins" period={standingsPeriod} />
+          <Board rows={rows} kind="points" period={standingsPeriod} />
         </div>
         <ShameBoard profiles={profiles} results={results} games={games} />
         <section className="history">
