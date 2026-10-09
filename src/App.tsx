@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import extensionManifest from "../extension/manifest.json";
 import {
   Download,
   ArrowUpRight,
@@ -148,6 +149,7 @@ function BrowserAddress({ address }: { address: string }) {
 }
 function ManualExtensionInstall() {
   const firefox = /Firefox\//i.test(navigator.userAgent);
+  const archive = `timeguessr-${firefox ? "firefox" : "chrome"}-extension-${extensionManifest.version}.zip`;
   return (
     <>
       <h3>Manual installation — {firefox ? "Firefox" : "Chrome / Edge"}</h3>
@@ -157,20 +159,18 @@ function ManualExtensionInstall() {
       </p>
       <a
         className="primary extension-download"
-        href={
-          firefox
-            ? "/timeguessr-tracker/downloads/timeguessr-firefox-extension-latest.zip"
-            : "/timeguessr-tracker/downloads/timeguessr-extension-latest.zip"
-        }
-        download={
-          firefox
-            ? "timeguessr-firefox-extension.zip"
-            : "timeguessr-extension.zip"
-        }
+        href={`/timeguessr-tracker/downloads/${archive}`}
+        download={archive}
       >
         <Download size={18} /> Download {firefox ? "Firefox" : "Chrome / Edge"}{" "}
         extension ZIP
       </a>
+      <p className="hint">
+        Version {extensionManifest.version}. After downloading an update,
+        replace the files in your installed extension folder and click Reload on
+        the browser’s extension page. Downloading alone does not update the
+        installed extension.
+      </p>
       <ol>
         <li>Extract the ZIP into a folder you’ll keep.</li>
         {firefox ? (

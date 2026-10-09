@@ -662,6 +662,10 @@ test("extension install button explains desktop installation and links to ZIP", 
   await expect(dialog.getByRole("tooltip")).toBeVisible();
   expect(page.url()).toBe(pageUrl);
   await expect(dialog).toContainText("Manual installation — Chrome / Edge");
+  await expect(dialog).toContainText("Version 1.1.1");
+  await expect(
+    dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
+  ).toHaveAttribute("download", "timeguessr-chrome-extension-1.1.1.zip");
   await expect(dialog).toContainText("Load unpacked");
   await expect(dialog).toContainText(
     "Mobile browsers cannot install this version",
@@ -670,7 +674,7 @@ test("extension install button explains desktop installation and links to ZIP", 
     dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
   ).toHaveAttribute(
     "href",
-    "/timeguessr-tracker/downloads/timeguessr-extension-latest.zip",
+    "/timeguessr-tracker/downloads/timeguessr-chrome-extension-1.1.1.zip",
   );
   await expect(dialog).toContainText("chrome://extensions");
   await expect(dialog).toContainText("edge://extensions");
@@ -727,7 +731,7 @@ test("Firefox gets its own manual package and temporary installation instruction
     dialog.getByRole("link", { name: "Download Firefox extension ZIP" }),
   ).toHaveAttribute(
     "href",
-    "/timeguessr-tracker/downloads/timeguessr-firefox-extension-latest.zip",
+    "/timeguessr-tracker/downloads/timeguessr-firefox-extension-1.1.1.zip",
   );
   await expect(
     dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
