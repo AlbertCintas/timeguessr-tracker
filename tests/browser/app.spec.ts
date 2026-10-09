@@ -505,3 +505,31 @@ test("standings periods update both boards and their per-game denominators", asy
     fullPage: true,
   });
 });
+
+test("extension install button explains desktop installation and links to ZIP", async ({
+  page,
+}) => {
+  await page.route("https://club-test.supabase.co/**", (route) =>
+    route.fulfill({
+      json: [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    }),
+  );
+  await page.goto("./");
+  await page.getByRole("button", { name: "Install extension" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Load unpacked");
+  await expect(dialog).toContainText(
+    "Mobile browsers cannot install this version",
+  );
+  await expect(
+    dialog.getByRole("link", { name: "Download extension ZIP" }),
+  ).toHaveAttribute(
+    "href",
+    "/timeguessr-tracker/downloads/timeguessr-extension-latest.zip",
+  );
+  await expect(dialog).toContainText("chrome://extensions");
+  await expect(dialog).toContainText("edge://extensions");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});

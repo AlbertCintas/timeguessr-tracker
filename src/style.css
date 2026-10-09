@@ -1262,3 +1262,20 @@ textarea:focus-visible {
     justify-content: space-between;
   }
 }
+
+.extension-download {
+  display: inline-flex;
+  gap: 8px;
+  text-decoration: none;
+  margin: 8px 0;
+}
+.extension-install ol {
+  padding-left: 22px;
+}
+.extension-install li {
+  margin: 12px 0;
+}
+.extension-install code {
+  overflow-wrap: anywhere;
+  color: inherit;
+}

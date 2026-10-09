@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Automatic receipts</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <small>OUR GROUP CHAT, WITH EVIDENCE</small>
+      <h1>Automatic receipts.</h1>
+      <p>Your terrible guesses now file themselves.</p>
+    </header>
+    <p id="error" role="alert" hidden></p>
+    <form id="login">
+      <label
+        >Tracker username<input
+          name="username"
+          autocomplete="username"
+          pattern="[a-zA-Z0-9_]{3,24}"
+          required /></label
+      ><label
+        >Password<input
+          name="password"
+          type="password"
+          autocomplete="current-password"
+          required /></label
+      ><button type="submit">Sign in</button>
+    </form>
+    <section id="connected" hidden>
+      <p>
+        Signed in as <strong id="player"></strong>
+        <button id="logout" class="quiet">Sign out</button>
+      </p>
+      <label class="toggle"
+        ><input id="enabled" type="checkbox" /> Automatically import completed
+        games</label
+      >
+      <p id="message" role="status"></p>
+      <button id="retry" class="quiet">Retry pending imports</button>
+      <h2>Recent imports</h2>
+      <div id="imports"></div>
+    </section>
+    <footer>
+      <a
+        href="https://albertcintas.github.io/timeguessr-tracker/"
+        target="_blank"
+        rel="noopener"
+        >Open the scoreboard ↗</a
+      >
+      <p>
+        Finish all five pictures on Timeguessr. Keep its results page open until
+        captured. Pending games stay with the account that captured them.
+      </p>
+      <small>v1.0.0 · Chrome / Edge</small>
+    </footer>
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

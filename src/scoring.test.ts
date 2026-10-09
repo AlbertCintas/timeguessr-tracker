@@ -188,3 +188,20 @@ test("standings periods filter by challenge date, Madrid dates and Monday-based 
     1,
   );
 });
+
+test("delayed custom imports use played dates for standings periods", () => {
+  const games: Game[] = [
+    {
+      id: "imported",
+      kind: "custom",
+      daily_date: null,
+      name: "Timeguessr",
+      played_on: "2026-10-08",
+      created_at: "2026-10-09T12:00:00Z",
+    },
+  ];
+  const results = [{ game_id: "imported", player_id: "a", points: 20000 }];
+  const now = new Date("2026-10-09T12:00:00Z");
+  assert.equal(resultsForPeriod(games, results, "today", now).length, 0);
+  assert.equal(resultsForPeriod(games, results, "week", now).length, 1);
+});

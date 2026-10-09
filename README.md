@@ -55,3 +55,11 @@ Set these repository Actions variables:
 Under **Settings → Pages**, select **GitHub Actions** as the source. Push to `main` or run **Deploy Pages** manually. Only the project URL and publishable key are included in the static bundle. Privileged credentials belong in Supabase only.
 
 Standings, game history, display names, and avatars are public. Database row policies restrict writes to authenticated owners or administrators. Photo uploads accept JPEG, PNG, and WebP up to 2 MB. Daily dates use Europe/Madrid. The app refreshes on focus and every minute.
+
+## Automatic imports
+
+On desktop Chrome or Edge, click **Install extension** on the scoreboard and download the ZIP. Extract it into a permanent folder, open `chrome://extensions` or `edge://extensions`, enable Developer mode, and choose **Load unpacked**. Select the extracted folder, pin the extension, and sign in with your tracker username and password. Refresh any Timeguessr results tab that was open before installation.
+
+The extension captures completed daily and non-daily games, including picture details. Pending imports survive browser restarts and remain attached to the account that captured them. Conflicts need review in the tracker; automatic imports preserve saved scores and can fill missing picture details when the scores match. Pause automatic imports or sign out from the extension popup.
+
+To update, download the latest ZIP, replace the extracted files, and click **Reload** on the browser’s extensions page. Run the installed-extension browser test with `npx playwright install chromium` and `npm run test:extension`. Build both the website and downloadable extension with `npm run build`; build only the extension with `npm run build:extension`. The Pages deployment includes versioned and latest ZIP downloads under `downloads/`.

@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
-    "test": "node --experimental-strip-types --test src/*.test.ts tests/*.test.mjs"
+    "build": "tsc -b && vite build && npm run build:extension",
+    "test": "node --experimental-strip-types --test src/*.test.ts tests/*.test.mjs",
+    "build:extension": "node scripts/build-extension.mjs",
+    "test:extension": "npm run build:extension && playwright test -c playwright.extension.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
@@ -20,6 +22,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.28.2",
     "prettier": "^3.9.9",
     "typescript": "~5.9.2",
     "vite": "^7.1.0"

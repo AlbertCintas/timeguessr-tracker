@@ -93,7 +93,7 @@ export function resultsForPeriod(
         const date =
           game.kind === "daily"
             ? game.daily_date!
-            : madridToday(new Date(game.created_at));
+            : game.played_on || madridToday(new Date(game.created_at));
         return date >= from && date <= today;
       })
       .map((game) => game.id),

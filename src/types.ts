@@ -10,6 +10,8 @@ export interface Game {
   daily_date: string | null;
   name: string | null;
   created_at: string;
+  external_key?: string | null;
+  played_on?: string | null;
 }
 export interface PictureResult {
   points: number;

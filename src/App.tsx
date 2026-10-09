@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
+  Download,
   ArrowUpRight,
   CalendarDays,
   Check,
@@ -372,7 +373,7 @@ export default function App() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [modal, setModal] = useState<
-    "login" | "score" | "profile" | "admin" | null
+    "login" | "score" | "profile" | "admin" | "extension" | null
   >(location.hash.startsWith("#invite=") ? "login" : null);
   const [busy, setBusy] = useState(false),
     [invite, setInvite] = useState(
@@ -722,6 +723,12 @@ export default function App() {
             >
               <Plus size={19} /> Add your score
             </button>
+            <button
+              className="subtle-button"
+              onClick={() => setModal("extension")}
+            >
+              <Download size={17} /> Install extension
+            </button>
             <span className="hint">
               Daily humiliation. Extra suffering available.
             </span>
@@ -831,8 +838,8 @@ export default function App() {
           ) : (
             [...playedGames]
               .sort((a, b) =>
-                (b.daily_date || b.created_at).localeCompare(
-                  a.daily_date || a.created_at,
+                (b.daily_date || b.played_on || b.created_at).localeCompare(
+                  a.daily_date || a.played_on || a.created_at,
                 ),
               )
               .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
@@ -978,17 +985,19 @@ export default function App() {
       {modal && (
         <Modal
           title={
-            modal === "login"
-              ? invite
-                ? "You were warned."
-                : "Back for more?"
-              : modal === "score"
-                ? edit
-                  ? "Edit score"
-                  : "Add your score"
-                : modal === "profile"
-                  ? "Your profile"
-                  : "Manage the club"
+            modal === "extension"
+              ? "Let the evidence collect itself."
+              : modal === "login"
+                ? invite
+                  ? "You were warned."
+                  : "Back for more?"
+                : modal === "score"
+                  ? edit
+                    ? "Edit score"
+                    : "Add your score"
+                  : modal === "profile"
+                    ? "Your profile"
+                    : "Manage the club"
           }
           close={close}
         >
@@ -996,6 +1005,55 @@ export default function App() {
             <p className="form-error" role="alert">
               {error}
             </p>
+          )}
+          {modal === "extension" && (
+            <div className="extension-install">
+              <p className="form-intro">
+                Finish a game. Let the extension report the damage. Daily and
+                non-daily games, all five pictures included.
+              </p>
+              <p>
+                For desktop Chrome and Edge. This version installs from a ZIP,
+                so the browser needs a few clicks from you.
+              </p>
+              <a
+                className="primary extension-download"
+                href="/timeguessr-tracker/downloads/timeguessr-extension-latest.zip"
+                download="timeguessr-extension.zip"
+              >
+                <Download size={18} /> Download extension ZIP
+              </a>
+              <ol>
+                <li>Extract the ZIP into a folder you’ll keep.</li>
+                <li>
+                  Open <code>chrome://extensions</code> in Chrome, or{" "}
+                  <code>edge://extensions</code> in Edge.
+                </li>
+                <li>
+                  Turn on <strong>Developer mode</strong>, click{" "}
+                  <strong>Load unpacked</strong>, and choose the extracted
+                  folder.
+                </li>
+                <li>
+                  Pin the extension, open it and sign in with your tracker
+                  username and password.
+                </li>
+                <li>
+                  Finish all five pictures on Timeguessr and leave the results
+                  page open until captured. If it was already open during
+                  installation, refresh it.
+                </li>
+              </ol>
+              <p>
+                Scores import automatically. Conflicting scores stay untouched
+                and appear for review in the extension. Mobile browsers cannot
+                install this version.
+              </p>
+              <p className="hint">
+                To update, download the latest ZIP, replace the extracted files,
+                then click Reload on the browser’s extensions page.
+              </p>
+            </div>
           )}
           {modal === "login" && (
             <form onSubmit={authenticate}>
@@ -1173,7 +1231,8 @@ export default function App() {
                               <option key={g.id} value={g.id}>
                                 {g.name} ·{" "}
                                 {europeanDate(
-                                  madridToday(new Date(g.created_at)),
+                                  g.played_on ||
+                                    madridToday(new Date(g.created_at)),
                                 )}
                               </option>
                             ))}
