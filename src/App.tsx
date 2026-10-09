@@ -637,7 +637,7 @@ export default function App() {
   const rows = standings(
       profiles,
       resultsForPeriod(games, results, standingsPeriod),
-    ),
+    ).filter((player) => player.games > 0),
     playedGames = games.filter((g) => results.some((r) => r.game_id === g.id));
   const historyPages = Math.max(1, Math.ceil(playedGames.length / 10));
   const currentHistoryPage = Math.min(historyPage, historyPages - 1);
