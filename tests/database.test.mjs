@@ -73,6 +73,15 @@ test("PostgreSQL schema, result ownership, game uniqueness, and avatar permissio
     );
     await db.exec(pictureMigration);
     await db.exec(pictureMigration);
+    const gameLinksMigration = await readFile(
+      new URL(
+        "../supabase/migrations/202610090004_game_links.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await db.exec(gameLinksMigration);
+    await db.exec(gameLinksMigration);
     assert.equal(
       (await db.query("select points, rounds from results")).rows[0].points,
       10,
@@ -82,6 +91,25 @@ test("PostgreSQL schema, result ownership, game uniqueness, and avatar permissio
       null,
     );
     await as("authenticated", ids[0]);
+    const challengeId = `${"a".repeat(64)}:${"b".repeat(32)}`;
+    const challenge = (
+      await db.query("select public.get_or_create_game(null,$1) as id", [
+        challengeId,
+      ])
+    ).rows[0].id;
+    assert.equal(
+      (
+        await db.query("select public.get_or_create_game(null,$1) as id", [
+          challengeId.toUpperCase(),
+        ])
+      ).rows[0].id,
+      challenge,
+    );
+    assert.equal(
+      (await db.query("select name from public.games where id=$1", [challenge]))
+        .rows[0].name,
+      challengeId,
+    );
     const rounds = Array.from({ length: 5 }, () => ({
       points: 2,
       years_off: 0,

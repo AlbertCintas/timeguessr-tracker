@@ -596,6 +596,26 @@ main {
   display: block;
   font-size: 12px;
 }
+.game-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.game-play-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 9px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--accent);
+  background: var(--raised);
+  font-size: 11px;
+  font-weight: 600;
+}
+.game-play-link:hover {
+  border-color: var(--accent);
+}
 .game-info small {
   display: block;
   font-size: 10px;

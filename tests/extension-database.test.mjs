@@ -21,6 +21,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       "202610090002_picture_results.sql",
       "202610090003_extension_import.sql",
       "202610090003_extension_import.sql",
+      "202610090004_game_links.sql",
     ])
       await db.exec(
         await readFile(

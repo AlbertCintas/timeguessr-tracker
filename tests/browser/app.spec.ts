@@ -19,6 +19,99 @@ const games = [
     created_at: "2026-10-09T12:00:00Z",
   },
 ];
+test("unplayed history games link to complete challenge IDs and shared links become titles", async ({
+  page,
+}) => {
+  const replayGames = Array.from({ length: 12 }, (_, index) => ({
+    id: `replay-${index}`,
+    kind: "custom",
+    daily_date: null,
+    name: `${index.toString(16).padStart(64, "0")}:${"b".repeat(32)}`,
+    created_at: `2026-10-09T12:00:${String(59 - index).padStart(2, "0")}Z`,
+  }));
+  let createdTitle = "";
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    let data: unknown = [];
+    if (url.includes("/auth/v1/token"))
+      data = {
+        access_token: "test-access-token",
+        refresh_token: "test-refresh-token",
+        expires_in: 3600,
+        token_type: "bearer",
+        user: {
+          id: "alice",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "alice@players.timeguessr.invalid",
+        },
+      };
+    else if (url.includes("/profiles")) data = profiles;
+    else if (url.includes("/games")) data = replayGames;
+    else if (url.includes("/results"))
+      data = [
+        ...replayGames.map((game) => ({
+          game_id: game.id,
+          player_id: "bob",
+          points: 30000,
+        })),
+        { game_id: replayGames[0].id, player_id: "alice", points: 0 },
+      ];
+    else if (url.includes("/rpc/get_or_create_game")) {
+      createdTitle = route.request().postDataJSON().game_name;
+      data = "new-game";
+    } else if (url.includes("/administrators")) data = null;
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./");
+  await expect(page.locator(".history .game")).toHaveCount(10);
+  await expect(page.locator(".game-play-link")).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Username", { exact: true }).fill("alice");
+  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".game-play-link")).toHaveCount(9);
+  await expect(
+    page.locator(".history .game").first().locator(".game-play-link"),
+  ).toHaveCount(0);
+  const link = page.locator(".game-play-link").first();
+  await expect(link).toHaveAttribute(
+    "href",
+    `https://timeguessr.com/game-settings?RA=${encodeURIComponent(replayGames[1].name)}`,
+  );
+  await expect(link).toHaveAttribute("target", "_blank");
+  await page.getByRole("button", { name: "Older games" }).click();
+  await expect(page.locator(".history .game")).toHaveCount(2);
+  await expect(page.locator(".game-play-link")).toHaveCount(2);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-replay-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Add your score" }).click();
+  await page.getByRole("button", { name: "Manual entry", exact: true }).click();
+  await page.getByRole("button", { name: "Non-daily game", exact: true }).click();
+  await page
+    .getByLabel("Timeguessr game ID or link")
+    .fill(
+      `https://timeguessr.com/es/game-settings?RA=${encodeURIComponent(replayGames[1].name)}`,
+    );
+  await page.getByLabel("Final points").fill("10000");
+  await page.getByRole("button", { name: "Save score", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(createdTitle).toBe(replayGames[1].name);
+});
 test("leaderboards, independent fairness switches, history and login keyboard entry", async ({
   page,
 }) => {
@@ -481,8 +574,7 @@ test("standings periods update both boards and their per-game denominators", asy
   await expect(alice(0).locator(".score")).toHaveText("100.0%");
   await picker.selectOption("today");
   await expect(alice(1).locator(".score")).toHaveText("300");
-  await expect(bob(0).locator(".played")).toHaveText("0");
-  await expect(bob(0).locator(".score")).toHaveText("—");
+  await expect(bob(0)).toHaveCount(0);
   await expect(page.locator(".history .game")).toHaveCount(4);
   await picker.selectOption("month");
   await expect(alice(1).locator(".score")).toHaveText("350");

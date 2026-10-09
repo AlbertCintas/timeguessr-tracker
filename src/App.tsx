@@ -36,6 +36,7 @@ import type { Game, Profile, Result, Standing, PictureResult } from "./types";
 import { parseTimeguessrResults } from "./importResults";
 import { shameMetrics, shameRankings, type ShameMetric } from "./shame";
 import { PictureBreakdown } from "./PictureBreakdown";
+import { gameReplayUrl, timeguessrGameId } from "./gameLinks";
 const number = new Intl.NumberFormat("en");
 const gameTitle = (g: Game) =>
   g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
@@ -559,9 +560,14 @@ export default function App() {
           "Enter a real date in dd/mm/yy format, no later than today.",
         );
       if (!gameId) {
+        const customId = kind === "custom" ? timeguessrGameId(gameName) : null;
+        if (kind === "custom" && !customId)
+          throw new Error(
+            "Paste the full Timeguessr game link or ID, including both parts separated by a colon.",
+          );
         const { data, error } = await db.rpc("get_or_create_game", {
           game_date: kind === "daily" ? dailyDate : null,
-          game_name: kind === "custom" ? gameName.trim() : null,
+          game_name: customId,
         });
         if (error) throw error;
         gameId = data;
@@ -877,6 +883,7 @@ export default function App() {
               )
               .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
               .map((game) => {
+                const replayUrl = gameReplayUrl(game);
                 const entries = results
                   .filter((r) => r.game_id === game.id)
                   .sort((a, b) => b.points - a.points);
@@ -895,6 +902,22 @@ export default function App() {
                             : "players"}
                           {game.kind === "custom" ? " · non-daily" : ""}
                         </small>
+                        {session &&
+                          replayUrl &&
+                          !entries.some(
+                            (entry) => entry.player_id === session.user.id,
+                          ) && (
+                            <a
+                              className="game-play-link"
+                              href={replayUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                              aria-label={`Play ${gameTitle(game)} on Timeguessr`}
+                            >
+                              Play game <ArrowUpRight size={14} />
+                            </a>
+                          )}
                       </span>
                       <span className="winner">
                         <Trophy size={15} />
@@ -1276,13 +1299,13 @@ export default function App() {
                       </label>
                       {!selectedGame && (
                         <label>
-                          Game name
+                          Timeguessr game ID or link
                           <input
                             value={gameName}
                             onChange={(e) => setGameName(e.target.value)}
-                            placeholder="Friday night damage control"
+                            placeholder="https://timeguessr.com/game-settings?RA=…"
                             required
-                            maxLength={80}
+                            maxLength={2048}
                           />
                         </label>
                       )}
