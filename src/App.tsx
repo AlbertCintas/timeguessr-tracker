@@ -27,7 +27,10 @@ import {
   europeanDate,
   parseEuropeanDate,
 } from "./scoring";
-import type { Game, Profile, Result, Standing } from "./types";
+import type { Game, Profile, Result, Standing, PictureResult } from "./types";
+import { parseTimeguessrResults } from "./importResults";
+import { shameMetrics, shameRankings, type ShameMetric } from "./shame";
+import { PictureBreakdown } from "./PictureBreakdown";
 const number = new Intl.NumberFormat("en");
 const gameTitle = (g: Game) =>
   g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
@@ -180,6 +183,87 @@ function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
     </section>
   );
 }
+function ShameBoard({
+  profiles,
+  results,
+  games,
+}: {
+  profiles: Profile[];
+  results: Result[];
+  games: Game[];
+}) {
+  const [metric, setMetric] = useState<ShameMetric>("worstGame");
+  const rows = shameRankings(profiles, results, metric);
+  const definition = shameMetrics[metric];
+  return (
+    <section className="shame-section" aria-labelledby="shame-heading">
+      <div className="section-heading">
+        <div>
+          <h2 id="shame-heading">The hall of shame</h2>
+          <p>Your mates forget. The database doesn’t.</p>
+        </div>
+      </div>
+      <div className="board shame-board">
+        <div className="shame-controls">
+          <label htmlFor="shame-metric">Choose your downfall</label>
+          <select
+            id="shame-metric"
+            value={metric}
+            onChange={(e) => setMetric(e.target.value as ShameMetric)}
+          >
+            {Object.entries(shameMetrics).map(([key, item]) => (
+              <option key={key} value={key}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <p>{definition.description}</p>
+        </div>
+        {rows.length ? (
+          <ol className="shame-list">
+            {rows.map((row) => {
+              const game = games.find((item) => item.id === row.gameId);
+              return (
+                <li key={row.id} className="shame-row">
+                  <span className="rank">{row.rank}</span>
+                  <Avatar profile={row} />
+                  <div className="shame-player">
+                    <strong>{row.display_name}</strong>
+                    <small>
+                      {game
+                        ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
+                        : `${row.samples} pictures recorded`}
+                    </small>
+                  </div>
+                  <strong className="shame-value">
+                    {new Intl.NumberFormat("en", {
+                      maximumFractionDigits: 3,
+                    }).format(row.value)}{" "}
+                    <small>{definition.unit}</small>
+                  </strong>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <div className="empty">
+            <strong>No evidence for this charge.</strong>
+            <span>
+              {metric === "worstGame"
+                ? "Add a score. We’ll take it from there."
+                : "Paste Detailed results to unlock picture rankings."}
+            </span>
+          </div>
+        )}
+        <div className="board-foot">
+          {metric === "worstGame"
+            ? "Includes manual and pasted game totals."
+            : "Only recorded picture details count. Missing details are never treated as zero."}
+        </div>
+      </div>
+    </section>
+  );
+}
 function Modal({
   title,
   close,
@@ -201,7 +285,7 @@ function Modal({
       if (event.key !== "Tab" || !el) return;
       const targets = [
         ...el.querySelectorAll<HTMLElement>(
-          'button, input, select, a[href], [tabindex="0"]',
+          'button, input, select, textarea, a[href], [tabindex="0"]',
         ),
       ].filter((n) => !n.hasAttribute("disabled"));
       const first = targets[0],
@@ -251,6 +335,13 @@ export default function App() {
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
+  const [scoreMode, setScoreMode] = useState<"manual" | "paste">("manual");
+  const [shareText, setShareText] = useState("");
+  const [importRead, setImportRead] = useState(false);
+  const [pictureRounds, setPictureRounds] = useState<PictureResult[] | null>(
+    null,
+  );
+  const [dailyNumber, setDailyNumber] = useState<number | null>(null);
   const [session, setSession] = useState<Session | null>(null),
     [admin, setAdmin] = useState(false),
     [loading, setLoading] = useState(configured),
@@ -372,6 +463,11 @@ export default function App() {
   }
   function openScore(entry?: Result) {
     setEdit(entry || null);
+    setScoreMode("manual");
+    setShareText("");
+    setImportRead(false);
+    setPictureRounds(entry?.rounds ?? null);
+    setDailyNumber(entry?.daily_number ?? null);
     setPoints(entry ? String(entry.points) : "");
     setKind("daily");
     setDate(europeanDate(madridToday()));
@@ -384,7 +480,16 @@ export default function App() {
     event.preventDefault();
     await run(async () => {
       if (!db || !session) throw new Error("Sign in first.");
+      if (scoreMode === "paste" && !importRead)
+        throw new Error("Read your pasted results before saving.");
       const value = Number(points);
+      if (
+        pictureRounds &&
+        pictureRounds.reduce((sum, round) => sum + round.points, 0) !== value
+      )
+        throw new Error(
+          "The total must match the picture scores. Remove picture details to enter a different total manually.",
+        );
       if (
         !points.trim() ||
         !Number.isInteger(value) ||
@@ -423,12 +528,20 @@ export default function App() {
       const query = edit
         ? db
             .from("results")
-            .update({ points: value })
+            .update({
+              points: value,
+              rounds: pictureRounds,
+              daily_number: dailyNumber,
+            })
             .eq("game_id", gameId)
             .eq("player_id", playerId)
-        : db
-            .from("results")
-            .insert({ game_id: gameId, player_id: playerId, points: value });
+        : db.from("results").insert({
+            game_id: gameId,
+            player_id: playerId,
+            points: value,
+            rounds: pictureRounds,
+            daily_number: dailyNumber,
+          });
       const { error } = await query;
       if (error) throw error;
       close();
@@ -618,6 +731,7 @@ export default function App() {
           <Board rows={rows} kind="wins" />
           <Board rows={rows} kind="points" />
         </div>
+        <ShameBoard profiles={profiles} results={results} games={games} />
         <section className="history">
           <div className="section-heading">
             <div>
@@ -698,30 +812,43 @@ export default function App() {
                           (p) => p.id === entry.player_id,
                         );
                         return (
-                          <div className="result" key={entry.player_id}>
-                            <Avatar profile={profile} />
-                            <span>{profile?.display_name}</span>
-                            <strong>{number.format(entry.points)}</strong>
-                            {(admin ||
-                              entry.player_id === session?.user.id) && (
-                              <>
-                                <button
-                                  className="icon-button"
-                                  aria-label={`Edit ${profile?.display_name}'s score`}
-                                  disabled={busy}
-                                  onClick={() => openScore(entry)}
-                                >
-                                  <Pencil size={15} />
-                                </button>
-                                <button
-                                  className="icon-button"
-                                  aria-label={`Delete ${profile?.display_name}'s score`}
-                                  disabled={busy}
-                                  onClick={() => void deleteScore(entry)}
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </>
+                          <div className="result-entry" key={entry.player_id}>
+                            <div className="result">
+                              <Avatar profile={profile} />
+                              <span>{profile?.display_name}</span>
+                              <strong>{number.format(entry.points)}</strong>
+                              {(admin ||
+                                entry.player_id === session?.user.id) && (
+                                <>
+                                  <button
+                                    className="icon-button"
+                                    aria-label={`Edit ${profile?.display_name}'s score`}
+                                    disabled={busy}
+                                    onClick={() => openScore(entry)}
+                                  >
+                                    <Pencil size={15} />
+                                  </button>
+                                  <button
+                                    className="icon-button"
+                                    aria-label={`Delete ${profile?.display_name}'s score`}
+                                    disabled={busy}
+                                    onClick={() => void deleteScore(entry)}
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            {entry.rounds && (
+                              <details className="result-breakdown">
+                                <summary>
+                                  {profile?.display_name}’s picture breakdown
+                                  {entry.daily_number
+                                    ? ` · #${entry.daily_number}`
+                                    : ""}
+                                </summary>
+                                <PictureBreakdown rounds={entry.rounds} />
+                              </details>
                             )}
                           </div>
                         );
@@ -848,6 +975,86 @@ export default function App() {
           )}
           {modal === "score" && (
             <form onSubmit={saveScore}>
+              <div className="segmented" aria-label="Score entry method">
+                <button
+                  type="button"
+                  aria-pressed={scoreMode === "manual"}
+                  className={scoreMode === "manual" ? "active" : ""}
+                  onClick={() => {
+                    setScoreMode("manual");
+                    setError("");
+                  }}
+                >
+                  Manual entry
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={scoreMode === "paste"}
+                  className={scoreMode === "paste" ? "active" : ""}
+                  onClick={() => {
+                    setScoreMode("paste");
+                    setError("");
+                  }}
+                >
+                  Paste results
+                </button>
+              </div>
+              {scoreMode === "paste" && (
+                <div className="paste-results">
+                  <label>
+                    Timeguessr share text
+                    <textarea
+                      value={shareText}
+                      maxLength={10000}
+                      rows={7}
+                      placeholder="TimeGuessr #1227 — 37,894/50,000…"
+                      onChange={(e) => {
+                        setShareText(e.target.value);
+                        setImportRead(false);
+                        setPictureRounds(null);
+                        setDailyNumber(null);
+                        setPoints("");
+                        setError("");
+                      }}
+                    />
+                  </label>
+                  <p className="hint">
+                    Use Share results → Detailed for picture stats. Emoji-grid
+                    shares import the total only.
+                  </p>
+                  <button
+                    type="button"
+                    className="subtle-button"
+                    onClick={() => {
+                      try {
+                        const parsed = parseTimeguessrResults(shareText);
+                        setPoints(String(parsed.points));
+                        setPictureRounds(parsed.rounds);
+                        setDailyNumber(parsed.dailyNumber);
+                        setImportRead(true);
+                        setError("");
+                      } catch (error) {
+                        setImportRead(false);
+                        setError(
+                          error instanceof Error
+                            ? error.message
+                            : "Could not read results.",
+                        );
+                      }
+                    }}
+                  >
+                    Read pasted results
+                  </button>
+                </div>
+              )}
+              {dailyNumber !== null && (
+                <p className="form-intro">
+                  Timeguessr #{dailyNumber}.{" "}
+                  {edit
+                    ? "Check this is the same challenge before saving."
+                    : "The share text has no date. Check the challenge date below before saving."}
+                </p>
+              )}
               {!edit ? (
                 <>
                   <div className="segmented">
@@ -942,6 +1149,7 @@ export default function App() {
                 Final points
                 <input
                   type="number"
+                  readOnly={scoreMode === "paste"}
                   inputMode="numeric"
                   min="0"
                   max="2147483647"
@@ -956,6 +1164,26 @@ export default function App() {
                 The highest score wins. Ties count as a win for each player.
                 Standings update immediately.
               </p>
+              {pictureRounds && (
+                <div className="import-preview">
+                  <PictureBreakdown rounds={pictureRounds} />
+                  <button
+                    type="button"
+                    className="subtle-button"
+                    onClick={() => {
+                      setPictureRounds(null);
+                      setScoreMode("manual");
+                    }}
+                  >
+                    Remove picture details
+                  </button>
+                </div>
+              )}
+              {scoreMode === "paste" && importRead && !pictureRounds && (
+                <p className="hint">
+                  Total imported. No exact picture details in this share.
+                </p>
+              )}
               <button className="primary full" disabled={busy}>
                 {busy ? "Saving…" : "Save score"}
               </button>

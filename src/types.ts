@@ -11,10 +11,17 @@ export interface Game {
   name: string | null;
   created_at: string;
 }
+export interface PictureResult {
+  points: number;
+  years_off: number | null;
+  distance_km: number | null;
+}
 export interface Result {
   game_id: string;
   player_id: string;
   points: number;
+  rounds?: PictureResult[] | null;
+  daily_number?: number | null;
 }
 export interface Standing extends Profile {
   games: number;

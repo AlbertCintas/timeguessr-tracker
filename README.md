@@ -4,6 +4,8 @@ A shared tracker for a group of friends, with cumulative wins and points, win pe
 
 The highest submitted score wins; ties award one win to each leader. Scores count immediately, including games with a single submission. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
+Scores can be entered manually or pasted from Timeguessr’s **Share results** menu. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame: worst game, worst picture, most zero-point pictures, biggest year error, and furthest guess.
+
 ## Run locally
 
 Use Node.js 22 or later.

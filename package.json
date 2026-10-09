@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
-    "test": "node --experimental-strip-types --test src/scoring.test.ts tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test src/*.test.ts tests/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",

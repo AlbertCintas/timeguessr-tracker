@@ -54,11 +54,85 @@ test("PostgreSQL schema, result ownership, game uniqueness, and avatar permissio
       db.query("select public.get_or_create_game('2999-01-01',null)"),
     );
     await assert.rejects(
-      db.query("insert into results values($1,$2,10)", [game, ids[1]]),
+      db.query(
+        "insert into results(game_id,player_id,points) values($1,$2,10)",
+        [game, ids[1]],
+      ),
     );
-    await db.query("insert into results values($1,$2,10)", [game, ids[0]]);
+    await db.query(
+      "insert into results(game_id,player_id,points) values($1,$2,10)",
+      [game, ids[0]],
+    );
+    await as("postgres", ids[0]);
+    const pictureMigration = await readFile(
+      new URL(
+        "../supabase/migrations/202610090002_picture_results.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await db.exec(pictureMigration);
+    await db.exec(pictureMigration);
+    assert.equal(
+      (await db.query("select points, rounds from results")).rows[0].points,
+      10,
+    );
+    assert.equal(
+      (await db.query("select rounds from results")).rows[0].rounds,
+      null,
+    );
+    await as("authenticated", ids[0]);
+    const rounds = Array.from({ length: 5 }, () => ({
+      points: 2,
+      years_off: 0,
+      distance_km: 1.3,
+    }));
+    await db.query(
+      "update results set rounds=$1,daily_number=1227 where game_id=$2",
+      [JSON.stringify(rounds), game],
+    );
     await assert.rejects(
-      db.query("insert into results values($1,$2,20)", [game, ids[0]]),
+      db.query("update results set points=20 where game_id=$1", [game]),
+    );
+    for (const invalid of [
+      [],
+      {},
+      rounds.slice(1),
+      rounds.map((r) => ({ ...r, points: 3 })),
+      rounds.map((r) => ({ ...r, points: 2.5 })),
+      rounds.map((r) => ({ ...r, years_off: -1 })),
+      rounds.map((r) => ({ ...r, distance_km: "1.3" })),
+      rounds.map((r) => ({ points: 2 })),
+    ])
+      await assert.rejects(
+        db.query("update results set rounds=$1 where game_id=$2", [
+          JSON.stringify(invalid),
+          game,
+        ]),
+      );
+    await assert.rejects(
+      db.query("update results set daily_number=0 where game_id=$1", [game]),
+    );
+    await as("authenticated", ids[1]);
+    await db.query(
+      "update results set rounds=null,daily_number=null where game_id=$1",
+      [game],
+    );
+    assert.notEqual(
+      (await db.query("select rounds from results")).rows[0].rounds,
+      null,
+    );
+    await as("authenticated", ids[0]);
+    await db.query(
+      "update results set rounds=null,daily_number=null where game_id=$1",
+      [game],
+    );
+
+    await assert.rejects(
+      db.query(
+        "insert into results(game_id,player_id,points) values($1,$2,20)",
+        [game, ids[0]],
+      ),
     );
     await assert.rejects(
       db.query("update profiles set username=$1 where id=$2", [
@@ -98,7 +172,10 @@ test("PostgreSQL schema, result ownership, game uniqueness, and avatar permissio
       1,
     );
     await assert.rejects(
-      db.query("insert into results values($1,$2,-1)", [game, ids[1]]),
+      db.query(
+        "insert into results(game_id,player_id,points) values($1,$2,-1)",
+        [game, ids[1]],
+      ),
     );
     await as("authenticated", ids[2]);
     await db.query("update results set points=20 where game_id=$1", [game]);

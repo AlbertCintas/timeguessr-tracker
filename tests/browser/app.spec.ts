@@ -231,3 +231,123 @@ test("history paginates newest first and clamps the page after games disappear",
   await page.getByRole("button", { name: "Refresh standings" }).click();
   await expect(page.locator(".history-empty")).toBeVisible();
 });
+
+test("pasted detailed results save picture stats, populate shame rankings, and remain editable", async ({
+  page,
+}) => {
+  const detailed = `TimeGuessr #1227 — 37,894/50,000
+1️⃣ 🏆8,359 · 📅 7y · 🌍 1.3km
+2️⃣ 🏆9,855 · 📅 0y · 🌍 11.3km
+3️⃣ 🏆6,925 · 📅 11y · 🌍 3.5km
+4️⃣ 🏆7,463 · 📅 10y · 🌍 1.1km
+5️⃣ 🏆5,292 · 📅 17y · 🌍 208.2km
+https://timeguessr.com`;
+  let stored: Record<string, unknown>[] = [
+    { game_id: "daily1", player_id: "bob", points: 1000 },
+  ];
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const request = route.request(),
+      url = request.url();
+    let data: unknown = [];
+    if (url.includes("/auth/v1/token"))
+      data = {
+        access_token: "test-access-token",
+        refresh_token: "test-refresh-token",
+        expires_in: 3600,
+        token_type: "bearer",
+        user: {
+          id: "alice",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "alice@players.timeguessr.invalid",
+        },
+      };
+    else if (url.includes("/profiles")) data = profiles;
+    else if (url.includes("/games")) data = games;
+    else if (url.includes("/rpc/get_or_create_game")) data = "daily2";
+    else if (url.includes("/administrators")) data = null;
+    else if (url.includes("/results")) {
+      if (request.method() === "POST") stored.push(request.postDataJSON());
+      if (request.method() === "PATCH")
+        stored = stored.map((entry) =>
+          entry.player_id === "alice"
+            ? { ...entry, ...request.postDataJSON() }
+            : entry,
+        );
+      data = stored;
+    }
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.getByLabel("Username", { exact: true }).fill("alice");
+  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Add your score" }).click();
+  await page
+    .getByRole("button", { name: "Paste results", exact: true })
+    .click();
+  await page.getByLabel("Timeguessr share text").fill("broken text");
+  await page.getByRole("button", { name: "Read pasted results" }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "Couldn’t find",
+  );
+  await page.getByLabel("Timeguessr share text").fill(detailed);
+  await page.getByRole("button", { name: "Read pasted results" }).click();
+  await expect(page.getByLabel("Final points")).toHaveValue("37894");
+  await expect(page.getByLabel("Final points")).toHaveAttribute("readonly", "");
+  await expect(page.getByRole("dialog").getByRole("table")).toContainText(
+    "208.2",
+  );
+  await expect(page.getByRole("dialog")).toContainText("Timeguessr #1227");
+  await page.getByLabel("Challenge date", { exact: true }).fill("09/10/26");
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-import-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Save score", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(stored[1].points).toBe(37894);
+  expect(stored[1].daily_number).toBe(1227);
+  expect(stored[1].rounds).toHaveLength(5);
+  const shame = page.locator(".shame-section");
+  await expect(shame.locator(".shame-row").first()).toContainText("Bob");
+  await page.getByLabel("Choose your downfall").selectOption("distance");
+  await expect(shame.locator(".shame-row")).toHaveCount(1);
+  await expect(shame.locator(".shame-row")).toContainText("Alice");
+  await expect(shame.locator(".shame-row")).toContainText("208.2");
+  await page.getByLabel("Choose your downfall").selectOption("years");
+  await expect(shame.locator(".shame-row")).toContainText("17");
+  await page.getByLabel("Choose your downfall").selectOption("zeros");
+  await expect(shame.locator(".shame-row")).toContainText("0 zeros");
+  await page.locator(".game > summary").first().click();
+  await page.locator(".result-breakdown > summary").click();
+  await expect(page.locator(".history .picture-breakdown")).toContainText(
+    "9,855",
+  );
+  await page.getByRole("button", { name: "Edit Alice's score" }).click();
+  await expect(page.getByRole("dialog").getByRole("table")).toBeVisible();
+  await page.getByLabel("Final points").fill("100");
+  await page.getByRole("button", { name: "Save score", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "total must match",
+  );
+  await page.getByRole("button", { name: "Remove picture details" }).click();
+  await page.getByRole("button", { name: "Save score", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(stored[1].rounds).toBeNull();
+  expect(stored[1].points).toBe(100);
+  await expect(shame.locator(".shame-row")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
