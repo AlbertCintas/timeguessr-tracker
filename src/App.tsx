@@ -115,6 +115,37 @@ function PendingExtensionInstall() {
     </span>
   );
 }
+function BrowserAddress({ address }: { address: string }) {
+  const [status, setStatus] = useState("");
+  return (
+    <>
+      <button
+        type="button"
+        className="browser-address"
+        aria-label={`Copy ${address}`}
+        title="Copy address"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(address);
+            setStatus("Copied — paste into the address bar.");
+          } catch {
+            setStatus(
+              "Couldn’t copy. Select the address and copy it manually.",
+            );
+          }
+        }}
+      >
+        <code>{address}</code>
+      </button>
+      {status && (
+        <span className="hint" role="status">
+          {" "}
+          {status}
+        </span>
+      )}
+    </>
+  );
+}
 function ManualExtensionInstall() {
   const firefox = /Firefox\//i.test(navigator.userAgent);
   return (
@@ -145,8 +176,9 @@ function ManualExtensionInstall() {
         {firefox ? (
           <>
             <li>
-              Open <code>about:debugging#/runtime/this-firefox</code> in
-              Firefox.
+              Copy{" "}
+              <BrowserAddress address="about:debugging#/runtime/this-firefox" />{" "}
+              and paste it into Firefox’s address bar.
             </li>
             <li>
               Click <strong>Load Temporary Add-on</strong> and select{" "}
@@ -156,8 +188,9 @@ function ManualExtensionInstall() {
         ) : (
           <>
             <li>
-              Open <code>chrome://extensions</code> in Chrome, or{" "}
-              <code>edge://extensions</code> in Edge.
+              Copy <BrowserAddress address="chrome://extensions" /> for Chrome,
+              or <BrowserAddress address="edge://extensions" /> for Edge, and
+              paste it into the address bar.
             </li>
             <li>
               Turn on <strong>Developer mode</strong>, click{" "}

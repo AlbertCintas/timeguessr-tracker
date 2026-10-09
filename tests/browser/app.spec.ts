@@ -670,6 +670,29 @@ test("extension install button explains desktop installation and links to ZIP", 
   );
   await expect(dialog).toContainText("chrome://extensions");
   await expect(dialog).toContainText("edge://extensions");
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: async (text: string) => {
+          document.documentElement.dataset.copiedAddress = text;
+        },
+      },
+      configurable: true,
+    });
+  });
+  for (const address of ["chrome://extensions", "edge://extensions"]) {
+    await dialog
+      .getByRole("button", { name: `Copy ${address}`, exact: true })
+      .click();
+    await expect(page.locator("html")).toHaveAttribute(
+      "data-copied-address",
+      address,
+    );
+  }
+  await expect(dialog.getByRole("status").first()).toContainText(
+    "paste into the address bar",
+  );
+
   await dialog
     .getByRole("link", { name: "Download Chrome / Edge extension ZIP" })
     .focus();

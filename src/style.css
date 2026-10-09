@@ -1345,3 +1345,12 @@ textarea:focus-visible {
   overflow-wrap: anywhere;
   color: inherit;
 }
+.browser-address {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
