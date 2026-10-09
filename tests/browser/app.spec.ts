@@ -27,6 +27,7 @@ test("unplayed history games link to complete challenge IDs and shared links bec
     kind: "custom",
     daily_date: null,
     name: `${index.toString(16).padStart(64, "0")}:${"b".repeat(32)}`,
+    played_on: index === 0 ? "2023-06-01" : "2026-10-09",
     created_at: `2026-10-09T12:00:${String(59 - index).padStart(2, "0")}Z`,
   }));
   let createdTitle = "";
@@ -68,6 +69,9 @@ test("unplayed history games link to complete challenge IDs and shared links bec
   });
   await page.goto("./");
   await expect(page.locator(".history .game")).toHaveCount(10);
+  await expect(page.locator(".history .game").first()).toContainText(
+    replayGames[0].name,
+  );
   await expect(page.locator(".game-play-link")).toHaveCount(0);
   const randomButton = page.getByRole("button", {
     name: "Play random unplayed game",

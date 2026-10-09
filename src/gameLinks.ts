@@ -27,9 +27,9 @@ export function gameReplayUrl(game: Game): string | null {
     return game.daily_date === madridToday()
       ? "https://timeguessr.com/play?mode=daily"
       : null;
-  const id = timeguessrGameId(game.name || "");
+  const id = timeguessrGameId(game.replay_id || game.name || "");
   return id
-    ? `https://timeguessr.com/game-settings?RA=${encodeURIComponent(id)}`
+    ? `https://timeguessr.com/game-settings?RA=${encodeURIComponent(id)}${game.timer_seconds ? `&timer=${game.timer_seconds}` : ""}`
     : null;
 }
 

@@ -91,3 +91,15 @@ test("random replay candidates exclude played games, missing results and invalid
     [],
   );
 });
+
+test("stored replay IDs keep their timer in the replay URL", () => {
+  assert.equal(
+    gameReplayUrl({
+      ...game,
+      name: "Timeguessr · 60s · aaaaaa",
+      replay_id: id,
+      timer_seconds: 60,
+    }),
+    `https://timeguessr.com/game-settings?RA=${encodeURIComponent(id)}&timer=60`,
+  );
+});

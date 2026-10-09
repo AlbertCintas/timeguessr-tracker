@@ -1082,11 +1082,7 @@ export default function App() {
             </div>
           ) : (
             [...playedGames]
-              .sort((a, b) =>
-                (b.daily_date || b.played_on || b.created_at).localeCompare(
-                  a.daily_date || a.played_on || a.created_at,
-                ),
-              )
+              .sort((a, b) => b.created_at.localeCompare(a.created_at))
               .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
               .map((game) => {
                 const replayUrl = gameReplayUrl(game);

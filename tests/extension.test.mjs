@@ -140,3 +140,41 @@ test("daily dates use official metadata across reset, archives and time zones", 
   );
   assert.throws(() => dailyDate(1227, "", ends - 1000));
 });
+
+test("non-daily capture saves replay IDs from random games and shared challenges without changing existing fingerprints", async () => {
+  const id = `${"a".repeat(64)}:${"b".repeat(32)}`;
+  const data = { ...snapshot(), mode: "play", dailyNumber: null, gameId: null };
+  const url = "https://timeguessr.com/final-score?mode=play";
+  const before = captureModern(data, url);
+  data.playArray.push("a".repeat(64), "b".repeat(32));
+  const captured = captureModern(data, url);
+  assert.equal(captured.replay_id, id);
+  assert.equal(await externalKey(captured), await externalKey(before));
+  assert.equal(
+    captureModern({ ...data, gameId: id, timerSeconds: 60 }, url).replay_id,
+    id,
+  );
+  assert.equal(
+    captureModern(
+      { ...data, playArray: [...data.playArray.slice(0, 5), "bad", "id"] },
+      url,
+    ).replay_id,
+    null,
+  );
+  assert.throws(() =>
+    validateCapture({ ...captured, replay_id: "https://example.com" }),
+  );
+  assert.equal(captureModern(snapshot(), href).replay_id, null);
+  const values = {
+    playArray: JSON.stringify(data.playArray),
+    timerSetting: "60",
+  };
+  for (const prefix of ["one", "two", "three", "four", "five"]) {
+    values[prefix + "Total"] = "4000";
+  }
+  assert.equal(
+    captureLegacy(values, "https://timeguessr.com/finalscore", "20000")
+      .replay_id,
+    id,
+  );
+});

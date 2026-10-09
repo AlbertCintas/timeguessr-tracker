@@ -22,6 +22,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       "202610090003_extension_import.sql",
       "202610090003_extension_import.sql",
       "202610090004_game_links.sql",
+      "202610090005_import_replays.sql",
     ])
       await db.exec(
         await readFile(
@@ -54,7 +55,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
     const importGame = async (overrides = {}) =>
       (
         await db.query(
-          "select import_timeguessr_result($1,$2,$3,$4,$5,$6,$7) as result",
+          "select import_timeguessr_result($1,$2,$3,$4,$5,$6,$7,$8) as result",
           Object.values({
             date: "2026-10-09",
             number: 1227,
@@ -63,6 +64,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
             total: 20000,
             rounds: JSON.stringify(rounds),
             timer: 0,
+            replay: null,
             ...overrides,
           }),
         )
@@ -122,6 +124,51 @@ test("transactional imports preserve old data, enforce ownership, enrich details
     const customSaved = await importGame(custom);
     assert.equal(customSaved.status, "saved");
     assert.equal(
+      (
+        await db.query("select name from games where id=$1", [
+          customSaved.game_id,
+        ])
+      ).rows[0].name,
+      "Timeguessr · aaaaaa",
+    );
+    await db.exec("reset role");
+    await db.query(
+      "update games set name='Timeguessr · 08/10/26 · 30s · aaaaaa' where id=$1",
+      [customSaved.game_id],
+    );
+    const beforeMigration = (
+      await db.query("select * from results where game_id=$1", [
+        customSaved.game_id,
+      ])
+    ).rows;
+    const titleMigration = await readFile(
+      new URL(
+        "../supabase/migrations/202610090005_import_replays.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await db.exec(titleMigration);
+    await db.exec(titleMigration);
+    assert.equal(
+      (
+        await db.query("select name from games where id=$1", [
+          customSaved.game_id,
+        ])
+      ).rows[0].name,
+      "Timeguessr · 30s · aaaaaa",
+    );
+    assert.deepEqual(
+      (
+        await db.query("select * from results where game_id=$1", [
+          customSaved.game_id,
+        ])
+      ).rows,
+      beforeMigration,
+    );
+    await as(alice);
+
+    assert.equal(
       (await importGame({ ...custom, played: "2026-10-09" })).game_id,
       customSaved.game_id,
     );
@@ -133,6 +180,66 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       ).rows[0].day,
       "2026-10-08",
     );
+    const replayId = `${"c".repeat(64)}:${"d".repeat(32)}`;
+    assert.equal(
+      (await importGame({ ...custom, replay: replayId })).game_id,
+      customSaved.game_id,
+    );
+    const replayGame = (
+      await db.query("select * from games where id=$1", [customSaved.game_id])
+    ).rows[0];
+    assert.equal(replayGame.replay_id, replayId);
+    assert.equal(replayGame.name, replayId);
+    assert.equal(
+      (
+        await importGame({
+          ...custom,
+          key: "timeguessr:v1:" + "b".repeat(64),
+          replay: replayId,
+        })
+      ).game_id,
+      customSaved.game_id,
+    );
+    const timed = await importGame({
+      ...custom,
+      key: "timeguessr:v1:" + "c".repeat(64),
+      replay: replayId,
+      timer: 60,
+    });
+    assert.notEqual(timed.game_id, customSaved.game_id);
+    assert.equal(
+      (
+        await db.query("select timer_seconds from games where id=$1", [
+          timed.game_id,
+        ])
+      ).rows[0].timer_seconds,
+      60,
+    );
+    await assert.rejects(importGame({ ...custom, replay: "bad" }));
+    await assert.rejects(importGame({ replay: replayId }));
+    const manualReplayId = `${"e".repeat(64)}:${"f".repeat(32)}`;
+    const manualReplay = (
+      await db.query("select get_or_create_game(null,$1) as id", [
+        manualReplayId,
+      ])
+    ).rows[0].id;
+    assert.equal(
+      (
+        await importGame({
+          ...custom,
+          key: "timeguessr:v1:" + "d".repeat(64),
+          replay: manualReplayId,
+        })
+      ).game_id,
+      manualReplay,
+    );
+    const legacy = (
+      await db.query(
+        "select import_timeguessr_result(null,null,$1,'2026-10-09',20000,$2,0) as result",
+        [custom.key, JSON.stringify(rounds)],
+      )
+    ).rows[0].result;
+    assert.equal(legacy.game_id, customSaved.game_id);
     const manual = (
       await db.query("select get_or_create_game(null,'My random game') as id")
     ).rows[0].id;
@@ -151,7 +258,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
     assert.equal(
       (
         await db.query(
-          "select has_function_privilege('anon','public.import_timeguessr_result(date,integer,text,date,integer,jsonb,integer)','execute') as allowed",
+          "select has_function_privilege('anon','public.import_timeguessr_result(date,integer,text,date,integer,jsonb,integer,text)','execute') as allowed",
         )
       ).rows[0].allowed,
       false,

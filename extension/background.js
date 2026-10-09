@@ -155,6 +155,7 @@ async function processQueue() {
         total: item.capture.points,
         pictures: item.capture.rounds,
         timer_seconds: item.capture.timer_seconds,
+        replay_game_id: item.capture.replay_id ?? null,
       });
       if (error) {
         if (
@@ -223,7 +224,8 @@ async function handle(message, sender) {
             (key) => round[key] === capture.rounds[i][key],
           ),
         ) &&
-        previous.capture.points === capture.points
+        previous.capture.points === capture.points &&
+        (previous.capture.replay_id ?? null) === capture.replay_id
       )
         return { accepted: true };
       if (data.queue.length >= 200) {
@@ -241,6 +243,12 @@ async function handle(message, sender) {
         message: "",
       });
       await save(data);
+    } else {
+      const queued = data.queue.find((entry) => entry.id === id);
+      if (capture.replay_id && !queued.capture.replay_id) {
+        queued.capture.replay_id = capture.replay_id;
+        await save(data);
+      }
     }
     void serial(processQueue);
     return { accepted: true };

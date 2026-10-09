@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Timeguessr Club \u2014 automatic receipts",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Automatically save your completed Timeguessr games to the group scoreboard.",
   "permissions": ["storage", "alarms"],
   "host_permissions": [

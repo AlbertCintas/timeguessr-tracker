@@ -77,7 +77,7 @@ test("installed MV3 extension signs in, captures results, uploads and hides auth
     await context.route("https://timeguessr.com/**", (route) =>
       route.fulfill({
         contentType: "text/html",
-        body: `<!doctype html><title>Timeguessr fixture</title><script>sessionStorage.setItem('tg_final_score',JSON.stringify({mode:'play',score:20000,gameId:null,playArray:[1,2,3,4,5].map(i=>({ImageId:'picture-'+i})),roundResults:[1,2,3,4,5].map(i=>({totalScore:4000,guessYear:2000,actualYear:1990,distanceMeters:1300}))}));</script><h1>20,000</h1>`,
+        body: `<!doctype html><title>Timeguessr fixture</title><script>sessionStorage.setItem('tg_final_score',JSON.stringify({mode:'play',score:20000,gameId:null,playArray:[...[1,2,3,4,5].map(i=>({ImageId:'picture-'+i})),'${"a".repeat(64)}','${"b".repeat(32)}'],roundResults:[1,2,3,4,5].map(i=>({totalScore:4000,guessYear:2000,actualYear:1990,distanceMeters:1300}))}));</script><h1>20,000</h1>`,
       }),
     );
     const game = await context.newPage();
@@ -95,6 +95,7 @@ test("installed MV3 extension signs in, captures results, uploads and hides auth
       () => (globalThis as typeof globalThis & { uploads: unknown[] }).uploads,
     );
     expect(uploads[0]).toMatchObject({
+      replay_game_id: `${"a".repeat(64)}:${"b".repeat(32)}`,
       total: 20000,
       challenge_date: null,
       pictures: [

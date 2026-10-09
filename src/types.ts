@@ -12,6 +12,8 @@ export interface Game {
   created_at: string;
   external_key?: string | null;
   played_on?: string | null;
+  replay_id?: string | null;
+  timer_seconds?: number;
 }
 export interface PictureResult {
   points: number;

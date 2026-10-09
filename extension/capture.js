@@ -1,4 +1,13 @@
 const prefixes = ["one", "two", "three", "four", "five"];
+function replayId(gameId, playArray) {
+  const candidate = String(gameId ?? "").includes(":")
+    ? gameId
+    : (playArray ?? []).slice(5, 7).join(":");
+  return typeof candidate === "string" &&
+    /^[a-f0-9]{64}:[a-f0-9]{32}$/i.test(candidate)
+    ? candidate.toLowerCase()
+    : null;
+}
 const number = (value) =>
   value === null || value === undefined || value === "" ? null : Number(value);
 const integer = (value, max) =>
@@ -67,6 +76,9 @@ export function validateCapture(input) {
     throw new Error("Cannot identify this game safely.");
   const timer = input.timer_seconds ?? 0;
   if (!integer(timer, 86400)) throw new Error("Unknown timer settings.");
+  const replay = input.replay_id ?? null;
+  if (replay !== null && (daily || !/^[a-f0-9]{64}:[a-f0-9]{32}$/.test(replay)))
+    throw new Error("Invalid replay identity.");
   return {
     mode: input.mode,
     points: input.points,
@@ -76,6 +88,7 @@ export function validateCapture(input) {
     source_id: source,
     images,
     timer_seconds: timer,
+    replay_id: replay,
   };
 }
 
@@ -133,6 +146,8 @@ export function captureModern(data, href, playedOn = playedToday()) {
     source_id: source,
     images,
     timer_seconds: number(data.timerSeconds) ?? 0,
+    replay_id:
+      data.mode === "daily" ? null : replayId(data.gameId, data.playArray),
   });
 }
 
@@ -199,6 +214,9 @@ export function captureLegacy(
     source_id: null,
     images,
     timer_seconds: number(values.timerSetting) ?? 0,
+    replay_id: daily
+      ? null
+      : replayId(null, JSON.parse(values.playArray ?? "[]")),
   });
 }
 
