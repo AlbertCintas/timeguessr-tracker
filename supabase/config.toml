@@ -1,0 +1,6 @@
+project_id = "timeguessr-tracker"
+[auth]
+enable_signup = false
+minimum_password_length = 10
+[functions.accounts]
+verify_jwt = false
