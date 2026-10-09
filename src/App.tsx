@@ -980,6 +980,7 @@ export default function App() {
             <Clock3 size={15} /> Time well wasted.
           </span>
           <span>Unofficial. Unqualified. Unreasonably competitive.</span>
+          <a href="/timeguessr-tracker/about.html">About</a>
           <a href="/timeguessr-tracker/privacy.html">Privacy</a>
         </footer>
       </main>

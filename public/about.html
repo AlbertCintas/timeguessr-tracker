@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="What Timeguessr Club is, how its shared scoreboard works, and how to use its companion browser extension."
+    />
+    <title>Timeguessr Club — About</title>
+    <style>
+      body {
+        max-width: 760px;
+        margin: 40px auto;
+        padding: 0 24px;
+        background: #111512;
+        color: #e8ede6;
+        font:
+          16px/1.65 system-ui,
+          sans-serif;
+      }
+      a {
+        color: #c5dd9d;
+      }
+      h1,
+      h2 {
+        line-height: 1.25;
+      }
+      h2 {
+        margin-top: 32px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav aria-label="Page navigation">
+      <a href="./">← Scoreboard</a><a href="./privacy.html">Privacy policy</a>
+    </nav>
+    <main>
+      <h1>About Timeguessr Club</h1>
+      <p>
+        Timeguessr Club is a free, independent scoreboard for a group of friends
+        who play Timeguessr. It keeps their game results together so they can
+        compare scores over time.
+      </p>
+      <p>
+        This project is maintained by
+        <a href="https://github.com/AlbertCintas">AlbertCintas</a>. It is not
+        affiliated with, endorsed by or operated by Timeguessr. To play the
+        original game, visit
+        <a href="https://timeguessr.com">timeguessr.com</a>.
+      </p>
+      <h2>How the standings work</h2>
+      <ul>
+        <li>
+          <strong>Points</strong> adds each player’s submitted scores. The
+          per-game option shows their average score instead.
+        </li>
+        <li>
+          <strong>Wins</strong> counts games where a player has the highest
+          submitted score. Tied highest scores each count as a win. The per-game
+          option shows the percentage of their recorded games won.
+        </li>
+        <li>
+          Standings include all recorded games by default. Period filters let
+          you compare results within a selected week, month, year or other
+          available period.
+        </li>
+        <li>
+          Picture records compare submitted picture scores, year errors and
+          distance errors. These are statistics from the guessing game.
+        </li>
+      </ul>
+      <p>
+        Rankings reflect the results recorded here. New submissions, corrections
+        or deletions can change them; this is a friends’ tracker, not an
+        official Timeguessr competition.
+      </p>
+      <h2>Accounts and adding results</h2>
+      <p>
+        Anyone can view the scoreboard. Adding results requires an invitation
+        from the club administrator and a separate tracker username and
+        password. A Timeguessr account does not provide access to this tracker.
+      </p>
+      <p>
+        Signed-in players can paste Timeguessr’s shared results, enter scores
+        manually, or use the companion browser extension. Detailed shared
+        results include the five picture scores and their year and distance
+        errors.
+      </p>
+      <h2>The companion extension</h2>
+      <p>
+        The Chrome, Edge and Firefox companion extension reads completed
+        Timeguessr results and imports them into this scoreboard for the
+        signed-in tracker account. Keep the completed results page open until
+        the extension captures it. Its popup shows import status and lets you
+        pause imports, retry pending uploads or sign out.
+      </p>
+      <p>
+        The extension is designed for this club’s scoreboard. It does not sync a
+        Timeguessr account or require your Timeguessr password. Conflicting
+        existing scores require manual review rather than being overwritten
+        automatically.
+      </p>
+      <h2>Privacy and public results</h2>
+      <p>
+        Usernames, display names, uploaded avatars, scores and picture
+        statistics are publicly visible. The site is hosted on GitHub Pages;
+        Supabase provides authentication and stores the club’s data. There are
+        no ads or analytics trackers.
+      </p>
+      <p>
+        Read the <a href="./privacy.html">privacy policy</a> for details about
+        information collected, local extension storage and deletion requests.
+      </p>
+      <h2>Source code and support</h2>
+      <p>
+        The
+        <a href="https://github.com/AlbertCintas/timeguessr-tracker"
+          >source code</a
+        >
+        is available on GitHub. Report technical problems through the
+        <a href="https://github.com/AlbertCintas/timeguessr-tracker/issues"
+          >issue tracker</a
+        >. For invitations or account help, contact the club administrator
+        privately. Do not post passwords or private account details in public
+        issues.
+      </p>
+    </main>
+  </body>
+</html>
