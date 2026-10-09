@@ -7,6 +7,7 @@ import {
   Check,
   Clock3,
   CircleHelp,
+  Shuffle,
   Flag,
   LogIn,
   Plus,
@@ -36,10 +37,50 @@ import type { Game, Profile, Result, Standing, PictureResult } from "./types";
 import { parseTimeguessrResults } from "./importResults";
 import { shameMetrics, shameRankings, type ShameMetric } from "./shame";
 import { PictureBreakdown } from "./PictureBreakdown";
-import { gameReplayUrl, timeguessrGameId } from "./gameLinks";
+import {
+  gameReplayUrl,
+  timeguessrGameId,
+  unplayedReplayGames,
+} from "./gameLinks";
 const number = new Intl.NumberFormat("en");
 const gameTitle = (g: Game) =>
   g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
+function HelpTooltip({
+  id,
+  label,
+  children,
+}: {
+  id: string;
+  label: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="extension-help"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") setOpen(false);
+      }}
+    >
+      <button
+        className="icon-button"
+        aria-label={label}
+        aria-describedby={open ? id : undefined}
+      >
+        <CircleHelp size={18} />
+      </button>
+      {open && (
+        <span id={id} role="tooltip">
+          {children}
+        </span>
+      )}
+    </span>
+  );
+}
 function ThemeToggle() {
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme !== "light",
@@ -359,7 +400,6 @@ export default function App() {
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
-  const [extensionHelpOpen, setExtensionHelpOpen] = useState(false);
   const [standingsPeriod, setStandingsPeriod] =
     useState<StandingsPeriod>("all");
   const [scoreMode, setScoreMode] = useState<"manual" | "paste">("paste");
@@ -648,6 +688,11 @@ export default function App() {
     ).filter((player) => player.games > 0),
     playedGames = games.filter((g) => results.some((r) => r.game_id === g.id));
   const historyPages = Math.max(1, Math.ceil(playedGames.length / 10));
+  const randomGames = unplayedReplayGames(
+    games,
+    results,
+    session?.user.id || null,
+  );
   const currentHistoryPage = Math.min(historyPage, historyPages - 1);
   useEffect(() => {
     setHistoryPage((page) => Math.min(page, historyPages - 1));
@@ -734,39 +779,54 @@ export default function App() {
             <div className="extension-actions">
               <button
                 className="subtle-button"
+                disabled={
+                  !configured || loading || (!!session && !randomGames.length)
+                }
+                onClick={() => {
+                  if (!session) {
+                    setModal("login");
+                    return;
+                  }
+                  const selected =
+                    randomGames[Math.floor(Math.random() * randomGames.length)];
+                  if (selected)
+                    window.open(selected.url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                <Shuffle size={17} /> Play random unplayed game
+              </button>
+              <HelpTooltip
+                id="random-game-tooltip"
+                label="How does random unplayed game work?"
+              >
+                {!session
+                  ? "Sign in to find games you haven’t recorded a score for. "
+                  : !randomGames.length
+                    ? "No unplayed games with replay links are available. "
+                    : ""}
+                Picks a random game from the club’s full history that someone
+                has played and you haven’t submitted a score for. Only games
+                with replay links are included. Opens Timeguessr in a new tab;
+                it counts as played once your score is saved here.
+              </HelpTooltip>
+            </div>
+            <div className="extension-actions">
+              <button
+                className="subtle-button"
                 onClick={() => setModal("extension")}
               >
                 <Download size={17} /> Install browser extension
               </button>
-              <span
-                className="extension-help"
-                onMouseEnter={() => setExtensionHelpOpen(true)}
-                onMouseLeave={() => setExtensionHelpOpen(false)}
-                onFocus={() => setExtensionHelpOpen(true)}
-                onBlur={() => setExtensionHelpOpen(false)}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") setExtensionHelpOpen(false);
-                }}
+              <HelpTooltip
+                id="extension-help-tooltip"
+                label="What does the browser extension do?"
               >
-                <button
-                  className="icon-button"
-                  aria-label="What does the browser extension do?"
-                  aria-describedby={
-                    extensionHelpOpen ? "extension-help-tooltip" : undefined
-                  }
-                >
-                  <CircleHelp size={18} />
-                </button>
-                {extensionHelpOpen && (
-                  <span id="extension-help-tooltip" role="tooltip">
-                    Automatically saves your completed Timeguessr games,
-                    including picture scores, year errors and distances, to this
-                    friends’ scoreboard. Sign in with your tracker account and
-                    keep the results page open until captured. You can pause
-                    imports at any time.
-                  </span>
-                )}
-              </span>
+                Automatically saves your completed Timeguessr games, including
+                picture scores, year errors and distances, to this friends’
+                scoreboard. Sign in with your tracker account and keep the
+                results page open until captured. You can pause imports at any
+                time.
+              </HelpTooltip>
             </div>
             <span className="hint">
               Daily humiliation. Extra suffering available.

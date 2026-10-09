@@ -69,7 +69,11 @@ test("unplayed history games link to complete challenge IDs and shared links bec
   await page.goto("./");
   await expect(page.locator(".history .game")).toHaveCount(10);
   await expect(page.locator(".game-play-link")).toHaveCount(0);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  const randomButton = page.getByRole("button", {
+    name: "Play random unplayed game",
+    exact: true,
+  });
+  await randomButton.click();
   await page.getByLabel("Username", { exact: true }).fill("alice");
   await page.getByLabel("Password", { exact: true }).fill("test-password-123");
   await page
@@ -77,6 +81,26 @@ test("unplayed history games link to complete challenge IDs and shared links bec
     .getByRole("button", { name: "Sign in", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  const randomHelp = page.getByRole("button", {
+    name: "How does random unplayed game work?",
+  });
+  await randomHelp.hover();
+  await expect(page.getByRole("tooltip")).toContainText("club’s full history");
+  await randomHelp.focus();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await page.evaluate(() => {
+    Math.random = () => 0.999;
+    window.open = (url) => {
+      document.body.dataset.openedGame = String(url);
+      return null;
+    };
+  });
+  await randomButton.click();
+  await expect(page.locator("body")).toHaveAttribute(
+    "data-opened-game",
+    `https://timeguessr.com/game-settings?RA=${encodeURIComponent(replayGames[11].name)}`,
+  );
   await expect(page.locator(".game-play-link")).toHaveCount(9);
   await expect(
     page.locator(".history .game").first().locator(".game-play-link"),
@@ -101,7 +125,9 @@ test("unplayed history games link to complete challenge IDs and shared links bec
   });
   await page.getByRole("button", { name: "Add your score" }).click();
   await page.getByRole("button", { name: "Manual entry", exact: true }).click();
-  await page.getByRole("button", { name: "Non-daily game", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Non-daily game", exact: true })
+    .click();
   await page
     .getByLabel("Timeguessr game ID or link")
     .fill(

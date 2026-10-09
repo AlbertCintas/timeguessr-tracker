@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { gameReplayUrl, timeguessrGameId } from "./gameLinks.ts";
+import {
+  gameReplayUrl,
+  timeguessrGameId,
+  unplayedReplayGames,
+} from "./gameLinks.ts";
 import { madridToday } from "./scoring.ts";
 import type { Game } from "./types.ts";
 
@@ -58,5 +62,32 @@ test("daily replay links point to today's challenge only", () => {
       daily_date: "2023-06-01",
     }),
     null,
+  );
+});
+
+test("random replay candidates exclude played games, missing results and invalid links", () => {
+  const candidates = [
+    game,
+    { ...game, id: "unplayed" },
+    { ...game, id: "empty" },
+    { ...game, id: "invalid", name: "Truncated ID" },
+  ];
+  const results = [
+    { game_id: game.id, player_id: "me", points: 0 },
+    { game_id: "unplayed", player_id: "friend", points: 10000 },
+    { game_id: "invalid", player_id: "friend", points: 10000 },
+  ];
+  assert.deepEqual(
+    unplayedReplayGames(candidates, results, "me").map(({ game }) => game.id),
+    ["unplayed"],
+  );
+  assert.deepEqual(unplayedReplayGames(candidates, results, null), []);
+  assert.deepEqual(
+    unplayedReplayGames(
+      candidates,
+      [...results, { game_id: "unplayed", player_id: "me", points: 10000 }],
+      "me",
+    ),
+    [],
   );
 });
