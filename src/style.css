@@ -246,6 +246,33 @@ main {
 .intro-right .hint {
   font-size: 10px;
 }
+.extension-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.extension-help {
+  position: relative;
+  display: inline-flex;
+}
+.extension-help .icon-button {
+  color: var(--muted);
+}
+.extension-help [role="tooltip"] {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  width: min(290px, calc(100vw - 40px));
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 5px 18px var(--shadow);
+  font-size: 12px;
+  line-height: 1.6;
+}
 .section-heading {
   display: flex;
   align-items: center;
@@ -894,6 +921,17 @@ footer > span:first-child {
   }
   .intro-right .hint {
     align-self: center;
+  }
+  .extension-actions {
+    position: relative;
+  }
+  .extension-help {
+    position: static;
+  }
+  .extension-help [role="tooltip"] {
+    left: 0;
+    right: auto;
+    width: min(270px, calc(100vw - 40px));
   }
   .intro-label {
     font-size: 9px;

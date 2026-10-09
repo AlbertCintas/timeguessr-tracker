@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Check,
   Clock3,
+  CircleHelp,
   Flag,
   LogIn,
   Plus,
@@ -357,6 +358,7 @@ export default function App() {
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
+  const [extensionHelpOpen, setExtensionHelpOpen] = useState(false);
   const [standingsPeriod, setStandingsPeriod] =
     useState<StandingsPeriod>("all");
   const [scoreMode, setScoreMode] = useState<"manual" | "paste">("paste");
@@ -723,12 +725,43 @@ export default function App() {
             >
               <Plus size={19} /> Add your score
             </button>
-            <button
-              className="subtle-button"
-              onClick={() => setModal("extension")}
-            >
-              <Download size={17} /> Install extension
-            </button>
+            <div className="extension-actions">
+              <button
+                className="subtle-button"
+                onClick={() => setModal("extension")}
+              >
+                <Download size={17} /> Install browser extension
+              </button>
+              <span
+                className="extension-help"
+                onMouseEnter={() => setExtensionHelpOpen(true)}
+                onMouseLeave={() => setExtensionHelpOpen(false)}
+                onFocus={() => setExtensionHelpOpen(true)}
+                onBlur={() => setExtensionHelpOpen(false)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setExtensionHelpOpen(false);
+                }}
+              >
+                <button
+                  className="icon-button"
+                  aria-label="What does the browser extension do?"
+                  aria-describedby={
+                    extensionHelpOpen ? "extension-help-tooltip" : undefined
+                  }
+                >
+                  <CircleHelp size={18} />
+                </button>
+                {extensionHelpOpen && (
+                  <span id="extension-help-tooltip" role="tooltip">
+                    Automatically saves your completed Timeguessr games,
+                    including picture scores, year errors and distances, to this
+                    friends’ scoreboard. Sign in with your tracker account and
+                    keep the results page open until captured. You can pause
+                    imports at any time.
+                  </span>
+                )}
+              </span>
+            </div>
             <span className="hint">
               Daily humiliation. Extra suffering available.
             </span>
