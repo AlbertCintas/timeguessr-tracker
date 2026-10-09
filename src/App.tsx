@@ -81,6 +81,40 @@ function HelpTooltip({
     </span>
   );
 }
+function PendingExtensionInstall() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      className="extension-help extension-store-pending"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          setOpen(false);
+          event.stopPropagation();
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="primary extension-download"
+        aria-disabled="true"
+        aria-describedby={open ? "extension-store-status" : undefined}
+        onClick={() => setOpen(true)}
+      >
+        <Download size={18} /> Install in browser
+      </button>
+      {open && (
+        <span id="extension-store-status" role="tooltip">
+          The extension is waiting for store approval. Until then, use the
+          manual installation option below.
+        </span>
+      )}
+    </span>
+  );
+}
 function ThemeToggle() {
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme !== "light",
@@ -1130,6 +1164,8 @@ export default function App() {
                 Finish a game. Let the extension report the damage. Daily and
                 non-daily games, all five pictures included.
               </p>
+              <PendingExtensionInstall />
+              <h3>Manual installation — Chrome / Edge</h3>
               <p>
                 For desktop Chrome and Edge. This version installs from a ZIP,
                 so the browser needs a few clicks from you.

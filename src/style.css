@@ -1330,6 +1330,14 @@ textarea:focus-visible {
 .extension-install ol {
   padding-left: 22px;
 }
+.extension-store-pending button {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.extension-store-pending [role="tooltip"] {
+  left: 0;
+  right: auto;
+}
 .extension-install li {
   margin: 12px 0;
 }

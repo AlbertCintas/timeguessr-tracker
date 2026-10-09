@@ -636,6 +636,28 @@ test("extension install button explains desktop installation and links to ZIP", 
   await page.goto("./");
   await page.getByRole("button", { name: "Install browser extension" }).click();
   const dialog = page.getByRole("dialog");
+  const storeInstall = dialog.getByRole("button", {
+    name: "Install in browser",
+    exact: true,
+  });
+  await expect(storeInstall).toBeDisabled();
+  await storeInstall.hover();
+  await expect(dialog.getByRole("tooltip")).toContainText(
+    "waiting for store approval",
+  );
+  await page.mouse.move(0, 0);
+  await storeInstall.focus();
+  await expect(dialog.getByRole("tooltip")).toContainText(
+    "manual installation option below",
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog.getByRole("tooltip")).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  const pageUrl = page.url();
+  await storeInstall.dispatchEvent("click");
+  await expect(dialog.getByRole("tooltip")).toBeVisible();
+  expect(page.url()).toBe(pageUrl);
+  await expect(dialog).toContainText("Manual installation — Chrome / Edge");
   await expect(dialog).toContainText("Load unpacked");
   await expect(dialog).toContainText(
     "Mobile browsers cannot install this version",
@@ -648,6 +670,7 @@ test("extension install button explains desktop installation and links to ZIP", 
   );
   await expect(dialog).toContainText("chrome://extensions");
   await expect(dialog).toContainText("edge://extensions");
+  await dialog.getByRole("link", { name: "Download extension ZIP" }).focus();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
