@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Timeguessr Club — automatic receipts",
-  "version": "1.0.0",
+  "name": "Timeguessr Club \u2014 automatic receipts",
+  "version": "1.1.0",
   "description": "Automatically save your completed Timeguessr games to the group scoreboard.",
   "permissions": ["storage", "alarms"],
   "host_permissions": [
@@ -9,10 +9,19 @@
     "https://www.timeguessr.com/*",
     "https://xymaqcuhpmjimfbwpenr.supabase.co/*"
   ],
-  "background": { "service_worker": "background.js", "type": "module" },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Timeguessr Club"
+    "default_title": "Timeguessr Club",
+    "default_icon": {
+      "16": "icons/club-16.png",
+      "32": "icons/club-32.png",
+      "48": "icons/club-48.png",
+      "128": "icons/club-128.png"
+    }
   },
   "content_scripts": [
     {
@@ -20,5 +29,13 @@
       "js": ["content.js"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "minimum_chrome_version": "140",
+  "icons": {
+    "16": "icons/club-16.png",
+    "32": "icons/club-32.png",
+    "48": "icons/club-48.png",
+    "128": "icons/club-128.png"
+  },
+  "homepage_url": "https://albertcintas.github.io/timeguessr-tracker/"
 }

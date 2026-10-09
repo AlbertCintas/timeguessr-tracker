@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
+import { IDBFactory } from "fake-indexeddb";
 import {
   validateCapture,
   dailyDate,
@@ -11,7 +12,7 @@ import {
 const source = (
   await readFile(new URL("../extension/background.js", import.meta.url), "utf8")
 ).replace(/^import .*;\n/gm, "");
-async function setup(initial = {}) {
+async function setup(initial = {}, firefox = false) {
   const stored = structuredClone(initial),
     calls = [],
     events = {};
@@ -65,6 +66,7 @@ async function setup(initial = {}) {
       },
     },
   };
+  if (firefox) delete chrome.storage.local.setAccessLevel;
   const db = {
     auth: {
       async getSession() {
@@ -117,6 +119,7 @@ async function setup(initial = {}) {
   };
   const context = vm.createContext({
     chrome,
+    indexedDB: new IDBFactory(),
     createClient: () => db,
     validateCapture,
     dailyDate,
@@ -157,6 +160,7 @@ async function setup(initial = {}) {
     }
   };
   return {
+    context,
     stored,
     calls,
     events,
@@ -299,4 +303,22 @@ test("worker rejects hostile senders and pauses uploads for expired authenticati
   assert.equal(app.calls.length, 0);
   assert.equal(app.stored.queue.length, 1);
   assert.match(app.stored.message, /Sign in again/);
+});
+
+test("Firefox stores auth in extension IndexedDB without exposing it through storage.local", async () => {
+  const app = await setup({}, true);
+  await vm.runInContext(
+    'authStorage.setItem("club-auth", "private-refresh-token")',
+    app.context,
+  );
+  assert.equal(
+    await vm.runInContext('authStorage.getItem("club-auth")', app.context),
+    "private-refresh-token",
+  );
+  assert.equal(app.stored["club-auth"], undefined);
+  await vm.runInContext('authStorage.removeItem("club-auth")', app.context);
+  assert.equal(
+    await vm.runInContext('authStorage.getItem("club-auth")', app.context),
+    null,
+  );
 });

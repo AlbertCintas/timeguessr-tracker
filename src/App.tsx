@@ -980,6 +980,7 @@ export default function App() {
             <Clock3 size={15} /> Time well wasted.
           </span>
           <span>Unofficial. Unqualified. Unreasonably competitive.</span>
+          <a href="/timeguessr-tracker/privacy.html">Privacy</a>
         </footer>
       </main>
       {modal && (
@@ -1049,6 +1050,7 @@ export default function App() {
                 and appear for review in the extension. Mobile browsers cannot
                 install this version.
               </p>
+              <p>Firefox: store release coming soon.</p>
               <p className="hint">
                 To update, download the latest ZIP, replace the extracted files,
                 then click Reload on the browser’s extensions page.

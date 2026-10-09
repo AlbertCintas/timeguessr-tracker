@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Timeguessr Club — Privacy</title>
+    <style>
+      body {
+        max-width: 760px;
+        margin: 40px auto;
+        padding: 0 24px;
+        background: #111512;
+        color: #e8ede6;
+        font:
+          16px/1.65 system-ui,
+          sans-serif;
+      }
+      a {
+        color: #c5dd9d;
+      }
+      h1,
+      h2 {
+        line-height: 1.25;
+      }
+      h2 {
+        margin-top: 32px;
+      }
+      li {
+        margin: 8px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="./">← Back to the scoreboard</a>
+    <h1>Timeguessr Club privacy policy</h1>
+    <p>
+      Timeguessr Club is a friends’ scoreboard and companion browser extension
+      maintained by <a href="https://github.com/AlbertCintas">AlbertCintas</a>.
+      It is independent of Timeguessr.
+    </p>
+    <h2>Information used</h2>
+    <ul>
+      <li>
+        When you sign in, the extension sends your tracker username, represented
+        as an internal account identifier, and password to our Supabase
+        authentication service over HTTPS. The extension does not retain your
+        password. It stores session and refresh tokens locally to keep you
+        signed in.
+      </li>
+      <li>
+        After you sign in and enable automatic imports, the extension reads
+        completed Timeguessr games: game type, challenge number, total score,
+        picture scores, year errors, distances, picture or challenge
+        identifiers, timer settings and the date captured. It does not read your
+        Timeguessr password or account cookies.
+      </li>
+      <li>
+        Game results and an external game fingerprint are sent to the tracker’s
+        Supabase database. Picture identifiers are used locally to generate
+        fingerprints for matching non-daily games; the extension does not upload
+        the original photographs, guessed coordinates or your physical location.
+      </li>
+      <li>
+        The extension requests public Timeguessr challenge metadata to verify
+        daily dates. It does not collect activity on unrelated websites or use
+        advertising or analytics trackers.
+      </li>
+    </ul>
+    <h2>Public scoreboard</h2>
+    <p>
+      Tracker usernames, display names, avatars, submitted scores and picture
+      statistics are publicly visible on the scoreboard. Signing in and enabling
+      auto-import means completed games can be added to this public record. The
+      extension does not upload profile photos; avatars are managed on the
+      website.
+    </p>
+    <h2>Storage and services</h2>
+    <p>
+      Authentication is kept in storage restricted to trusted extension contexts
+      on Chrome and Edge, or the extension’s own IndexedDB database on Firefox.
+      Pending imports and up to 20 recent import records are stored locally.
+      Pending games remain attached to the account that captured them.
+    </p>
+    <p>
+      The website is hosted on GitHub Pages and authentication, scores and
+      avatars are hosted on Supabase. Requests expose ordinary connection
+      information to those services. See
+      <a
+        href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement"
+        >GitHub’s privacy statement</a
+      >
+      and <a href="https://supabase.com/privacy">Supabase’s privacy policy</a>.
+    </p>
+    <h2>Control and deletion</h2>
+    <p>
+      Pause automatic imports or sign out using the extension popup. Sign-out
+      removes its saved authentication session but keeps pending imports for
+      that account. Dismiss pending imports in the popup; uninstalling removes
+      the extension’s local data. Uploaded scores can be edited or deleted on
+      the tracker by their owner or a club administrator. Uninstalling does not
+      delete uploaded scores.
+    </p>
+    <p>
+      For account deletion or other privacy requests, contact the club
+      administrator privately or use the
+      <a href="https://github.com/AlbertCintas/timeguessr-tracker/issues"
+        >project’s issue tracker</a
+      >
+      to request a private contact method. Do not post passwords, session tokens
+      or private account information in a public issue.
+    </p>
+    <h2>Purpose and sharing</h2>
+    <p>
+      Information is used to authenticate players, match games, upload scores,
+      retry pending imports and show rankings. We do not sell information, use
+      it for advertising, or share it beyond the public scoreboard and the
+      services needed to operate the tracker.
+    </p>
+  </body>
+</html>

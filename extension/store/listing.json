@@ -1,0 +1,12 @@
+{
+  "name": "Timeguessr Club \u2014 automatic receipts",
+  "summary": "Automatically save completed Timeguessr games and picture stats to your friends\u2019 scoreboard.",
+  "description": "Finish a game. Let the extension report the damage.\n\nTimeguessr Club automatically imports completed daily and non-daily Timeguessr games into your friends\u2019 shared scoreboard, including all five picture scores, year errors and distances.\n\n\u2022 Sign in with your invitation-only tracker account.\n\u2022 Automatically save completed games, with offline retries.\n\u2022 Keep existing scores safe: conflicting entries require manual review.\n\u2022 Compare wins and points, per-game averages and the hall of shame on the scoreboard.\n\u2022 Pause imports or sign out whenever you want.\n\nA Timeguessr Club account is required; ask your club administrator for an invitation. This extension is designed for the scoreboard at https://albertcintas.github.io/timeguessr-tracker/. It is not a general-purpose Timeguessr account sync tool.\n\nIndependent companion project, not affiliated with or endorsed by Timeguessr. Free to use, with no ads or analytics.",
+  "homepage": "https://albertcintas.github.io/timeguessr-tracker/",
+  "privacy_policy": "https://albertcintas.github.io/timeguessr-tracker/privacy.html",
+  "support_url": "https://github.com/AlbertCintas/timeguessr-tracker/issues",
+  "chrome_visibility": "unlisted",
+  "firefox_channel": "listed",
+  "category": "Games & Entertainment",
+  "language": "en"
+}

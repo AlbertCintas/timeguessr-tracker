@@ -2,21 +2,48 @@ import { createClient } from "@supabase/supabase-js";
 import { validateCapture, dailyDate, externalKey } from "./capture.js";
 const URL = "https://xymaqcuhpmjimfbwpenr.supabase.co";
 const KEY = "sb_publishable_TZh1TA51sJWotfDszbJzTw_jl-3RnBt";
-const ready = chrome.storage.local.setAccessLevel({
-  accessLevel: "TRUSTED_CONTEXTS",
-});
+const trustedStorage = Boolean(chrome.storage.local.setAccessLevel);
+const ready = trustedStorage
+  ? chrome.storage.local.setAccessLevel({ accessLevel: "TRUSTED_CONTEXTS" })
+  : Promise.resolve();
+let authDatabase;
+async function privateAuthStore(method, key, value) {
+  authDatabase ??= new Promise((resolve, reject) => {
+    const request = indexedDB.open("club-private-auth", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("session");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  const database = await authDatabase;
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(
+      "session",
+      method === "get" ? "readonly" : "readwrite",
+    );
+    const store = transaction.objectStore("session");
+    const request =
+      method === "put" ? store.put(value, key) : store[method](key);
+    transaction.oncomplete = () => resolve(request.result ?? null);
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
 const authStorage = {
   async getItem(key) {
     await ready;
-    return (await chrome.storage.local.get(key))[key] ?? null;
+    return trustedStorage
+      ? ((await chrome.storage.local.get(key))[key] ?? null)
+      : privateAuthStore("get", key);
   },
   async setItem(key, value) {
     await ready;
-    await chrome.storage.local.set({ [key]: value });
+    if (trustedStorage) await chrome.storage.local.set({ [key]: value });
+    else await privateAuthStore("put", key, value);
   },
   async removeItem(key) {
     await ready;
-    await chrome.storage.local.remove(key);
+    if (trustedStorage) await chrome.storage.local.remove(key);
+    else await privateAuthStore("delete", key);
   },
 };
 const db = createClient(URL, KEY, {

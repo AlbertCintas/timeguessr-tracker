@@ -63,3 +63,9 @@ On desktop Chrome or Edge, click **Install extension** on the scoreboard and dow
 The extension captures completed daily and non-daily games, including picture details. Pending imports survive browser restarts and remain attached to the account that captured them. Conflicts need review in the tracker; automatic imports preserve saved scores and can fill missing picture details when the scores match. Pause automatic imports or sign out from the extension popup.
 
 To update, download the latest ZIP, replace the extracted files, and click **Reload** on the browser’s extensions page. Run the installed-extension browser test with `npx playwright install chromium` and `npm run test:extension`. Build both the website and downloadable extension with `npm run build`; build only the extension with `npm run build:extension`. The Pages deployment includes versioned and latest ZIP downloads under `downloads/`.
+
+## Store packages
+
+`npm run build:store` prepares Chrome and Firefox upload ZIPs, a matching source archive, and listing material in `store-artifacts/`. Firefox uses an event page and stores authentication in the extension’s IndexedDB database. Firefox 140 or later is required. The source archive includes build instructions and the dependency lockfile.
+
+Run `npm run lint:firefox`, `npm run test:extension`, and `npm run test:firefox` to validate the packages. Firefox browser tests use an isolated profile and require an installed Firefox; set `FIREFOX_BINARY` if it is outside the standard macOS location. The privacy policy is served at `privacy.html`.

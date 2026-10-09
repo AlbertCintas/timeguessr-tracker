@@ -8,7 +8,10 @@
     "build": "tsc -b && vite build && npm run build:extension",
     "test": "node --experimental-strip-types --test src/*.test.ts tests/*.test.mjs",
     "build:extension": "node scripts/build-extension.mjs",
-    "test:extension": "npm run build:extension && playwright test -c playwright.extension.config.ts"
+    "test:extension": "npm run build:extension && playwright test -c playwright.extension.config.ts",
+    "test:firefox": "npm run build:extension && node --test tests/extension-firefox/*.test.mjs",
+    "lint:firefox": "addons-linter extension-firefox-dist --warnings-as-errors",
+    "build:store": "npm run build:extension && node scripts/build-store.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
@@ -22,7 +25,10 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "addons-linter": "^10.14.0",
     "esbuild": "^0.28.2",
+    "fake-indexeddb": "^6.2.5",
+    "geckodriver": "^7.0.0",
     "prettier": "^3.9.9",
     "typescript": "~5.9.2",
     "vite": "^7.1.0"
