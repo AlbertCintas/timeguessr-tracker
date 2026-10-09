@@ -663,14 +663,50 @@ test("extension install button explains desktop installation and links to ZIP", 
     "Mobile browsers cannot install this version",
   );
   await expect(
-    dialog.getByRole("link", { name: "Download extension ZIP" }),
+    dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
   ).toHaveAttribute(
     "href",
     "/timeguessr-tracker/downloads/timeguessr-extension-latest.zip",
   );
   await expect(dialog).toContainText("chrome://extensions");
   await expect(dialog).toContainText("edge://extensions");
-  await dialog.getByRole("link", { name: "Download extension ZIP" }).focus();
+  await dialog
+    .getByRole("link", { name: "Download Chrome / Edge extension ZIP" })
+    .focus();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
+});
+
+test("Firefox gets its own manual package and temporary installation instructions", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "userAgent", {
+      get: () => "Mozilla/5.0 Firefox/140.0",
+    });
+  });
+  await page.route("https://club-test.supabase.co/**", (route) =>
+    route.fulfill({
+      json: [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    }),
+  );
+  await page.goto("./");
+  await page
+    .getByRole("button", { name: "Install browser extension", exact: true })
+    .click();
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("link", { name: "Download Firefox extension ZIP" }),
+  ).toHaveAttribute(
+    "href",
+    "/timeguessr-tracker/downloads/timeguessr-firefox-extension-latest.zip",
+  );
+  await expect(
+    dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
+  ).toHaveCount(0);
+  await expect(dialog).toContainText("Load Temporary Add-on");
+  await expect(dialog).toContainText("manifest.json");
+  await expect(dialog).toContainText("After restarting Firefox, load it again");
+  await expect(dialog).not.toContainText("Load unpacked");
 });

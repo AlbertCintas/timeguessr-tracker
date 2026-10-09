@@ -49,6 +49,10 @@ for (const browser of ["chrome", "firefox"]) {
       "dist/downloads/timeguessr-extension-latest.zip",
     );
   }
+  await copyFile(
+    `dist/downloads/${archive}`,
+    `dist/downloads/timeguessr-${browser}-extension-latest.zip`,
+  );
   console.log(
     `Built ${browser} extension ${manifest.version}: dist/downloads/${archive}`,
   );

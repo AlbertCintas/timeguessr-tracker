@@ -115,6 +115,85 @@ function PendingExtensionInstall() {
     </span>
   );
 }
+function ManualExtensionInstall() {
+  const firefox = /Firefox\//i.test(navigator.userAgent);
+  return (
+    <>
+      <h3>Manual installation — {firefox ? "Firefox" : "Chrome / Edge"}</h3>
+      <p>
+        For desktop {firefox ? "Firefox" : "Chrome and Edge"}. This version
+        installs from a ZIP, so the browser needs a few clicks from you.
+      </p>
+      <a
+        className="primary extension-download"
+        href={
+          firefox
+            ? "/timeguessr-tracker/downloads/timeguessr-firefox-extension-latest.zip"
+            : "/timeguessr-tracker/downloads/timeguessr-extension-latest.zip"
+        }
+        download={
+          firefox
+            ? "timeguessr-firefox-extension.zip"
+            : "timeguessr-extension.zip"
+        }
+      >
+        <Download size={18} /> Download {firefox ? "Firefox" : "Chrome / Edge"}{" "}
+        extension ZIP
+      </a>
+      <ol>
+        <li>Extract the ZIP into a folder you’ll keep.</li>
+        {firefox ? (
+          <>
+            <li>
+              Open <code>about:debugging#/runtime/this-firefox</code> in
+              Firefox.
+            </li>
+            <li>
+              Click <strong>Load Temporary Add-on</strong> and select{" "}
+              <code>manifest.json</code> inside the extracted folder.
+            </li>
+          </>
+        ) : (
+          <>
+            <li>
+              Open <code>chrome://extensions</code> in Chrome, or{" "}
+              <code>edge://extensions</code> in Edge.
+            </li>
+            <li>
+              Turn on <strong>Developer mode</strong>, click{" "}
+              <strong>Load unpacked</strong>, and choose the extracted folder.
+            </li>
+          </>
+        )}
+        <li>
+          Pin the extension, open it and sign in with your tracker username and
+          password.
+        </li>
+        <li>
+          Finish all five pictures on Timeguessr and leave the results page open
+          until captured. If it was already open during installation, refresh
+          it.
+        </li>
+      </ol>
+      {firefox && (
+        <p>
+          This unsigned Firefox version is temporary. After restarting Firefox,
+          load it again through <code>about:debugging</code>.
+        </p>
+      )}
+      <p>
+        Scores import automatically. Conflicting scores stay untouched and
+        appear for review in the extension. Mobile browsers cannot install this
+        version.
+      </p>
+      <p className="hint">
+        To update, download the latest ZIP, replace the extracted files, then
+        click Reload on the browser’s{" "}
+        {firefox ? "about:debugging" : "extensions"} page.
+      </p>
+    </>
+  );
+}
 function ThemeToggle() {
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme !== "light",
@@ -1165,49 +1244,7 @@ export default function App() {
                 non-daily games, all five pictures included.
               </p>
               <PendingExtensionInstall />
-              <h3>Manual installation — Chrome / Edge</h3>
-              <p>
-                For desktop Chrome and Edge. This version installs from a ZIP,
-                so the browser needs a few clicks from you.
-              </p>
-              <a
-                className="primary extension-download"
-                href="/timeguessr-tracker/downloads/timeguessr-extension-latest.zip"
-                download="timeguessr-extension.zip"
-              >
-                <Download size={18} /> Download extension ZIP
-              </a>
-              <ol>
-                <li>Extract the ZIP into a folder you’ll keep.</li>
-                <li>
-                  Open <code>chrome://extensions</code> in Chrome, or{" "}
-                  <code>edge://extensions</code> in Edge.
-                </li>
-                <li>
-                  Turn on <strong>Developer mode</strong>, click{" "}
-                  <strong>Load unpacked</strong>, and choose the extracted
-                  folder.
-                </li>
-                <li>
-                  Pin the extension, open it and sign in with your tracker
-                  username and password.
-                </li>
-                <li>
-                  Finish all five pictures on Timeguessr and leave the results
-                  page open until captured. If it was already open during
-                  installation, refresh it.
-                </li>
-              </ol>
-              <p>
-                Scores import automatically. Conflicting scores stay untouched
-                and appear for review in the extension. Mobile browsers cannot
-                install this version.
-              </p>
-              <p>Firefox: store release coming soon.</p>
-              <p className="hint">
-                To update, download the latest ZIP, replace the extracted files,
-                then click Reload on the browser’s extensions page.
-              </p>
+              <ManualExtensionInstall />
             </div>
           )}
           {modal === "login" && (
