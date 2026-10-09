@@ -192,9 +192,6 @@ function ShameBoard({
   results: Result[];
   games: Game[];
 }) {
-  const [metric, setMetric] = useState<ShameMetric>("worstGame");
-  const rows = shameRankings(profiles, results, metric);
-  const definition = shameMetrics[metric];
   return (
     <section className="shame-section" aria-labelledby="shame-heading">
       <div className="section-heading">
@@ -204,66 +201,78 @@ function ShameBoard({
         </div>
       </div>
       <div className="board shame-board">
-        <div className="shame-controls">
-          <label htmlFor="shame-metric">Choose your downfall</label>
-          <select
-            id="shame-metric"
-            value={metric}
-            onChange={(e) => setMetric(e.target.value as ShameMetric)}
-          >
-            {Object.entries(shameMetrics).map(([key, item]) => (
-              <option key={key} value={key}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-          <p>{definition.description}</p>
-        </div>
-        {rows.length ? (
-          <ol className="shame-list">
-            {rows.map((row) => {
-              const game = games.find((item) => item.id === row.gameId);
+        <table className="shame-table" aria-label="Hall of shame records">
+          <thead>
+            <tr>
+              <th scope="col">The charge</th>
+              <th scope="col">The guilty</th>
+              <th scope="col">The damage</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(Object.keys(shameMetrics) as ShameMetric[]).map((metric) => {
+              const definition = shameMetrics[metric];
+              const rows = shameRankings(profiles, results, metric);
+              const winners = rows.filter((row) => row.rank === 1);
               return (
-                <li key={row.id} className="shame-row">
-                  <span className="rank">{row.rank}</span>
-                  <Avatar profile={row} />
-                  <div className="shame-player">
-                    <strong>{row.display_name}</strong>
-                    <small>
-                      {game
-                        ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
-                        : `${row.samples} pictures recorded`}
-                    </small>
-                  </div>
-                  <strong className="shame-value">
-                    {new Intl.NumberFormat("en", {
-                      maximumFractionDigits: 3,
-                    }).format(row.value)}{" "}
-                    <small>{definition.unit}</small>
-                  </strong>
-                </li>
+                <tr key={metric} data-metric={metric}>
+                  <th scope="row" title={definition.description}>
+                    {definition.label}
+                  </th>
+                  <td>
+                    {winners.length ? (
+                      winners.map((row) => {
+                        const game = games.find(
+                          (item) => item.id === row.gameId,
+                        );
+                        return (
+                          <div className="shame-holder" key={row.id}>
+                            <Avatar profile={row} />
+                            <div className="shame-player">
+                              <strong>{row.display_name}</strong>
+                              <small>
+                                {game
+                                  ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
+                                  : `${row.samples} pictures recorded`}
+                              </small>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <span className="shame-missing">
+                        {metric === "worstGame"
+                          ? "No scores yet"
+                          : "No picture details yet"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="shame-value">
+                    {winners.length ? (
+                      <>
+                        {new Intl.NumberFormat("en", {
+                          maximumFractionDigits: 3,
+                        }).format(winners[0].value)}{" "}
+                        <small>{definition.unit}</small>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
               );
             })}
-          </ol>
-        ) : (
-          <div className="empty">
-            <strong>No evidence for this charge.</strong>
-            <span>
-              {metric === "worstGame"
-                ? "Add a score. We’ll take it from there."
-                : "Paste Detailed results to unlock picture rankings."}
-            </span>
-          </div>
-        )}
+          </tbody>
+        </table>
         <div className="board-foot">
-          {metric === "worstGame"
-            ? "Includes manual and pasted game totals."
-            : "Only recorded picture details count. Missing details are never treated as zero."}
+          Ties share the blame. Picture records use detailed results only;
+          missing details never count as zero.
         </div>
       </div>
     </section>
   );
 }
+
 function Modal({
   title,
   close,
@@ -335,9 +344,10 @@ export default function App() {
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
   const [historyPage, setHistoryPage] = useState(0);
-  const [scoreMode, setScoreMode] = useState<"manual" | "paste">("manual");
+  const [scoreMode, setScoreMode] = useState<"manual" | "paste">("paste");
   const [shareText, setShareText] = useState("");
   const [importRead, setImportRead] = useState(false);
+  const [pasteError, setPasteError] = useState("");
   const [pictureRounds, setPictureRounds] = useState<PictureResult[] | null>(
     null,
   );
@@ -463,7 +473,8 @@ export default function App() {
   }
   function openScore(entry?: Result) {
     setEdit(entry || null);
-    setScoreMode("manual");
+    setScoreMode(entry ? "manual" : "paste");
+    setPasteError("");
     setShareText("");
     setImportRead(false);
     setPictureRounds(entry?.rounds ?? null);
@@ -476,12 +487,33 @@ export default function App() {
     setError("");
     setModal(session ? "score" : "login");
   }
+  function updateShareText(text: string) {
+    setShareText(text);
+    setImportRead(false);
+    setPictureRounds(null);
+    setDailyNumber(null);
+    setPoints("");
+    setError("");
+    setPasteError("");
+    if (!text.trim()) return;
+    try {
+      const parsed = parseTimeguessrResults(text);
+      setPoints(String(parsed.points));
+      setPictureRounds(parsed.rounds);
+      setDailyNumber(parsed.dailyNumber);
+      setImportRead(true);
+    } catch (error) {
+      setPasteError(
+        error instanceof Error ? error.message : "Could not read results.",
+      );
+    }
+  }
   async function saveScore(event: FormEvent) {
     event.preventDefault();
     await run(async () => {
       if (!db || !session) throw new Error("Sign in first.");
       if (scoreMode === "paste" && !importRead)
-        throw new Error("Read your pasted results before saving.");
+        throw new Error("Paste valid Timeguessr results before saving.");
       const value = Number(points);
       if (
         pictureRounds &&
@@ -978,6 +1010,19 @@ export default function App() {
               <div className="segmented" aria-label="Score entry method">
                 <button
                   type="button"
+                  aria-pressed={scoreMode === "paste"}
+                  className={scoreMode === "paste" ? "active" : ""}
+                  onClick={() => {
+                    setScoreMode("paste");
+                    setError("");
+                    if (shareText.trim()) updateShareText(shareText);
+                    else setImportRead(false);
+                  }}
+                >
+                  Paste results
+                </button>
+                <button
+                  type="button"
                   aria-pressed={scoreMode === "manual"}
                   className={scoreMode === "manual" ? "active" : ""}
                   onClick={() => {
@@ -986,17 +1031,6 @@ export default function App() {
                   }}
                 >
                   Manual entry
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={scoreMode === "paste"}
-                  className={scoreMode === "paste" ? "active" : ""}
-                  onClick={() => {
-                    setScoreMode("paste");
-                    setError("");
-                  }}
-                >
-                  Paste results
                 </button>
               </div>
               {scoreMode === "paste" && (
@@ -1007,44 +1041,32 @@ export default function App() {
                       value={shareText}
                       maxLength={10000}
                       rows={7}
-                      placeholder="TimeGuessr #1227 — 37,894/50,000…"
-                      onChange={(e) => {
-                        setShareText(e.target.value);
-                        setImportRead(false);
-                        setPictureRounds(null);
-                        setDailyNumber(null);
-                        setPoints("");
-                        setError("");
-                      }}
+                      placeholder="Paste your Timeguessr results here — we’ll read them automatically."
+                      onChange={(e) => updateShareText(e.target.value)}
                     />
                   </label>
                   <p className="hint">
-                    Use Share results → Detailed for picture stats. Emoji-grid
-                    shares import the total only.
+                    Share results → Detailed includes picture stats. Emoji-grid
+                    shares include the total only.
                   </p>
-                  <button
-                    type="button"
-                    className="subtle-button"
-                    onClick={() => {
-                      try {
-                        const parsed = parseTimeguessrResults(shareText);
-                        setPoints(String(parsed.points));
-                        setPictureRounds(parsed.rounds);
-                        setDailyNumber(parsed.dailyNumber);
-                        setImportRead(true);
-                        setError("");
-                      } catch (error) {
-                        setImportRead(false);
-                        setError(
-                          error instanceof Error
-                            ? error.message
-                            : "Could not read results.",
-                        );
-                      }
-                    }}
-                  >
-                    Read pasted results
-                  </button>
+                  {pasteError && (
+                    <p className="form-error" role="alert">
+                      {pasteError}
+                    </p>
+                  )}
+                  {importRead && (
+                    <div className="paste-summary" role="status">
+                      <Check size={19} />
+                      <div>
+                        <strong>{number.format(Number(points))} points</strong>
+                        <span>
+                          {pictureRounds
+                            ? "All 5 pictures imported."
+                            : "Total imported. No picture details in this share."}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
               {dailyNumber !== null && (
@@ -1145,26 +1167,27 @@ export default function App() {
                   {profiles.find((p) => p.id === edit.player_id)?.display_name}
                 </p>
               )}
-              <label>
-                Final points
-                <input
-                  type="number"
-                  readOnly={scoreMode === "paste"}
-                  inputMode="numeric"
-                  min="0"
-                  max="2147483647"
-                  step="1"
-                  placeholder="e.g. 42500"
-                  value={points}
-                  onChange={(e) => setPoints(e.target.value)}
-                  required
-                />
-              </label>
+              {scoreMode === "manual" && (
+                <label>
+                  Final points
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max="2147483647"
+                    step="1"
+                    placeholder="e.g. 42500"
+                    value={points}
+                    onChange={(e) => setPoints(e.target.value)}
+                    required
+                  />
+                </label>
+              )}
               <p className="hint">
                 The highest score wins. Ties count as a win for each player.
                 Standings update immediately.
               </p>
-              {pictureRounds && (
+              {pictureRounds && (scoreMode === "manual" || importRead) && (
                 <div className="import-preview">
                   <PictureBreakdown rounds={pictureRounds} />
                   <button
@@ -1179,12 +1202,10 @@ export default function App() {
                   </button>
                 </div>
               )}
-              {scoreMode === "paste" && importRead && !pictureRounds && (
-                <p className="hint">
-                  Total imported. No exact picture details in this share.
-                </p>
-              )}
-              <button className="primary full" disabled={busy}>
+              <button
+                className="primary full"
+                disabled={busy || (scoreMode === "paste" && !importRead)}
+              >
                 {busy ? "Saving…" : "Save score"}
               </button>
             </form>

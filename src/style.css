@@ -1057,45 +1057,48 @@ footer > span:first-child {
 .shame-section {
   margin-top: 38px;
 }
-.shame-controls {
-  padding: 24px;
-}
-.shame-controls label {
-  display: block;
-  color: var(--muted);
-  font-size: 11px;
-  margin-bottom: 8px;
-}
-.shame-controls select {
+.shame-table {
   width: 100%;
-  max-width: 360px;
-  min-height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 10px;
-  color: var(--text);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.shame-table th,
+.shame-table td {
+  text-align: left;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.shame-table thead th {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
   background: var(--raised);
 }
-.shame-controls p {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.6;
-  margin-bottom: 0;
+.shame-table th:first-child {
+  width: 30%;
 }
-.shame-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.shame-table th:last-child {
+  width: 24%;
+  text-align: right;
 }
-.shame-row {
+.shame-table tbody th {
+  font-size: 13px;
+  font-weight: 600;
+}
+.shame-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.shame-holder {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 24px;
-  border-top: 1px solid var(--border);
+  gap: 12px;
+}
+.shame-holder + .shame-holder {
+  margin-top: 12px;
 }
 .shame-player {
-  flex: 1;
   min-width: 0;
 }
 .shame-player strong {
@@ -1109,17 +1112,38 @@ footer > span:first-child {
   font-size: 10px;
   margin-top: 5px;
 }
-.shame-value {
+.shame-table .shame-value {
   font-size: 18px;
+  font-weight: 700;
   text-align: right;
 }
-.shame-value small {
-  font-size: 10px;
+.shame-value small,
+.shame-missing {
+  font-size: 11px;
   color: var(--muted);
   font-weight: 400;
 }
 .shame-board .board-foot {
   line-height: 1.6;
+}
+.paste-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  margin: 16px 0;
+  color: var(--green);
+  background: var(--green-bg);
+  border-radius: 8px;
+}
+.paste-summary strong {
+  display: block;
+  font-size: 18px;
+}
+.paste-summary span {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
 }
 textarea {
   font: inherit;
@@ -1182,22 +1206,23 @@ textarea:focus-visible {
   margin-left: 42px;
 }
 @media (max-width: 680px) {
-  .shame-row {
-    gap: 10px;
-    padding: 16px;
-    flex-wrap: wrap;
+  .shame-table th,
+  .shame-table td {
+    padding: 14px 10px;
   }
-  .shame-controls {
-    padding: 20px;
+  .shame-table thead th {
+    font-size: 8px;
+    letter-spacing: 0;
   }
-  .shame-value {
-    font-size: 15px;
-    overflow-wrap: anywhere;
-    max-width: 100%;
+  .shame-table tbody th,
+  .shame-player strong {
+    font-size: 11px;
   }
-  .shame-board .empty {
-    padding: 20px;
-    text-align: center;
+  .shame-table .shame-value {
+    font-size: 13px;
+  }
+  .shame-holder .avatar {
+    display: none;
   }
   .result-breakdown {
     margin-left: 0;

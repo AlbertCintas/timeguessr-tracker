@@ -133,6 +133,7 @@ test("score entry uses European dates and submits ISO dates", async ({
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Add your score" }).click();
+  await page.getByRole("button", { name: "Manual entry", exact: true }).click();
   await expect(page.getByLabel("Challenge date", { exact: true })).toHaveValue(
     /^[0-9]{2}\/[0-9]{2}\/[0-9]{2}$/,
   );
@@ -291,18 +292,36 @@ https://timeguessr.com`;
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: "Add your score" }).click();
-  await page
-    .getByRole("button", { name: "Paste results", exact: true })
-    .click();
+  await expect(
+    page.getByRole("button", { name: "Paste results", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Final points")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Save score", exact: true }),
+  ).toBeDisabled();
   await page.getByLabel("Timeguessr share text").fill("broken text");
-  await page.getByRole("button", { name: "Read pasted results" }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Couldn’t find",
   );
   await page.getByLabel("Timeguessr share text").fill(detailed);
-  await page.getByRole("button", { name: "Read pasted results" }).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText(
+    "37,894 points",
+  );
+  await expect(page.getByLabel("Final points")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Read pasted results" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Manual entry", exact: true }).click();
   await expect(page.getByLabel("Final points")).toHaveValue("37894");
-  await expect(page.getByLabel("Final points")).toHaveAttribute("readonly", "");
+  await page
+    .getByRole("button", { name: "Paste results", exact: true })
+    .click();
+  await page.getByLabel("Timeguessr share text").fill("invalid replacement");
+  await expect(
+    page.getByRole("button", { name: "Save score", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByRole("dialog").getByRole("status")).toHaveCount(0);
+  await page.getByLabel("Timeguessr share text").fill(detailed);
   await expect(page.getByRole("dialog").getByRole("table")).toContainText(
     "208.2",
   );
@@ -317,16 +336,21 @@ https://timeguessr.com`;
   expect(stored[1].points).toBe(37894);
   expect(stored[1].daily_number).toBe(1227);
   expect(stored[1].rounds).toHaveLength(5);
-  const shame = page.locator(".shame-section");
-  await expect(shame.locator(".shame-row").first()).toContainText("Bob");
-  await page.getByLabel("Choose your downfall").selectOption("distance");
-  await expect(shame.locator(".shame-row")).toHaveCount(1);
-  await expect(shame.locator(".shame-row")).toContainText("Alice");
-  await expect(shame.locator(".shame-row")).toContainText("208.2");
-  await page.getByLabel("Choose your downfall").selectOption("years");
-  await expect(shame.locator(".shame-row")).toContainText("17");
-  await page.getByLabel("Choose your downfall").selectOption("zeros");
-  await expect(shame.locator(".shame-row")).toContainText("0 zeros");
+  const shame = page.getByRole("table", { name: "Hall of shame records" });
+  await expect(shame.locator("tbody tr")).toHaveCount(5);
+  await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
+  await expect(shame.locator('[data-metric="distance"]')).toContainText(
+    "Alice",
+  );
+  await expect(shame.locator('[data-metric="distance"]')).toContainText(
+    "208.2",
+  );
+  await expect(shame.locator('[data-metric="years"]')).toContainText("17");
+  await expect(shame.locator('[data-metric="zeros"]')).toContainText("0 zeros");
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-shame-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await page.locator(".game > summary").first().click();
   await page.locator(".result-breakdown > summary").click();
   await expect(page.locator(".history .picture-breakdown")).toContainText(
@@ -344,7 +368,12 @@ https://timeguessr.com`;
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(stored[1].rounds).toBeNull();
   expect(stored[1].points).toBe(100);
-  await expect(shame.locator(".shame-row")).toHaveCount(0);
+  await expect(shame.locator('[data-metric="zeros"]')).toContainText(
+    "No picture details yet",
+  );
+  await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
+    "Alice",
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
