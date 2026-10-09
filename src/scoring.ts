@@ -43,3 +43,19 @@ export function madridToday(now = new Date()) {
     day: "2-digit",
   }).format(now);
 }
+
+export function europeanDate(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return `${day}/${month}/${year.slice(-2)}`;
+}
+export function parseEuropeanDate(value: string): string | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(value);
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const iso = `20${year}-${month}-${day}`;
+  const parsed = new Date(`${iso}T12:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === iso
+    ? iso
+    : null;
+}

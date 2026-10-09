@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { madridToday, ranked, standings } from "./scoring.ts";
+import {
+  madridToday,
+  ranked,
+  standings,
+  europeanDate,
+  parseEuropeanDate,
+} from "./scoring.ts";
 const profiles = ["a", "b", "c"].map((id) => ({
   id,
   username: id,
@@ -52,4 +58,22 @@ test("relative rankings reward averages, preserve tied ranks, and exclude unplay
 test("daily dates use Madrid midnight including daylight saving", () => {
   assert.equal(madridToday(new Date("2026-10-08T22:30:00Z")), "2026-10-09");
   assert.equal(madridToday(new Date("2026-12-08T22:30:00Z")), "2026-12-08");
+});
+
+test("European dates round-trip and reject impossible or ambiguous input", () => {
+  assert.equal(europeanDate("2026-10-09"), "09/10/26");
+  assert.equal(parseEuropeanDate("09/10/26"), "2026-10-09");
+  assert.equal(parseEuropeanDate("29/02/24"), "2024-02-29");
+  for (const value of [
+    "29/02/25",
+    "31/04/26",
+    "32/01/26",
+    "01/13/26",
+    "00/01/26",
+    "1/2/26",
+    "2026-10-09",
+    "09/10/2026",
+    "",
+  ])
+    assert.equal(parseEuropeanDate(value), null);
 });

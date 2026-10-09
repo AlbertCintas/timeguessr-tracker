@@ -16,15 +16,47 @@ import {
   Trash2,
   Settings,
   Camera,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
-import { madridToday, ranked, standings } from "./scoring";
+import {
+  madridToday,
+  ranked,
+  standings,
+  europeanDate,
+  parseEuropeanDate,
+} from "./scoring";
 import type { Game, Profile, Result, Standing } from "./types";
 const number = new Intl.NumberFormat("en");
 const gameTitle = (g: Game) =>
-  g.kind === "daily"
-    ? `Daily · ${new Date(`${g.daily_date}T12:00:00`).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}`
-    : g.name!;
+  g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
+function ThemeToggle() {
+  const [dark, setDark] = useState(
+    document.documentElement.dataset.theme !== "light",
+  );
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", dark ? "#111512" : "#f6f5f0");
+    try {
+      localStorage.setItem("theme", dark ? "dark" : "light");
+    } catch {}
+  }, [dark]);
+  return (
+    <button
+      className="icon-button theme-toggle"
+      role="switch"
+      aria-label="Dark mode"
+      aria-checked={dark}
+      title={dark ? "Switch to light mode" : "Switch to dark mode"}
+      onClick={() => setDark(!dark)}
+    >
+      {dark ? <Sun size={20} /> : <Moon size={20} />}
+    </button>
+  );
+}
 function Avatar({
   profile,
   large = false,
@@ -63,7 +95,7 @@ function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
           {kind === "wins" ? <Trophy size={22} /> : <Flag size={22} />}
         </span>
         <span className="eyebrow">
-          {kind === "wins" ? "THE WINNERS’ CIRCLE" : "EVERY POINT COUNTS"}
+          {kind === "wins" ? "SURVIVORS’ GUILT" : "NUMBERS FOR YOUR OBITUARY"}
         </span>
       </div>
       <div className="board-heading">
@@ -90,11 +122,11 @@ function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
       <p className="board-description">
         {kind === "wins"
           ? relative
-            ? "Wins divided by games played. Every game matters."
-            : "A little friendly competition. A lot of bragging rights."
+            ? "Win rate. For anyone blaming their lack of free time."
+            : "The body count. Egos, mostly."
           : relative
-            ? "Total points divided by games played."
-            : "The long game. All your scores, added together."}
+            ? "Points per game. A smaller sample of the same tragedy."
+            : "All your points. Still not a personality."}
       </p>
       <div className="table-head">
         <span>PLAYER</span>
@@ -112,8 +144,8 @@ function Board({ rows, kind }: { rows: Standing[]; kind: "wins" | "points" }) {
       {!rows.length ? (
         <div className="empty">
           <Users size={28} />
-          <strong>Your club starts here</strong>
-          <span>Invite your friends and log your first game.</span>
+          <strong>No victims yet.</strong>
+          <span>Log a game. Give us something to bury.</span>
         </div>
       ) : (
         ranked(rows, metric).map((p) => (
@@ -235,7 +267,7 @@ export default function App() {
     [password, setPassword] = useState(""),
     [displayName, setDisplayName] = useState("");
   const [kind, setKind] = useState<"daily" | "custom">("daily"),
-    [date, setDate] = useState(madridToday()),
+    [date, setDate] = useState(europeanDate(madridToday())),
     [selectedGame, setSelectedGame] = useState(""),
     [gameName, setGameName] = useState(""),
     [points, setPoints] = useState(""),
@@ -341,7 +373,7 @@ export default function App() {
     setEdit(entry || null);
     setPoints(entry ? String(entry.points) : "");
     setKind("daily");
-    setDate(madridToday());
+    setDate(europeanDate(madridToday()));
     setSelectedGame("");
     setGameName("");
     setError("");
@@ -362,9 +394,18 @@ export default function App() {
           "Enter a whole-number score between 0 and 2,147,483,647.",
         );
       let gameId = edit?.game_id || (kind === "custom" ? selectedGame : "");
+      const dailyDate = parseEuropeanDate(date);
+      if (
+        !edit &&
+        kind === "daily" &&
+        (!dailyDate || dailyDate > madridToday())
+      )
+        throw new Error(
+          "Enter a real date in dd/mm/yy format, no later than today.",
+        );
       if (!gameId) {
         const { data, error } = await db.rpc("get_or_create_game", {
-          game_date: kind === "daily" ? date : null,
+          game_date: kind === "daily" ? dailyDate : null,
           game_name: kind === "custom" ? gameName.trim() : null,
         });
         if (error) throw error;
@@ -390,7 +431,7 @@ export default function App() {
       const { error } = await query;
       if (error) throw error;
       close();
-      setNotice("Score saved. The standings are up to date.");
+      setNotice("Score saved. Evidence secured.");
       await load();
     });
   }
@@ -429,7 +470,7 @@ export default function App() {
       if (me.avatar_path)
         await db!.storage.from("avatars").remove([me.avatar_path]);
       await load();
-      setNotice("Profile photo updated.");
+      setNotice("New face. Same questionable guesses.");
     });
   }
   const rows = standings(profiles, results),
@@ -446,6 +487,7 @@ export default function App() {
           </span>
         </a>
         <nav>
+          <ThemeToggle />
           {session ? (
             <>
               <button
@@ -487,27 +529,23 @@ export default function App() {
         <section className="intro">
           <div>
             <div className="eyebrow intro-label">
-              <span className="dot" /> GOOD GUESSES. GREAT COMPANY.
+              <span className="dot" /> YOUR GROUP CHAT, WITH EVIDENCE.
             </div>
             <h1>
-              A little history.
+              History is dead.
               <br />
-              <span>A little rivalry.</span>
+              <span>So is your score.</span>
             </h1>
             <p>
-              Your daily guesses, your friends’ best scores.
-              <br className="desktop-break" /> One place to keep the competition
-              going.
+              Five guesses. Zero dignity.
+              <br className="desktop-break" /> A permanent record of your mates
+              being confidently wrong.
             </p>
           </div>
           <div className="intro-right">
             <div className="date-stamp">
               <CalendarDays size={16} />
-              {new Date(`${madridToday()}T12:00:00`).toLocaleDateString("en", {
-                weekday: "short",
-                day: "numeric",
-                month: "long",
-              })}
+              {europeanDate(madridToday())}
             </div>
             <button
               className="primary"
@@ -516,14 +554,16 @@ export default function App() {
             >
               <Plus size={19} /> Add your score
             </button>
-            <span className="hint">Daily challenge or just one more game.</span>
+            <span className="hint">
+              Daily humiliation. Extra suffering available.
+            </span>
           </div>
         </section>
         {!configured && (
           <div className="setup-notice">
             <Clock3 size={20} />
             <div>
-              <strong>The club is getting ready.</strong>
+              <strong>The scoreboard is clinically offline.</strong>
               <p>
                 Shared scores and sign-in will be available once the database is
                 connected.
@@ -557,7 +597,7 @@ export default function App() {
             <h2>
               The standings <span className="pill">ALL TIME</span>
             </h2>
-            <p>Different paths to the top. Pick your bragging rights.</p>
+            <p>Someone has to finish last. We’re keeping receipts.</p>
           </div>
           <button
             className="icon-button"
@@ -578,7 +618,9 @@ export default function App() {
               <h2>
                 Game history <span className="count">{playedGames.length}</span>
               </h2>
-              <p>Every guess has a story. Here’s the score.</p>
+              <p>
+                The evidence locker. Deleting your browser history won’t help.
+              </p>
             </div>
             <span className="history-caption">
               <Users size={15} />
@@ -590,8 +632,8 @@ export default function App() {
             <div className="history-empty">
               <CalendarDays size={26} />
               <div>
-                <strong>No games on the board. Yet.</strong>
-                <p>Your first score is the start of something competitive.</p>
+                <strong>Suspiciously clean record.</strong>
+                <p>Submit a score. Your dignity has had a good run.</p>
               </div>
               <button
                 className="subtle-button"
@@ -686,7 +728,9 @@ export default function App() {
                             onClick={() => {
                               openScore();
                               setKind(game.kind);
-                              setDate(game.daily_date || madridToday());
+                              setDate(
+                                europeanDate(game.daily_date || madridToday()),
+                              );
                               setSelectedGame(
                                 game.kind === "custom" ? game.id : "",
                               );
@@ -703,9 +747,9 @@ export default function App() {
         </section>
         <footer>
           <span>
-            <Clock3 size={15} /> Made for the daily ritual.
+            <Clock3 size={15} /> Time well wasted.
           </span>
-          <span>An unofficial tracker for friends who guess together.</span>
+          <span>Unofficial. Unqualified. Unreasonably competitive.</span>
         </footer>
       </main>
       {modal && (
@@ -713,8 +757,8 @@ export default function App() {
           title={
             modal === "login"
               ? invite
-                ? "Join the club"
-                : "Welcome back"
+                ? "You were warned."
+                : "Back for more?"
               : modal === "score"
                 ? edit
                   ? "Edit score"
@@ -734,8 +778,8 @@ export default function App() {
             <form onSubmit={authenticate}>
               <p className="form-intro">
                 {invite
-                  ? "Choose your username and password. No email needed."
-                  : "Sign in to log a score and keep your streak of good guesses going."}
+                  ? "Pick a username and password. Your mates will handle the character assassination."
+                  : "Sign in. The evidence won’t incriminate itself."}
               </p>
               <label>
                 Username
@@ -792,17 +836,35 @@ export default function App() {
                     </button>
                   </div>
                   {kind === "daily" ? (
-                    <label>
-                      Challenge date
-                      <input
-                        type="date"
-                        value={date}
-                        max={madridToday()}
-                        required
-                        onChange={(e) => setDate(e.target.value)}
-                      />
-                      <small>Daily dates use Madrid time.</small>
-                    </label>
+                    <div className="date-field">
+                      <label htmlFor="challenge-date">Challenge date</label>
+                      <div className="date-control">
+                        <input
+                          id="challenge-date"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="dd/mm/yy"
+                          value={date}
+                          required
+                          pattern="[0-9]{2}/[0-9]{2}/[0-9]{2}"
+                          onChange={(e) => setDate(e.target.value)}
+                        />
+                        <span className="calendar-picker">
+                          <CalendarDays size={20} aria-hidden="true" />
+                          <input
+                            type="date"
+                            aria-label="Choose date from calendar"
+                            value={parseEuropeanDate(date) || ""}
+                            max={madridToday()}
+                            onChange={(e) => {
+                              if (e.target.value)
+                                setDate(europeanDate(e.target.value));
+                            }}
+                          />
+                        </span>
+                      </div>
+                      <small>dd/mm/yy · Madrid time.</small>
+                    </div>
                   ) : (
                     <>
                       <label>
@@ -817,7 +879,9 @@ export default function App() {
                             .map((g) => (
                               <option key={g.id} value={g.id}>
                                 {g.name} ·{" "}
-                                {new Date(g.created_at).toLocaleDateString()}
+                                {europeanDate(
+                                  madridToday(new Date(g.created_at)),
+                                )}
                               </option>
                             ))}
                         </select>
@@ -828,7 +892,7 @@ export default function App() {
                           <input
                             value={gameName}
                             onChange={(e) => setGameName(e.target.value)}
-                            placeholder="Friday evening rematch"
+                            placeholder="Friday night damage control"
                             required
                             maxLength={80}
                           />
@@ -958,8 +1022,8 @@ export default function App() {
           {modal === "admin" && (
             <>
               <p className="form-intro">
-                Invite a friend with a single-use link. Invitations expire after
-                seven days.
+                Recruit another victim. Single-use links expire after seven
+                days.
               </p>
               <button
                 className="primary full"
