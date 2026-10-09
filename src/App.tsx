@@ -529,7 +529,7 @@ export default function App() {
         <section className="intro">
           <div>
             <div className="eyebrow intro-label">
-              <span className="dot" /> YOUR GROUP CHAT, WITH EVIDENCE.
+              <span className="dot" /> OUR GROUP CHAT
             </div>
             <h1>
               History is dead.
