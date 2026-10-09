@@ -516,7 +516,7 @@ test("extension install button explains desktop installation and links to ZIP", 
     }),
   );
   await page.goto("./");
-  await page.getByRole("button", { name: "Install extension" }).click();
+  await page.getByRole("button", { name: "Install browser extension" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toContainText("Load unpacked");
   await expect(dialog).toContainText(
