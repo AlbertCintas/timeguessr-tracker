@@ -160,3 +160,74 @@ test("score entry uses European dates and submits ISO dates", async ({
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(submittedDate).toBe("2024-02-29");
 });
+
+test("history paginates newest first and clamps the page after games disappear", async ({
+  page,
+}) => {
+  let count = 23;
+  const historyGames = Array.from({ length: 24 }, (_, i) => ({
+    id: `game-${i + 1}`,
+    kind: "daily",
+    daily_date: `2026-09-${String(i + 1).padStart(2, "0")}`,
+    name: null,
+    created_at: `2026-09-${String(i + 1).padStart(2, "0")}T12:00:00Z`,
+  }));
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const data = url.includes("/profiles")
+      ? profiles
+      : url.includes("/games")
+        ? historyGames
+        : url.includes("/results")
+          ? historyGames
+              .slice(0, count)
+              .map((g) => ({ game_id: g.id, player_id: "alice", points: 100 }))
+          : [];
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./");
+  const pagination = page.getByRole("navigation", {
+    name: "Game history pagination",
+  });
+  await expect(page.locator(".game")).toHaveCount(10);
+  await expect(page.locator("summary").first()).toContainText("23/09/26");
+  await expect(page.locator("summary").last()).toContainText("14/09/26");
+  await expect(
+    pagination.getByRole("button", { name: "Newer games" }),
+  ).toBeDisabled();
+  await expect(pagination).toContainText("Page 1 of 3");
+  await expect(page.locator(".board").first()).toContainText("23");
+  await pagination.getByRole("button", { name: "Older games" }).click();
+  await expect(page.locator(".game")).toHaveCount(10);
+  await expect(page.locator("summary").first()).toContainText("13/09/26");
+  await expect(page.locator("summary").last()).toContainText("04/09/26");
+  await pagination.getByRole("button", { name: "Older games" }).click();
+  await expect(page.locator(".game")).toHaveCount(3);
+  await expect(page.locator("summary").first()).toContainText("03/09/26");
+  await expect(
+    pagination.getByRole("button", { name: "Older games" }),
+  ).toBeDisabled();
+  await pagination.getByRole("button", { name: "Newer games" }).click();
+  await expect(pagination).toContainText("Page 2 of 3");
+  await pagination.getByRole("button", { name: "Older games" }).click();
+  count = 11;
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await expect(pagination).toContainText("Page 2 of 2");
+  await expect(page.locator(".game")).toHaveCount(1);
+  await expect(page.locator("summary").first()).toContainText("01/09/26");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  count = 10;
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await expect(pagination).toHaveCount(0);
+  await expect(page.locator(".game")).toHaveCount(10);
+  count = 0;
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await expect(page.locator(".history-empty")).toBeVisible();
+});

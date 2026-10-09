@@ -250,6 +250,7 @@ export default function App() {
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
+  const [historyPage, setHistoryPage] = useState(0);
   const [session, setSession] = useState<Session | null>(null),
     [admin, setAdmin] = useState(false),
     [loading, setLoading] = useState(configured),
@@ -475,6 +476,11 @@ export default function App() {
   }
   const rows = standings(profiles, results),
     playedGames = games.filter((g) => results.some((r) => r.game_id === g.id));
+  const historyPages = Math.max(1, Math.ceil(playedGames.length / 10));
+  const currentHistoryPage = Math.min(historyPage, historyPages - 1);
+  useEffect(() => {
+    setHistoryPage((page) => Math.min(page, historyPages - 1));
+  }, [historyPages]);
   return (
     <>
       <header className="header">
@@ -529,7 +535,7 @@ export default function App() {
         <section className="intro">
           <div>
             <div className="eyebrow intro-label">
-              <span className="dot" /> OUR GROUP CHAT
+              <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
             </div>
             <h1>
               History is dead.
@@ -650,6 +656,7 @@ export default function App() {
                   a.daily_date || a.created_at,
                 ),
               )
+              .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
               .map((game) => {
                 const entries = results
                   .filter((r) => r.game_id === game.id)
@@ -743,6 +750,30 @@ export default function App() {
                   </details>
                 );
               })
+          )}
+          {historyPages > 1 && (
+            <nav
+              className="history-pagination"
+              aria-label="Game history pagination"
+            >
+              <button
+                className="subtle-button"
+                disabled={currentHistoryPage === 0}
+                onClick={() => setHistoryPage(currentHistoryPage - 1)}
+              >
+                Newer games
+              </button>
+              <span role="status">
+                Page {currentHistoryPage + 1} of {historyPages}
+              </span>
+              <button
+                className="subtle-button"
+                disabled={currentHistoryPage === historyPages - 1}
+                onClick={() => setHistoryPage(currentHistoryPage + 1)}
+              >
+                Older games
+              </button>
+            </nav>
           )}
         </section>
         <footer>

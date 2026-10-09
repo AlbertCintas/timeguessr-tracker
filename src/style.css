@@ -1041,3 +1041,16 @@ footer > span:first-child {
   height: 100%;
   cursor: pointer;
 }
+
+.history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.history-pagination button {
+  min-height: 44px;
+}
