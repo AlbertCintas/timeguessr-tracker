@@ -213,6 +213,8 @@ function ShameBoard({
             {(Object.keys(shameMetrics) as ShameMetric[]).map((metric) => {
               const definition = shameMetrics[metric];
               const rows = shameRankings(profiles, results, metric);
+              if (metric === "zeros" && !rows.some((row) => row.value > 0))
+                return null;
               const winners = rows.filter((row) => row.rank === 1);
               return (
                 <tr key={metric} data-metric={metric}>
@@ -265,8 +267,7 @@ function ShameBoard({
           </tbody>
         </table>
         <div className="board-foot">
-          Ties share the blame. Picture records use detailed results only;
-          missing details never count as zero.
+          Ties share the blame. Picture records use detailed results only.
         </div>
       </div>
     </section>

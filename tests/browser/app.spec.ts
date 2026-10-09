@@ -337,7 +337,7 @@ https://timeguessr.com`;
   expect(stored[1].daily_number).toBe(1227);
   expect(stored[1].rounds).toHaveLength(5);
   const shame = page.getByRole("table", { name: "Hall of shame records" });
-  await expect(shame.locator("tbody tr")).toHaveCount(5);
+  await expect(shame.locator("tbody tr")).toHaveCount(4);
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
   await expect(shame.locator('[data-metric="distance"]')).toContainText(
     "Alice",
@@ -346,7 +346,7 @@ https://timeguessr.com`;
     "208.2",
   );
   await expect(shame.locator('[data-metric="years"]')).toContainText("17");
-  await expect(shame.locator('[data-metric="zeros"]')).toContainText("0 zeros");
+  await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
   await page.screenshot({
     path: `/private/tmp/timeguessr-shame-${test.info().project.name}.png`,
     fullPage: true,
@@ -368,9 +368,7 @@ https://timeguessr.com`;
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(stored[1].rounds).toBeNull();
   expect(stored[1].points).toBe(100);
-  await expect(shame.locator('[data-metric="zeros"]')).toContainText(
-    "No picture details yet",
-  );
+  await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
     "Alice",
   );
@@ -379,4 +377,47 @@ https://timeguessr.com`;
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("zero-picture shame record appears only while a zero-point picture exists", async ({
+  page,
+}) => {
+  let hasZero = false;
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const rounds = Array.from({ length: 5 }, (_, index) => ({
+      points: hasZero && index === 0 ? 0 : 100,
+      years_off: null,
+      distance_km: null,
+    }));
+    const data = url.includes("/profiles")
+      ? profiles
+      : url.includes("/games")
+        ? games
+        : url.includes("/results")
+          ? [
+              {
+                game_id: "daily1",
+                player_id: "alice",
+                points: hasZero ? 400 : 500,
+                rounds,
+              },
+            ]
+          : [];
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./");
+  const shame = page.getByRole("table", { name: "Hall of shame records" });
+  await expect(shame.locator("tbody tr")).toHaveCount(4);
+  await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
+  hasZero = true;
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await expect(shame.locator('[data-metric="zeros"]')).toContainText("Alice");
+  await expect(shame.locator('[data-metric="zeros"]')).toContainText("1 zeros");
+  hasZero = false;
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
 });
