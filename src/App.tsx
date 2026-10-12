@@ -82,8 +82,20 @@ function HelpTooltip({
     </span>
   );
 }
-function PendingExtensionInstall() {
+function StoreExtensionInstall() {
   const [open, setOpen] = useState(false);
+  if (!/Firefox\//i.test(navigator.userAgent)) {
+    return (
+      <a
+        className="primary extension-download"
+        href="https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Download size={18} /> Install in browser
+      </a>
+    );
+  }
   return (
     <span
       className="extension-help extension-store-pending"
@@ -109,8 +121,8 @@ function PendingExtensionInstall() {
       </button>
       {open && (
         <span id="extension-store-status" role="tooltip">
-          The extension is waiting for store approval. Until then, use the
-          manual installation option below.
+          The Firefox extension is not yet available in the store. Until then,
+          use the manual installation option below.
         </span>
       )}
     </span>
@@ -1272,7 +1284,7 @@ export default function App() {
                 Finish a game. Let the extension report the damage. Daily and
                 non-daily games, all five pictures included.
               </p>
-              <PendingExtensionInstall />
+              <StoreExtensionInstall />
               <ManualExtensionInstall />
             </div>
           )}
