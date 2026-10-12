@@ -63,6 +63,43 @@ test("daily dates use Madrid midnight including daylight saving", () => {
   assert.equal(madridToday(new Date("2026-12-08T22:30:00Z")), "2026-12-08");
 });
 
+test("wins ties show higher total points first while keeping shared ranks", () => {
+  const rows = standings(profiles, [
+    { game_id: "1", player_id: "a", points: 10 },
+    { game_id: "1", player_id: "b", points: 20 },
+    { game_id: "2", player_id: "a", points: 5 },
+    { game_id: "2", player_id: "b", points: 0 },
+    { game_id: "3", player_id: "c", points: 1 },
+    { game_id: "4", player_id: "c", points: 1 },
+  ]);
+  assert.deepEqual(
+    ranked(rows, "wins").map((r) => [r.id, r.rank]),
+    [
+      ["c", 1],
+      ["b", 2],
+      ["a", 2],
+    ],
+  );
+  assert.deepEqual(
+    rows.map((r) => r.id),
+    ["a", "b", "c"],
+  );
+  assert.deepEqual(
+    ranked(
+      standings(profiles, [
+        { game_id: "1", player_id: "a", points: 10 },
+        { game_id: "1", player_id: "b", points: 10 },
+      ]),
+      "wins",
+    ).map((r) => [r.id, r.rank]),
+    [
+      ["a", 1],
+      ["b", 1],
+      ["c", null],
+    ],
+  );
+});
+
 test("European dates round-trip and reject impossible or ambiguous input", () => {
   assert.equal(europeanDate("2026-10-09"), "09/10/26");
   assert.equal(parseEuropeanDate("09/10/26"), "2026-10-09");

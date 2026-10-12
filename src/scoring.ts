@@ -25,6 +25,7 @@ export function ranked(
     (a, b) =>
       Number(b.games > 0) - Number(a.games > 0) ||
       b[metric] - a[metric] ||
+      (metric === "wins" ? b.points - a.points : 0) ||
       a.display_name.localeCompare(b.display_name),
   );
   return sorted.map((row, index) => ({
