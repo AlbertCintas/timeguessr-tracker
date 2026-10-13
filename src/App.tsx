@@ -1261,8 +1261,9 @@ export default function App() {
           {modal === "extension" && (
             <div className="extension-install">
               <p className="form-intro">
-                Finish a game. Let the extension report the damage. Daily and
-                non-daily games, all five pictures included.
+                Sign in to the extension with your club account to automatically
+                sync your game scores and individual picture scores to the
+                dashboard.
               </p>
               <StoreExtensionInstall />
               <button
