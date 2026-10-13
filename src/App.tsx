@@ -83,49 +83,20 @@ function HelpTooltip({
   );
 }
 function StoreExtensionInstall() {
-  const [open, setOpen] = useState(false);
-  if (!/Firefox\//i.test(navigator.userAgent)) {
-    return (
-      <a
-        className="primary extension-download"
-        href="https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Download size={18} /> Install in browser
-      </a>
-    );
-  }
+  const firefox = /Firefox\//i.test(navigator.userAgent);
   return (
-    <span
-      className="extension-help extension-store-pending"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          setOpen(false);
-          event.stopPropagation();
-        }
-      }}
+    <a
+      className="primary extension-download"
+      href={
+        firefox
+          ? "https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/"
+          : "https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb"
+      }
+      target="_blank"
+      rel="noopener noreferrer"
     >
-      <button
-        type="button"
-        className="primary extension-download"
-        aria-disabled="true"
-        aria-describedby={open ? "extension-store-status" : undefined}
-        onClick={() => setOpen(true)}
-      >
-        <Download size={18} /> Install in browser
-      </button>
-      {open && (
-        <span id="extension-store-status" role="tooltip">
-          The Firefox extension is not yet available in the store. Until then,
-          use the manual installation option below.
-        </span>
-      )}
-    </span>
+      <Download size={18} /> Install in browser
+    </a>
   );
 }
 function BrowserAddress({ address }: { address: string }) {

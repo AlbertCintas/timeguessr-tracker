@@ -715,18 +715,15 @@ test("Firefox gets its own manual package and temporary installation instruction
     .getByRole("button", { name: "Install browser extension", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
-  const storeInstall = dialog.getByRole("button", {
+  const storeInstall = dialog.getByRole("link", {
     name: "Install in browser",
     exact: true,
   });
-  await expect(storeInstall).toBeDisabled();
-  await storeInstall.focus();
-  await expect(dialog.getByRole("tooltip")).toContainText(
-    "Firefox extension is not yet available in the store",
+  await expect(storeInstall).toHaveAttribute(
+    "href",
+    "https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/",
   );
-  await expect(
-    dialog.getByRole("link", { name: "Install in browser" }),
-  ).toHaveCount(0);
+  await expect(storeInstall).toHaveAttribute("target", "_blank");
 
   await expect(
     dialog.getByRole("link", { name: "Download Firefox extension ZIP" }),
