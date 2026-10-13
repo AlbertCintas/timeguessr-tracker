@@ -1327,6 +1327,13 @@ textarea:focus-visible {
   text-decoration: none;
   margin: 8px 0;
 }
+.extension-manual-link {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+  text-decoration: underline;
+}
 .extension-install ol {
   padding-left: 22px;
 }

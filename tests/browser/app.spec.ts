@@ -641,7 +641,7 @@ test("extension install button explains desktop installation and links to ZIP", 
   await page.getByRole("button", { name: "Install browser extension" }).click();
   const dialog = page.getByRole("dialog");
   const storeInstall = dialog.getByRole("link", {
-    name: "Install in browser",
+    name: "Install browser extension",
     exact: true,
   });
   await expect(storeInstall).toHaveAttribute(
@@ -649,6 +649,18 @@ test("extension install button explains desktop installation and links to ZIP", 
     "https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb",
   );
   await expect(storeInstall).toHaveAttribute("target", "_blank");
+  await expect(dialog.getByRole("link", { name: /extension ZIP/ })).toHaveCount(
+    0,
+  );
+  await dialog
+    .getByRole("button", { name: "Prefer a manual install?" })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(dialog).toHaveAttribute(
+    "aria-label",
+    "Manual extension installation",
+  );
+  await expect(dialog).toBeFocused();
   await expect(dialog).toContainText("Manual installation — Chrome / Edge");
   await expect(dialog).toContainText("Version 1.1.1");
   await expect(
@@ -716,7 +728,7 @@ test("Firefox gets its own manual package and temporary installation instruction
     .click();
   const dialog = page.getByRole("dialog");
   const storeInstall = dialog.getByRole("link", {
-    name: "Install in browser",
+    name: "Install browser extension",
     exact: true,
   });
   await expect(storeInstall).toHaveAttribute(
@@ -724,6 +736,18 @@ test("Firefox gets its own manual package and temporary installation instruction
     "https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/",
   );
   await expect(storeInstall).toHaveAttribute("target", "_blank");
+  await expect(dialog.getByRole("link", { name: /extension ZIP/ })).toHaveCount(
+    0,
+  );
+  await dialog
+    .getByRole("button", { name: "Prefer a manual install?" })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(dialog).toHaveAttribute(
+    "aria-label",
+    "Manual extension installation",
+  );
+  await expect(dialog).toBeFocused();
 
   await expect(
     dialog.getByRole("link", { name: "Download Firefox extension ZIP" }),

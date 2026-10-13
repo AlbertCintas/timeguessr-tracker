@@ -58,7 +58,7 @@ Standings, game history, display names, and avatars are public. Database row pol
 
 ## Automatic imports
 
-On desktop Chrome or Edge, click **Install browser extension** on the scoreboard, then **Install in browser** to open the [Chrome Web Store listing](https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb). Pin the extension and sign in with your tracker username and password. Refresh any Timeguessr results tab that was open before installation. On Firefox, **Install in browser** opens the [Firefox Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/). Manual installation is also available in the scoreboard’s installation dialog.
+On desktop Chrome or Edge, click **Install browser extension** on the scoreboard, then **Install browser extension** to open the [Chrome Web Store listing](https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb). Pin the extension and sign in with your tracker username and password. Refresh any Timeguessr results tab that was open before installation. On Firefox, **Install browser extension** opens the [Firefox Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/). The **Prefer a manual install?** link opens a separate popup with ZIP downloads and instructions.
 
 The extension captures completed daily and non-daily games, including picture details. Pending imports survive browser restarts and remain attached to the account that captured them. Conflicts need review in the tracker; automatic imports preserve saved scores and can fill missing picture details when the scores match. Pause automatic imports or sign out from the extension popup.
 

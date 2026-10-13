@@ -95,7 +95,7 @@ function StoreExtensionInstall() {
       target="_blank"
       rel="noopener noreferrer"
     >
-      <Download size={18} /> Install in browser
+      <Download size={18} /> Install browser extension
     </a>
   );
 }
@@ -545,7 +545,13 @@ export default function App() {
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
   const [modal, setModal] = useState<
-    "login" | "score" | "profile" | "admin" | "extension" | null
+    | "login"
+    | "score"
+    | "profile"
+    | "admin"
+    | "extension"
+    | "extension-manual"
+    | null
   >(location.hash.startsWith("#invite=") ? "login" : null);
   const [busy, setBusy] = useState(false),
     [invite, setInvite] = useState(
@@ -1227,20 +1233,23 @@ export default function App() {
       </main>
       {modal && (
         <Modal
+          key={modal}
           title={
             modal === "extension"
               ? "Let the evidence collect itself."
-              : modal === "login"
-                ? invite
-                  ? "You were warned."
-                  : "Back for more?"
-                : modal === "score"
-                  ? edit
-                    ? "Edit score"
-                    : "Add your score"
-                  : modal === "profile"
-                    ? "Your profile"
-                    : "Manage the club"
+              : modal === "extension-manual"
+                ? "Manual extension installation"
+                : modal === "login"
+                  ? invite
+                    ? "You were warned."
+                    : "Back for more?"
+                  : modal === "score"
+                    ? edit
+                      ? "Edit score"
+                      : "Add your score"
+                    : modal === "profile"
+                      ? "Your profile"
+                      : "Manage the club"
           }
           close={close}
         >
@@ -1256,6 +1265,17 @@ export default function App() {
                 non-daily games, all five pictures included.
               </p>
               <StoreExtensionInstall />
+              <button
+                type="button"
+                className="subtle-button extension-manual-link"
+                onClick={() => setModal("extension-manual")}
+              >
+                Prefer a manual install?
+              </button>
+            </div>
+          )}
+          {modal === "extension-manual" && (
+            <div className="extension-install">
               <ManualExtensionInstall />
             </div>
           )}
