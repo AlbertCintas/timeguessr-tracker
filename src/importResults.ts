@@ -46,7 +46,7 @@ export function parseTimeguessrResults(text: string): ImportedResult {
       "Detailed results need all five picture lines. Copy the complete Detailed share text.",
     );
   const pattern = new RegExp(
-    String.raw`^\s*([1-5])[.)]?\s*🏆\s*(${numeric})\s*[·—–-]\s*📅\s*(-|[+-]?\d+\s*y(?:ears?)?)\s*[·—–-]\s*[🌍🌎🌏]\s*(-|${numeric}\s*(?:km|mi|m))\s*$`,
+    String.raw`^\s*([1-5])[.)]?\s*🏆\s*(${numeric})\s*[·—–-]\s*📅\s*(-|[+-]?\d+\s*y(?:ears?)?)\s*[·—–-]\s*[🌍🌎🌏]\s*(-|${numeric}\s*(?:km|mi|ft|m))\s*$`,
     "iu",
   );
   const rounds = detailLines.map((line, index) => {
@@ -61,13 +61,15 @@ export function parseTimeguessrResults(text: string): ImportedResult {
       match[4] === "-"
         ? null
         : match[4].match(
-            new RegExp(String.raw`^(${numeric})\s*(km|mi|m)$`, "i"),
+            new RegExp(String.raw`^(${numeric})\s*(km|mi|ft|m)$`, "i"),
           )!;
     const km =
       distance === null
         ? null
         : valueOf(distance[1]) *
-          { km: 1, mi: 1.609344, m: 0.001 }[distance[2].toLowerCase()]!;
+          { km: 1, mi: 1.609344, ft: 0.0003048, m: 0.001 }[
+            distance[2].toLowerCase()
+          ]!;
     if (
       !Number.isInteger(score) ||
       score < 0 ||

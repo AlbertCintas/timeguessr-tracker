@@ -11,6 +11,15 @@ const detailed = `TimeGuessr #1227 — 37,894/50,000
 5️⃣ 🏆5,292 · 📅 17y · 🌍 208.2km
 
 https://timeguessr.com`;
+const detailedWithFeet = `TimeGuessr #1231 — 37,651/50,000
+
+1️⃣ 🏆4,959 · 📅 22y · 🌍 4388ft
+2️⃣ 🏆4,842 · 📅 13y · 🌍 817.2mi
+3️⃣ 🏆9,910 · 📅 1y · 🌍 4062ft
+4️⃣ 🏆9,295 · 📅 4y · 🌍 771ft
+5️⃣ 🏆8,645 · 📅 4y · 🌍 96.2mi
+
+https://timeguessr.com`;
 test("imports the actual Detailed share format and older dash separators", () => {
   const imported = parseTimeguessrResults(detailed);
   assert.equal(imported.points, 37894);
@@ -42,6 +51,15 @@ test("imports the actual Detailed share format and older dash separators", () =>
   assert.equal(
     parseTimeguessrResults(detailed.replace("7y", "-7y")).rounds?.[0].years_off,
     7,
+  );
+});
+test("imports Detailed shares with distances in feet", () => {
+  const imported = parseTimeguessrResults(detailedWithFeet);
+  assert.equal(imported.points, 37651);
+  assert.equal(imported.dailyNumber, 1231);
+  assert.equal(imported.rounds?.[0].distance_km, 1.3374624);
+  assert.ok(
+    Math.abs((imported.rounds?.[3].distance_km ?? 0) - 0.2350008) < 1e-12,
   );
 });
 test("emoji-grid and total-only shares never invent picture statistics", () => {
