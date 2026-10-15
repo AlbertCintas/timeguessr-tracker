@@ -266,7 +266,7 @@ function Board({
   kind: "wins" | "points";
   period: StandingsPeriod;
 }) {
-  const [relative, setRelative] = useState(false);
+  const [relative, setRelative] = useState(true);
   const metric =
     kind === "wins"
       ? relative

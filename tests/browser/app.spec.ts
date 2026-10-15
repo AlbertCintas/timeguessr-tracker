@@ -166,7 +166,9 @@ test("leaderboards, independent fairness switches, history and login keyboard en
     });
   });
   await page.goto("./");
-  await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Win percentage" }),
+  ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator("summary").first()).toContainText(
     "Daily · 09/10/26",
@@ -179,21 +181,24 @@ test("leaderboards, independent fairness switches, history and login keyboard en
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   const boards = page.locator(".board");
-  await expect(boards.nth(1).locator(".player-row").first()).toContainText(
-    "Alice",
-  );
-  await boards.nth(1).getByRole("switch").check();
-  await expect(boards.nth(1).locator(".player-row").first()).toContainText(
-    "Bob",
-  );
-  await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
-  await boards.nth(0).getByRole("switch").check();
   await expect(boards.nth(0).locator(".player-row").first()).toContainText(
     "Bob",
   );
   await expect(boards.nth(0).locator(".player-row").first()).toContainText(
     "100.0%",
   );
+  await expect(boards.nth(1).locator(".player-row").first()).toContainText(
+    "Bob",
+  );
+  await boards.nth(1).getByRole("switch").uncheck();
+  await expect(boards.nth(1).locator(".player-row").first()).toContainText(
+    "Alice",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Win percentage" }),
+  ).toBeVisible();
+  await boards.nth(0).getByRole("switch").uncheck();
+  await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
   await page.locator("summary").first().click();
   await expect(page.locator(".game[open] .result")).toHaveCount(1);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
@@ -589,6 +594,9 @@ test("standings periods update both boards and their per-game denominators", asy
   const bob = (board: number) =>
     boards.nth(board).locator(".player-row").filter({ hasText: "Bob" });
   await expect(picker).toHaveValue("all");
+  await expect(alice(1).locator(".score")).toHaveText("567");
+  await boards.nth(0).getByRole("switch").uncheck();
+  await boards.nth(1).getByRole("switch").uncheck();
   await expect(alice(1).locator(".score")).toHaveText("1,700");
   await picker.selectOption("week");
   await expect(alice(0).locator(".score")).toHaveText("2");
