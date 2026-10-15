@@ -154,6 +154,10 @@ test("non-daily capture saves replay IDs from random games and shared challenges
     captureModern({ ...data, gameId: id, timerSeconds: 60 }, url).replay_id,
     id,
   );
+  const spread = data.playArray.map((e) =>
+    e.scoringVersion ? e : { ...e, scoringVersion: 2 },
+  );
+  assert.equal(captureModern({ ...data, playArray: spread }, url).replay_id, id);
   assert.equal(
     captureModern(
       { ...data, playArray: [...data.playArray.slice(0, 5), "bad", "id"] },

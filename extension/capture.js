@@ -1,8 +1,18 @@
 const prefixes = ["one", "two", "three", "four", "five"];
+// Timeguessr back-fills scoringVersion with `{...entry}`, which spreads these
+// string entries into objects keyed by character index.
+const text = (value) =>
+  typeof value === "string"
+    ? value
+    : value && typeof value === "object"
+      ? Array.from({ length: 128 }, (_, i) => value[i])
+          .filter((c) => c !== undefined)
+          .join("")
+      : "";
 function replayId(gameId, playArray) {
   const candidate = String(gameId ?? "").includes(":")
     ? gameId
-    : (playArray ?? []).slice(5, 7).join(":");
+    : (playArray ?? []).slice(5, 7).map(text).join(":");
   return typeof candidate === "string" &&
     /^[a-f0-9]{64}:[a-f0-9]{32}$/i.test(candidate)
     ? candidate.toLowerCase()
