@@ -312,7 +312,7 @@ function Board({
             ? "Win rate. For anyone blaming their lack of free time."
             : "The body count. Egos, mostly."
           : relative
-            ? "Points per game. A smaller sample of the same tragedy."
+            ? "Points per game. Another sample of the same tragedy."
             : "All your points. Still not a personality."}
       </p>
       <div className="table-head">
