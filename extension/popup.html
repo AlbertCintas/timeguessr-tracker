@@ -63,7 +63,11 @@
           >Privacy policy</a
         >
       </p>
-      <small>v1.1.0 · Chrome / Edge / Firefox</small>
+      <p class="update">
+        <small><span id="version"></span> · Chrome / Edge / Firefox</small>
+        <button id="update" class="quiet">Check for updates</button>
+      </p>
+      <p id="update-status" role="status"></p>
     </footer>
     <script src="popup.js" type="module"></script>
   </body>

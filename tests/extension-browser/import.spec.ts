@@ -139,6 +139,16 @@ test("installed MV3 extension signs in, captures results, uploads and hides auth
             .length,
       ),
     ).toBe(1);
+    await expect(popup.locator("#version")).toHaveText(
+      `v${await worker.evaluate(() => chrome.runtime.getManifest().version)}`,
+    );
+    await context.route("**/downloads/version.json", (route) =>
+      route.fulfill({ json: { version: "99.0.0" } }),
+    );
+    await popup.getByRole("button", { name: "Check for updates" }).click();
+    await expect(
+      popup.getByRole("link", { name: "Get v99.0.0 ↗" }),
+    ).toBeVisible();
     await popup.getByRole("button", { name: "Sign out" }).click();
     await expect(popup.getByLabel("Tracker username")).toBeVisible();
   } finally {

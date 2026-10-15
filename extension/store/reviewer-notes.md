@@ -9,4 +9,4 @@ This extension uses an invitation-only scoreboard. Reviewer credentials are supp
 5. Reload the Timeguessr results screen. An identical saved result does not create another entry. Conflicting replays require review and preserve the saved result.
 6. Disable automatic imports in the popup to pause capture and uploads. Sign out to remove the locally saved session.
 
-The extension is independent of Timeguessr. It collects completed results only on Timeguessr and calls the project’s Supabase host for authentication and uploads. The privacy policy is https://albertcintas.github.io/timeguessr-tracker/privacy.html.
+The extension is independent of Timeguessr. It collects completed results only on Timeguessr and calls the project’s Supabase host for authentication and uploads. “Check for updates” in the popup calls `runtime.requestUpdateCheck` and reads the public `downloads/version.json` from the tracker site; it never loads code. The privacy policy is https://albertcintas.github.io/timeguessr-tracker/privacy.html.
