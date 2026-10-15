@@ -128,6 +128,58 @@ $("enabled").onchange = (event) =>
   send("toggle", { enabled: event.target.checked })
     .then(render)
     .catch(showError);
+const version = chrome.runtime.getManifest().version;
+const newer = (a, b) => {
+  const [x, y] = [a, b].map((v) => v.split(".").map(Number));
+  for (let i = 0; i < Math.max(x.length, y.length); i++)
+    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
+  return false;
+};
+async function checkForUpdate() {
+  const status = $("update-status");
+  status.replaceChildren("Checking…");
+  const store = chrome.runtime.requestUpdateCheck
+    ? await chrome.runtime.requestUpdateCheck().catch(() => null)
+    : null;
+  if (store?.status === "update_available") {
+    status.replaceChildren(
+      `Downloading v${store.version}. The extension restarts when it is ready.`,
+    );
+    return;
+  }
+  const published = await fetch(
+    "https://albertcintas.github.io/timeguessr-tracker/downloads/version.json",
+    { cache: "no-store" },
+  )
+    .then((response) => (response.ok ? response.json() : null))
+    .catch(() => null);
+  if (published?.version && newer(published.version, version)) {
+    const link = document.createElement("a");
+    link.href = "https://albertcintas.github.io/timeguessr-tracker/";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = `Get v${published.version} ↗`;
+    status.replaceChildren(
+      store?.status === "throttled"
+        ? "Checked too recently; try again in a few minutes, or "
+        : "The store has not published it yet. ",
+      link,
+    );
+    return;
+  }
+  status.replaceChildren(
+    published || store ? "You have the latest version." : "Could not check for updates.",
+  );
+}
+$("version").textContent = `v${version}`;
+$("update").onclick = () => {
+  $("update").disabled = true;
+  checkForUpdate()
+    .catch(showError)
+    .finally(() => {
+      $("update").disabled = false;
+    });
+};
 $("retry").onclick = () => send("retry").then(render).catch(showError);
 void render().catch(showError);
 setInterval(() => {

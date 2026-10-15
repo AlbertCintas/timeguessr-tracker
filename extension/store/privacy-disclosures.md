@@ -10,5 +10,6 @@ Permissions:
 - `alarms`: retry pending uploads after connectivity returns or the browser restarts.
 - Timeguessr hosts: read completed results and fetch public daily metadata.
 - The project’s Supabase host: authenticate tracker accounts and upload results.
+- No extra permission: on “Check for updates”, the popup asks the browser store for an update and reads the public `version.json` from the tracker site on GitHub Pages.
 
 All executable code is bundled locally. Network responses contain data, not executable code. Firefox requires `authenticationInfo` and `websiteContent` consent at installation.

@@ -348,6 +348,7 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "retry-imports") void serial(processQueue);
 });
+chrome.runtime.onUpdateAvailable?.addListener(() => chrome.runtime.reload());
 chrome.runtime.onStartup.addListener(() => {
   void serial(processQueue);
 });
