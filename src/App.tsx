@@ -458,6 +458,49 @@ function ShameBoard({
   );
 }
 
+function RuleBook() {
+  return (
+    <section className="rules-section" aria-labelledby="rules-heading">
+      <div className="section-heading">
+        <div>
+          <h2 id="rules-heading">The rules</h2>
+          <p>Short list. Long memory.</p>
+        </div>
+      </div>
+      <div className="board">
+        <ol className="rules-list">
+          <li>
+            <strong>No Google.</strong> No Google Maps either. No anything.
+          </li>
+          <li>
+            <strong>No AI.</strong> The robot didn’t go to school with you.
+          </li>
+          <li>
+            <strong>No asking your grandma.</strong> However vividly she
+            remembers 1974.
+          </li>
+          <li>
+            <strong>No asking your dog.</strong> Good boy. Terrible historian.
+          </li>
+          <li>
+            <strong>Timeguessr is the only tab.</strong> If you don’t remember
+            when the Berlin Wall came down, you should have paid more attention
+            at school.
+          </li>
+        </ol>
+        <div className="rules-exemption">
+          <strong>The Guillem clause.</strong> Guillem cheats sometimes. We all
+          know. It changes nothing: he wouldn’t recognise Thessaloniki if he’d
+          been born there.
+        </div>
+        <div className="board-foot">
+          Cheaters will be shamed and punished. Guillem will just be shamed.
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Modal({
   title,
   close,
@@ -1038,6 +1081,7 @@ export default function App() {
           <Board rows={rows} kind="points" period={standingsPeriod} />
         </div>
         <ShameBoard profiles={profiles} results={results} games={games} />
+        <RuleBook />
         <section className="history">
           <div className="section-heading">
             <div>

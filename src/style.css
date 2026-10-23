@@ -1184,6 +1184,33 @@ footer > span:first-child {
 .shame-board .board-foot {
   line-height: 1.6;
 }
+.rules-section {
+  margin-top: 38px;
+}
+.rules-list {
+  margin: 0;
+  padding: 22px 24px 22px 46px;
+  display: grid;
+  gap: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.rules-list li::marker {
+  color: var(--muted);
+  font-weight: 700;
+}
+.rules-exemption {
+  margin: 0 24px 22px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--gold-bg);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.rules-exemption strong {
+  color: var(--gold);
+}
 .paste-summary {
   display: flex;
   align-items: center;
