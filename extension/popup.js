@@ -138,9 +138,9 @@ const newer = (a, b) => {
 async function checkForUpdate() {
   const status = $("update-status");
   status.replaceChildren("Checking…");
-  const store = chrome.runtime.requestUpdateCheck
-    ? await chrome.runtime.requestUpdateCheck().catch(() => null)
-    : null;
+  const store = FIREFOX
+    ? null
+    : await chrome.runtime.requestUpdateCheck().catch(() => null);
   if (store?.status === "update_available") {
     status.replaceChildren(
       `Downloading v${store.version}. The extension restarts when it is ready.`,

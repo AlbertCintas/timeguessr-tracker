@@ -22,8 +22,12 @@ for (const browser of ["chrome", "firefox"]) {
     format: "esm",
     target: browser === "chrome" ? "chrome140" : "firefox140",
     minify: false,
+    minifySyntax: true,
     legalComments: "eof",
-    define: { "process.env.NODE_ENV": '"production"' },
+    define: {
+      "process.env.NODE_ENV": '"production"',
+      FIREFOX: String(browser === "firefox"),
+    },
   });
   const target = browser === "chrome" ? manifest : { ...manifest, ...firefox };
   if (browser === "firefox") delete target.minimum_chrome_version;
