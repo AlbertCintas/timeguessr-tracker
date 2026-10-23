@@ -771,3 +771,21 @@ test("Firefox gets its own manual package and temporary installation instruction
   await expect(dialog).toContainText("After restarting Firefox, load it again");
   await expect(dialog).not.toContainText("Load unpacked");
 });
+test("rules section lists the house rules and the Guillem clause", async ({
+  page,
+}) => {
+  await page.route("https://club-test.supabase.co/**", (route) =>
+    route.fulfill({
+      json: [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    }),
+  );
+  await page.goto("./");
+  const rules = page.getByRole("region", { name: "The rules" });
+  await expect(rules.locator("li")).toHaveCount(5);
+  await expect(rules).toContainText("Berlin Wall");
+  await expect(rules).toContainText("The Guillem clause");
+  await rules.screenshot({
+    path: `/private/tmp/timeguessr-rules-${test.info().project.name}.png`,
+  });
+});
