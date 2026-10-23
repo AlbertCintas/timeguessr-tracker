@@ -771,7 +771,7 @@ test("Firefox gets its own manual package and temporary installation instruction
   await expect(dialog).toContainText("After restarting Firefox, load it again");
   await expect(dialog).not.toContainText("Load unpacked");
 });
-test("rules section lists the house rules and the Guillem clause", async ({
+test("Read the rules opens the rules popup with the Guillem clause", async ({
   page,
 }) => {
   await page.route("https://club-test.supabase.co/**", (route) =>
@@ -781,11 +781,14 @@ test("rules section lists the house rules and the Guillem clause", async ({
     }),
   );
   await page.goto("./");
-  const rules = page.getByRole("region", { name: "The rules" });
+  await page.getByRole("button", { name: "Read the rules" }).click();
+  const rules = page.getByRole("dialog", { name: "The rules" });
   await expect(rules.locator("li")).toHaveCount(5);
   await expect(rules).toContainText("Berlin Wall");
   await expect(rules).toContainText("The Guillem clause");
-  await rules.screenshot({
+  await page.screenshot({
     path: `/private/tmp/timeguessr-rules-${test.info().project.name}.png`,
   });
+  await page.keyboard.press("Escape");
+  await expect(rules).toHaveCount(0);
 });
