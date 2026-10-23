@@ -471,11 +471,10 @@ function Rules() {
           <strong>No AI.</strong> The robot didn’t go to school with you.
         </li>
         <li>
-          <strong>No asking your grandma.</strong> However vividly she remembers
-          1974.
+          <strong>No asking your grandma.</strong>
         </li>
         <li>
-          <strong>No asking your dog.</strong> Good boy. Terrible historian.
+          <strong>No asking your dog.</strong>
         </li>
         <li>
           <strong>Timeguessr is the only tab.</strong> If you don’t remember
