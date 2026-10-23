@@ -470,8 +470,7 @@ function RuleBook() {
       <div className="board">
         <ol className="rules-list">
           <li>
-            <strong>No Google.</strong> No Google Maps either. Street View is
-            not “just checking”.
+            <strong>No Google.</strong> No Google Maps either. No anything.
           </li>
           <li>
             <strong>No AI.</strong> The robot didn’t go to school with you.
@@ -481,8 +480,7 @@ function RuleBook() {
             remembers 1974.
           </li>
           <li>
-            <strong>No conferring with the dog.</strong> Good boy. Terrible
-            historian.
+            <strong>No asking your dog.</strong> Good boy. Terrible historian.
           </li>
           <li>
             <strong>Timeguessr is the only tab.</strong> If you don’t remember
