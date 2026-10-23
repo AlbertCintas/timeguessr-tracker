@@ -22,6 +22,7 @@ import {
   Camera,
   Moon,
   Sun,
+  ScrollText,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
 import {
@@ -458,46 +459,39 @@ function ShameBoard({
   );
 }
 
-function RuleBook() {
+function Rules() {
   return (
-    <section className="rules-section" aria-labelledby="rules-heading">
-      <div className="section-heading">
-        <div>
-          <h2 id="rules-heading">The rules</h2>
-          <p>Short list. Long memory.</p>
-        </div>
+    <div className="rules">
+      <p className="form-intro">Short list. Long memory.</p>
+      <ol className="rules-list">
+        <li>
+          <strong>No Google.</strong> No Google Maps either. No anything.
+        </li>
+        <li>
+          <strong>No AI.</strong> The robot didn’t go to school with you.
+        </li>
+        <li>
+          <strong>No asking your grandma.</strong> However vividly she remembers
+          1974.
+        </li>
+        <li>
+          <strong>No asking your dog.</strong> Good boy. Terrible historian.
+        </li>
+        <li>
+          <strong>Timeguessr is the only tab.</strong> If you don’t remember
+          when the Berlin Wall came down, you should have paid more attention at
+          school.
+        </li>
+      </ol>
+      <div className="rules-exemption">
+        <strong>The Guillem clause.</strong> Guillem cheats sometimes. We all
+        know. It changes nothing: he wouldn’t recognise Thessaloniki if he’d
+        been born there.
       </div>
-      <div className="board">
-        <ol className="rules-list">
-          <li>
-            <strong>No Google.</strong> No Google Maps either. No anything.
-          </li>
-          <li>
-            <strong>No AI.</strong> The robot didn’t go to school with you.
-          </li>
-          <li>
-            <strong>No asking your grandma.</strong> However vividly she
-            remembers 1974.
-          </li>
-          <li>
-            <strong>No asking your dog.</strong> Good boy. Terrible historian.
-          </li>
-          <li>
-            <strong>Timeguessr is the only tab.</strong> If you don’t remember
-            when the Berlin Wall came down, you should have paid more attention
-            at school.
-          </li>
-        </ol>
-        <div className="rules-exemption">
-          <strong>The Guillem clause.</strong> Guillem cheats sometimes. We all
-          know. It changes nothing: he wouldn’t recognise Thessaloniki if he’d
-          been born there.
-        </div>
-        <div className="board-foot">
-          Cheaters will be shamed and punished. Guillem will just be shamed.
-        </div>
-      </div>
-    </section>
+      <p className="hint">
+        Cheaters will be shamed and punished. Guillem will just be shamed.
+      </p>
+    </div>
   );
 }
 
@@ -594,6 +588,7 @@ export default function App() {
     | "admin"
     | "extension"
     | "extension-manual"
+    | "rules"
     | null
   >(location.hash.startsWith("#invite=") ? "login" : null);
   const [busy, setBusy] = useState(false),
@@ -941,6 +936,9 @@ export default function App() {
               <br className="desktop-break" /> A permanent record of your mates
               being confidently wrong.
             </p>
+            <button className="rules-link" onClick={() => setModal("rules")}>
+              <ScrollText size={15} /> Read the rules
+            </button>
           </div>
           <div className="intro-right">
             <div className="date-stamp">
@@ -1081,7 +1079,6 @@ export default function App() {
           <Board rows={rows} kind="points" period={standingsPeriod} />
         </div>
         <ShameBoard profiles={profiles} results={results} games={games} />
-        <RuleBook />
         <section className="history">
           <div className="section-heading">
             <div>
@@ -1293,7 +1290,9 @@ export default function App() {
                       : "Add your score"
                     : modal === "profile"
                       ? "Your profile"
-                      : "Manage the club"
+                      : modal === "rules"
+                        ? "The rules"
+                        : "Manage the club"
           }
           close={close}
         >
@@ -1302,6 +1301,7 @@ export default function App() {
               {error}
             </p>
           )}
+          {modal === "rules" && <Rules />}
           {modal === "extension" && (
             <div className="extension-install">
               <p className="form-intro">
