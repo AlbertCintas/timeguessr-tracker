@@ -37,6 +37,30 @@ export const shameMetrics = {
 } as const;
 export type ShameMetric = keyof typeof shameMetrics;
 
+export const extraShameMetrics = {
+  avgYears: {
+    label: "Highest average years off",
+    description: "Consistently wrong, on average.",
+    unit: "years avg",
+  },
+  avgDistance: {
+    label: "Highest average distance",
+    description: "Not lost. Just everywhere.",
+    unit: "km avg",
+  },
+} as const;
+export type ExtraShameMetric = keyof typeof extraShameMetrics;
+
+export const shameQuips: Record<ShameMetric | ExtraShameMetric, string> = {
+  avgYears: "Consistently wrong, on average.",
+  avgDistance: "Plays the map like darts. Blindfolded.",
+  years: "Carbon dating, but drunk.",
+  distance: "Wrong continent. Possibly wrong planet.",
+  worstGame: "A five-picture cry for help.",
+  zeros: "Rock bottom has a counter.",
+  worstPicture: "One photo, no survivors.",
+};
+
 export function shameRankings(
   profiles: Profile[],
   results: Result[],
