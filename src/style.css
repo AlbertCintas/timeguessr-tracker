@@ -1638,16 +1638,8 @@ textarea:focus-visible {
   align-items: center;
   gap: 20px;
 }
-.today-strip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 24px 0 22px;
-  padding: 14px 18px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+.bar-actions ~ .lab-main {
+  padding-top: 30px;
 }
 .today-summary {
   display: flex;
@@ -1754,9 +1746,6 @@ textarea:focus-visible {
   }
   .bar-actions .brand > span:last-child {
     display: none;
-  }
-  .today-strip {
-    margin-top: 16px;
   }
   .appbar .appbar-top {
     height: 70px;

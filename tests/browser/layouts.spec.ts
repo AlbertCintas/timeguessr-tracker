@@ -181,7 +181,7 @@ test("average records stay empty below 20 detailed pictures", async ({
 
 test("header options keep the score button and the tabs", async ({ page }) => {
   await serve(page, 4);
-  await page.goto("./layouts.html?hero=actionbar");
+  await page.goto("./layouts.html?hero=appbar");
   await expect(page.getByLabel("Today’s daily")).toContainText(
     "Nobody has played yet",
   );

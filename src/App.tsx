@@ -1794,13 +1794,10 @@ export default function App({
               {barActions}
               {barAddScore}
               {account}
+              {playLink}
             </nav>
           </header>
           <main className="lab-main">
-            <div className="today-strip">
-              {todaySummary}
-              {playLink}
-            </div>
             {alerts}
             {tabNav}
             <div className="lab-panel">{panels[tab]}</div>
