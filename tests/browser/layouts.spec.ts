@@ -179,47 +179,35 @@ test("average records stay empty below 20 detailed pictures", async ({
   await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });
 
-test("every B variant reaches every control without horizontal scroll", async ({
+test("the top bar shows the helpers and keeps account controls in a menu", async ({
   page,
 }) => {
   await serve(page, 4);
-  const variants: [string, string, string | null, string | null][] = [
-    ["b1", "B1 · Menu", "More options", "More options"],
-    ["b2", "B2 · Play first", "Tools", null],
-    ["b3", "B3 · Two lines", null, null],
-    ["b4", "B4 · Account menu", "Account and settings", "Account and settings"],
-  ];
   await page.goto("./layouts.html");
-  for (const [option, label, toolsMenu, accountMenu] of variants) {
-    await page.getByRole("button", { name: label }).click();
-    await expect(page).toHaveURL(new RegExp(`\\?hero=${option}`));
-    await expect(
-      page.getByRole("button", { name: "Add your score" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("navigation", { name: "Sections" }),
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
-    ).toBe(true);
-    if (toolsMenu) await page.getByLabel(toolsMenu, { exact: true }).click();
-    await expect(
-      page.getByRole("button", { name: "Read the rules" }),
-    ).toBeVisible();
-    if (toolsMenu) await page.getByLabel(toolsMenu, { exact: true }).click();
-    if (accountMenu)
-      await page.getByLabel(accountMenu, { exact: true }).click();
-    await expect(page.getByRole("switch", { name: "Dark mode" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Sign in" }).first(),
-    ).toBeVisible();
-    if (accountMenu)
-      await page.getByLabel(accountMenu, { exact: true }).click();
-  }
-  await page.getByRole("button", { name: "B4 · Account menu" }).click();
-  await page.getByLabel("Account and settings").click();
+  for (const name of [
+    "Random game",
+    "Browser extension",
+    "Read the rules",
+    "Add your score",
+  ])
+    await expect(page.getByRole("button", { name })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Play Timeguessr/ }),
+  ).toBeHidden();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeHidden();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  const menu = page.getByLabel("Account and settings");
+  await menu.click();
+  await expect(
+    page.getByRole("link", { name: /Play Timeguessr/ }),
+  ).toBeVisible();
+  await page.getByRole("switch", { name: "Dark mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await menu.click();
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
 });

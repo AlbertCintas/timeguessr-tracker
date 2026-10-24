@@ -25,8 +25,6 @@ import {
   ScrollText,
   Medal,
   ChartColumn,
-  Ellipsis,
-  ChevronDown,
   UserRound,
   Skull,
 } from "lucide-react";
@@ -819,7 +817,6 @@ function Modal({
   );
 }
 export type Layout = "classic" | "tabs";
-export type Hero = "b1" | "b2" | "b3" | "b4";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -832,13 +829,7 @@ const tabFromHash = (): LabTab =>
   location.hash.slice(1) in labTabs
     ? (location.hash.slice(1) as LabTab)
     : "standings";
-export default function App({
-  layout = "classic",
-  hero = "b1",
-}: {
-  layout?: Layout;
-  hero?: Hero;
-}) {
+export default function App({ layout = "classic" }: { layout?: Layout }) {
   const [tab, setTab] = useState<LabTab>(tabFromHash);
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
@@ -1355,17 +1346,6 @@ export default function App({
       Play Timeguessr <ArrowUpRight size={16} />
     </a>
   );
-  const playButton = (
-    <a
-      className="play-button"
-      href="https://timeguessr.com"
-      target="_blank"
-      rel="noreferrer"
-      aria-label="Play Timeguessr"
-    >
-      <span>Play Timeguessr</span> <ArrowUpRight size={17} />
-    </a>
-  );
   const menuAccount = session ? (
     <>
       <button
@@ -1411,75 +1391,23 @@ export default function App({
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, []);
-  const barNavs: Record<Hero, ReactNode> = {
-    b1: (
-      <nav>
-        {randomBar}
-        {extensionBar}
-        {rulesBar}
-        {barAddScore}
-        {menu(
-          <Ellipsis size={20} />,
-          "More options",
-          <>
-            {menuAccount}
-            <ThemeToggle label />
-            {playLink}
-          </>,
-        )}
-      </nav>
-    ),
-    b2: (
-      <nav>
-        {menu(
-          <>
-            <span>Tools</span> <ChevronDown size={16} />
-          </>,
-          "Tools",
-          <>
-            {randomBar}
-            {extensionBar}
-            {rulesBar}
-          </>,
-        )}
-        {playButton}
-        {barAddScore}
-        <span className="bar-divider" />
-        {account}
-      </nav>
-    ),
-    b3: (
-      <div className="bar-stack">
-        <div className="bar-utility">
-          {account}
+  const barNav = (
+    <nav>
+      {randomBar}
+      {extensionBar}
+      {rulesBar}
+      {barAddScore}
+      {menu(
+        session ? <Avatar profile={me} /> : <UserRound size={20} />,
+        "Account and settings",
+        <>
+          {menuAccount}
+          <ThemeToggle label />
           {playLink}
-        </div>
-        <nav>
-          {randomBar}
-          {extensionBar}
-          {rulesBar}
-          {barAddScore}
-        </nav>
-      </div>
-    ),
-    b4: (
-      <nav>
-        {randomBar}
-        {playButton}
-        {barAddScore}
-        {menu(
-          session ? <Avatar profile={me} /> : <UserRound size={20} />,
-          "Account and settings",
-          <>
-            {menuAccount}
-            <ThemeToggle label />
-            {extensionBar}
-            {rulesBar}
-          </>,
-        )}
-      </nav>
-    ),
-  };
+        </>,
+      )}
+    </nav>
+  );
   const alerts = (
     <>
       {!configured && (
@@ -1826,12 +1754,12 @@ export default function App({
         </>
       ) : (
         <>
-          <header className={`header bar-actions bar-${hero}`}>
+          <header className="header bar-actions">
             <div className="brand-block">
               {brand}
               <small>History is dead. So is your score.</small>
             </div>
-            {barNavs[hero]}
+            {barNav}
           </header>
           <main className="lab-main">
             {alerts}

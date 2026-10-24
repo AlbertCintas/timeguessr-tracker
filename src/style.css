@@ -1492,33 +1492,6 @@ textarea:focus-visible {
 .player-stats > .empty {
   padding: 40px;
 }
-.lab-switcher {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 20;
-  display: flex;
-  gap: 4px;
-  padding: 5px;
-  border: 1px solid var(--gold);
-  border-radius: 999px;
-  background: var(--gold-bg);
-  box-shadow: 0 4px 10px var(--shadow);
-}
-.lab-switcher button {
-  border: 0;
-  border-radius: 999px;
-  padding: 7px 11px;
-  background: transparent;
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.lab-switcher button[aria-pressed="true"] {
-  background: var(--gold);
-  color: var(--bg);
-}
 .bar-actions nav {
   display: flex;
   align-items: center;
@@ -1535,8 +1508,7 @@ textarea:focus-visible {
   font-weight: 600;
   white-space: nowrap;
 }
-.bar-action:hover,
-.play-button:hover {
+.bar-action:hover {
   color: var(--gold);
 }
 .bar-add {
@@ -1545,21 +1517,6 @@ textarea:focus-visible {
   gap: 7px;
   padding: 10px 16px;
   white-space: nowrap;
-}
-.play-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.bar-divider {
-  width: 1px;
-  height: 24px;
-  background: var(--border);
 }
 .bar-actions nav .subtle-button {
   white-space: nowrap;
@@ -1576,32 +1533,6 @@ textarea:focus-visible {
 }
 .bar-actions ~ .lab-main {
   padding-top: 30px;
-}
-.bar-stack {
-  display: grid;
-  justify-items: end;
-  gap: 4px;
-}
-.bar-utility {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 12px;
-}
-.bar-utility .icon-button {
-  padding: 4px;
-}
-.bar-utility .subtle-button,
-.bar-utility .profile-button {
-  padding: 2px 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-.bar-utility .external {
-  padding-left: 14px;
-}
-.bar-b3 {
-  height: 96px;
 }
 .more-menu {
   position: relative;
@@ -1641,13 +1572,10 @@ textarea:focus-visible {
   background: var(--surface);
   box-shadow: 0 8px 20px var(--shadow);
 }
-.bar-b2 .more-menu-list {
-  left: 0;
-  right: auto;
-}
 .more-menu-list > * {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 9px;
   min-height: 40px;
   padding: 0;
@@ -1667,45 +1595,25 @@ textarea:focus-visible {
   color: var(--text);
 }
 @media (max-width: 1150px) {
-  .bar-b1 nav > .bar-action span,
-  .bar-b3 nav > .bar-action span,
-  .bar-b4 nav > .bar-action span {
+  .bar-actions nav > .bar-action span {
     display: none;
   }
 }
 @media (max-width: 900px) {
-  .bar-add span,
-  .play-button span {
+  .bar-add span {
     display: none;
   }
-  .bar-add,
-  .play-button {
+  .bar-add {
     padding: 10px 12px;
   }
 }
 @media (max-width: 680px) {
-  .lab-switcher {
-    left: 8px;
-    right: 8px;
-    justify-content: space-between;
-  }
-  .lab-switcher button {
-    padding: 7px 6px;
-    font-size: 10px;
-  }
   .brand-block small,
-  .bar-actions .brand > span:last-child,
-  .bar-divider {
+  .bar-actions .brand > span:last-child {
     display: none;
   }
   .bar-actions nav {
     gap: 10px;
-  }
-  .bar-b3 {
-    height: 84px;
-  }
-  .bar-utility .profile-button > span:last-child {
-    display: none;
   }
   .more-menu-list .external {
     display: flex;
