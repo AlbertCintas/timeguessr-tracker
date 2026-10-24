@@ -1393,9 +1393,9 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
   }, []);
   const barNav = (
     <nav>
-      {randomBar}
       {extensionBar}
       {rulesBar}
+      {randomBar}
       {barAddScore}
       {menu(
         session ? <Avatar profile={me} /> : <UserRound size={20} />,
