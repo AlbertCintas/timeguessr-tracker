@@ -4,7 +4,7 @@ A shared tracker for a group of friends, with cumulative wins and points, win pe
 
 The highest submitted score wins; ties award one win to each leader. Scores count immediately, including games with a single submission. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
-New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame: worst game, worst picture, most zero-point pictures, biggest year error, and furthest guess.
+New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame, the hall of fame and player stats. The site has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. Average records need 20 detailed pictures.
 
 ## Run locally
 
@@ -58,7 +58,7 @@ Standings, game history, display names, and avatars are public. Database row pol
 
 ## Automatic imports
 
-On desktop Chrome or Edge, click **Install browser extension** on the scoreboard, then **Install browser extension** to open the [Chrome Web Store listing](https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb). Pin the extension and sign in with your tracker username and password. Refresh any Timeguessr results tab that was open before installation. On Firefox, **Install browser extension** opens the [Firefox Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/). The **Prefer a manual install?** link opens a separate popup with ZIP downloads and instructions.
+On desktop Chrome or Edge, click **Browser extension** in the top bar, then **Install browser extension** to open the [Chrome Web Store listing](https://chromewebstore.google.com/detail/goaihidkkladlkkkhagodpiimokmgedo?utm_source=item-share-cb). Pin the extension and sign in with your tracker username and password. Refresh any Timeguessr results tab that was open before installation. On Firefox, the same button opens the [Firefox Add-ons listing](https://addons.mozilla.org/en-US/firefox/addon/timeguessr-club/). The **Prefer a manual install?** link opens a separate popup with ZIP downloads and instructions.
 
 The extension captures completed daily and non-daily games, including picture details. Pending imports survive browser restarts and remain attached to the account that captured them. Conflicts need review in the tracker; automatic imports preserve saved scores and can fill missing picture details when the scores match. Pause automatic imports or sign out from the extension popup.
 

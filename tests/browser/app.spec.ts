@@ -1,4 +1,20 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+const openSection = (page: Page, name: string) =>
+  page
+    .getByRole("navigation", { name: "Sections" })
+    .getByRole("button", { name })
+    .click();
+const openMenu = (page: Page) =>
+  page.getByLabel("Account and settings").click();
+async function openSignIn(page: Page) {
+  await openMenu(page);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+}
+async function refresh(page: Page) {
+  await openSection(page, "Standings");
+  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await openSection(page, "History");
+}
 const profiles = [
   { id: "alice", username: "alice", display_name: "Alice", avatar_path: null },
   { id: "bob", username: "bob", display_name: "Bob", avatar_path: null },
@@ -67,14 +83,14 @@ test("unplayed history games link to complete challenge IDs and shared links bec
       headers: { "Access-Control-Allow-Origin": "*" },
     });
   });
-  await page.goto("./");
+  await page.goto("./#history");
   await expect(page.locator(".history .game")).toHaveCount(10);
   await expect(page.locator(".history .game").first()).toContainText(
     replayGames[0].name,
   );
   await expect(page.locator(".game-play-link")).toHaveCount(0);
   const randomButton = page.getByRole("button", {
-    name: "Play random unplayed game",
+    name: "Random game",
     exact: true,
   });
   await randomButton.click();
@@ -85,14 +101,7 @@ test("unplayed history games link to complete challenge IDs and shared links bec
     .getByRole("button", { name: "Sign in", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  const randomHelp = page.getByRole("button", {
-    name: "How does random unplayed game work?",
-  });
-  await randomHelp.hover();
-  await expect(page.getByRole("tooltip")).toContainText("club’s full history");
-  await randomHelp.focus();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await expect(randomButton).toHaveAttribute("title", /random club game/);
   await page.evaluate(() => {
     Math.random = () => 0.999;
     window.open = (url) => {
@@ -170,13 +179,17 @@ test("leaderboards, independent fairness switches, history and login keyboard en
     page.getByRole("heading", { name: "Win percentage" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.locator("summary").first()).toContainText(
+  await openSection(page, "History");
+  await expect(page.locator(".game > summary").first()).toContainText(
     "Daily · 09/10/26",
   );
+  await openSection(page, "Standings");
+  await openMenu(page);
   await page.getByRole("switch", { name: "Dark mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await openMenu(page);
   await page.getByRole("switch", { name: "Dark mode" }).click();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -199,9 +212,10 @@ test("leaderboards, independent fairness switches, history and login keyboard en
   ).toBeVisible();
   await boards.nth(0).getByRole("switch").uncheck();
   await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
-  await page.locator("summary").first().click();
+  await openSection(page, "History");
+  await page.locator(".game > summary").first().click();
   await expect(page.locator(".game[open] .result")).toHaveCount(1);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await openSignIn(page);
   await page.getByLabel("Username", { exact: true }).click();
   await page.keyboard.type("alice");
   await expect(page.getByLabel("Username", { exact: true })).toHaveValue(
@@ -252,7 +266,7 @@ test("score entry uses European dates and submits ISO dates", async ({
     });
   });
   await page.goto("./");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await openSignIn(page);
   await page.getByLabel("Username", { exact: true }).fill("alice");
   await page.getByLabel("Password", { exact: true }).fill("test-password-123");
   await page
@@ -317,25 +331,37 @@ test("history paginates newest first and clamps the page after games disappear",
       headers: { "Access-Control-Allow-Origin": "*" },
     });
   });
-  await page.goto("./");
+  await page.goto("./#history");
   const pagination = page.getByRole("navigation", {
     name: "Game history pagination",
   });
   await expect(page.locator(".game")).toHaveCount(10);
-  await expect(page.locator("summary").first()).toContainText("23/09/26");
-  await expect(page.locator("summary").last()).toContainText("14/09/26");
+  await expect(page.locator(".game > summary").first()).toContainText(
+    "23/09/26",
+  );
+  await expect(page.locator(".game > summary").last()).toContainText(
+    "14/09/26",
+  );
   await expect(
     pagination.getByRole("button", { name: "Newer games" }),
   ).toBeDisabled();
   await expect(pagination).toContainText("Page 1 of 3");
+  await openSection(page, "Standings");
   await expect(page.locator(".board").first()).toContainText("23");
+  await openSection(page, "History");
   await pagination.getByRole("button", { name: "Older games" }).click();
   await expect(page.locator(".game")).toHaveCount(10);
-  await expect(page.locator("summary").first()).toContainText("13/09/26");
-  await expect(page.locator("summary").last()).toContainText("04/09/26");
+  await expect(page.locator(".game > summary").first()).toContainText(
+    "13/09/26",
+  );
+  await expect(page.locator(".game > summary").last()).toContainText(
+    "04/09/26",
+  );
   await pagination.getByRole("button", { name: "Older games" }).click();
   await expect(page.locator(".game")).toHaveCount(3);
-  await expect(page.locator("summary").first()).toContainText("03/09/26");
+  await expect(page.locator(".game > summary").first()).toContainText(
+    "03/09/26",
+  );
   await expect(
     pagination.getByRole("button", { name: "Older games" }),
   ).toBeDisabled();
@@ -343,21 +369,23 @@ test("history paginates newest first and clamps the page after games disappear",
   await expect(pagination).toContainText("Page 2 of 3");
   await pagination.getByRole("button", { name: "Older games" }).click();
   count = 11;
-  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await refresh(page);
   await expect(pagination).toContainText("Page 2 of 2");
   await expect(page.locator(".game")).toHaveCount(1);
-  await expect(page.locator("summary").first()).toContainText("01/09/26");
+  await expect(page.locator(".game > summary").first()).toContainText(
+    "01/09/26",
+  );
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
   count = 10;
-  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await refresh(page);
   await expect(pagination).toHaveCount(0);
   await expect(page.locator(".game")).toHaveCount(10);
   count = 0;
-  await page.getByRole("button", { name: "Refresh standings" }).click();
+  await refresh(page);
   await expect(page.locator(".history-empty")).toBeVisible();
 });
 
@@ -411,7 +439,7 @@ https://timeguessr.com`;
     });
   });
   await page.goto("./");
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await openSignIn(page);
   await page.getByLabel("Username", { exact: true }).fill("alice");
   await page.getByLabel("Password", { exact: true }).fill("test-password-123");
   await page
@@ -464,8 +492,9 @@ https://timeguessr.com`;
   expect(stored[1].points).toBe(37894);
   expect(stored[1].daily_number).toBe(1227);
   expect(stored[1].rounds).toHaveLength(5);
+  await openSection(page, "Hall of shame");
   const shame = page.getByRole("table", { name: "Hall of shame records" });
-  await expect(shame.locator("tbody tr")).toHaveCount(4);
+  await expect(shame.locator("tbody tr")).toHaveCount(6);
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
   await expect(shame.locator('[data-metric="distance"]')).toContainText(
     "Alice",
@@ -479,6 +508,7 @@ https://timeguessr.com`;
     path: `/private/tmp/timeguessr-shame-${test.info().project.name}.png`,
     fullPage: true,
   });
+  await openSection(page, "History");
   await page.locator(".game > summary").first().click();
   await page.locator(".result-breakdown > summary").click();
   await expect(page.locator(".history .picture-breakdown")).toContainText(
@@ -496,6 +526,7 @@ https://timeguessr.com`;
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(stored[1].rounds).toBeNull();
   expect(stored[1].points).toBe(100);
+  await openSection(page, "Hall of shame");
   await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
     "Alice",
@@ -537,9 +568,9 @@ test("zero-picture shame record appears only while a zero-point picture exists",
       headers: { "Access-Control-Allow-Origin": "*" },
     });
   });
-  await page.goto("./");
+  await page.goto("./#shame");
   const shame = page.getByRole("table", { name: "Hall of shame records" });
-  await expect(shame.locator("tbody tr")).toHaveCount(4);
+  await expect(shame.locator("tbody tr")).toHaveCount(6);
   await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
   hasZero = true;
   await page.getByRole("button", { name: "Refresh standings" }).click();
@@ -613,7 +644,9 @@ test("standings periods update both boards and their per-game denominators", asy
   await picker.selectOption("today");
   await expect(alice(1).locator(".score")).toHaveText("300");
   await expect(bob(0)).toHaveCount(0);
+  await openSection(page, "History");
   await expect(page.locator(".history .game")).toHaveCount(4);
+  await openSection(page, "Standings");
   await picker.selectOption("month");
   await expect(alice(1).locator(".score")).toHaveText("350");
   await picker.selectOption("year");
@@ -646,7 +679,7 @@ test("extension install button explains desktop installation and links to ZIP", 
     }),
   );
   await page.goto("./");
-  await page.getByRole("button", { name: "Install browser extension" }).click();
+  await page.getByRole("button", { name: "Browser extension" }).click();
   const dialog = page.getByRole("dialog");
   const storeInstall = dialog.getByRole("link", {
     name: "Install browser extension",
@@ -732,7 +765,7 @@ test("Firefox gets its own manual package and temporary installation instruction
   );
   await page.goto("./");
   await page
-    .getByRole("button", { name: "Install browser extension", exact: true })
+    .getByRole("button", { name: "Browser extension", exact: true })
     .click();
   const dialog = page.getByRole("dialog");
   const storeInstall = dialog.getByRole("link", {
