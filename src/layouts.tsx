@@ -5,9 +5,9 @@ import "./style.css";
 
 const heroes: Record<Hero, string> = {
   current: "Current",
-  compact: "A · Compact",
-  today: "B · Today",
-  toolbar: "C · Toolbar",
+  tabsbar: "A · Tabs in bar",
+  actionbar: "B · Actions in bar",
+  appbar: "C · App bar",
 };
 
 function LayoutLab() {

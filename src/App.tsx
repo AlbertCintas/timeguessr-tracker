@@ -813,7 +813,7 @@ function Modal({
   );
 }
 export type Layout = "classic" | "tabs";
-export type Hero = "current" | "compact" | "today" | "toolbar";
+export type Hero = "current" | "tabsbar" | "actionbar" | "appbar";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -1257,129 +1257,101 @@ export default function App({
   const todayLeaders = todayEntries.filter(
     (entry) => entry.points === todayEntries[0].points,
   );
-  const rulesLink = (
-    <button className="rules-link" onClick={() => setModal("rules")}>
-      <ScrollText size={15} /> Read the rules
+  const playRandom = () => {
+    if (!session) {
+      setModal("login");
+      return;
+    }
+    const selected =
+      randomGames[Math.floor(Math.random() * randomGames.length)];
+    if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
+  };
+  const randomDisabled =
+    !configured || loading || (!!session && !randomGames.length);
+  const todaySummary = (
+    <p className="today-summary" aria-label="Today’s daily">
+      <span className="eyebrow">TODAY’S DAILY</span>
+      {todayEntries.length ? (
+        <span>
+          <strong>
+            {todayLeaders
+              .map(
+                (entry) =>
+                  profiles.find((p) => p.id === entry.player_id)?.display_name,
+              )
+              .join(", ")}
+          </strong>{" "}
+          {todayLeaders.length > 1 ? "lead" : "leads"} with{" "}
+          {number.format(todayEntries[0].points)} · {todayEntries.length} played
+        </span>
+      ) : (
+        <span>Nobody has played yet. First blood is yours.</span>
+      )}
+      {session && (
+        <span className="today-you">
+          {myToday
+            ? `You: ${number.format(myToday.points)} · #${
+                todayEntries.findIndex(
+                  (entry) => entry.points === myToday.points,
+                ) + 1
+              } of ${todayEntries.length}`
+            : "You haven’t played today. Scared?"}
+        </span>
+      )}
+    </p>
+  );
+  const barActions = (
+    <>
+      <button
+        className="bar-action"
+        disabled={randomDisabled}
+        onClick={playRandom}
+        title="A random club game you haven’t played"
+      >
+        <Shuffle size={17} />
+        <span>Random game</span>
+      </button>
+      <button
+        className="bar-action"
+        onClick={() => setModal("extension")}
+        title="Saves your games automatically"
+      >
+        <Download size={17} />
+        <span>Extension</span>
+      </button>
+      <button className="bar-action" onClick={() => setModal("rules")}>
+        <ScrollText size={17} />
+        <span>Rules</span>
+      </button>
+    </>
+  );
+  const barAddScore = (
+    <button
+      className="primary bar-add"
+      onClick={() => openScore()}
+      disabled={!configured}
+      aria-label="Add your score"
+    >
+      <Plus size={18} />
+      <span>Add score</span>
     </button>
   );
-  const heroes: Record<Exclude<Hero, "current">, ReactNode> = {
-    compact: (
-      <section className="hero-compact">
-        <div>
-          <h1>
-            History is dead. <span>So is your score.</span>
-          </h1>
-          <p>Five guesses. Zero dignity. {rulesLink}</p>
-        </div>
-        <div className="hero-compact-actions">
-          {addScoreButton}
-          {randomAction}
-          {extensionAction}
-        </div>
-      </section>
-    ),
-    today: (
-      <section className="hero-today">
-        <div>
-          <div className="eyebrow intro-label">
-            <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
-          </div>
-          <h1>
-            History is dead. <span>So is your score.</span>
-          </h1>
-          <p>A permanent record of your mates being confidently wrong.</p>
-          {rulesLink}
-        </div>
-        <aside className="today-card" aria-label="Today’s daily">
-          <div className="today-heading">
-            <span className="eyebrow">TODAY’S DAILY</span>
-            <span className="date-stamp">
-              <CalendarDays size={14} />
-              {europeanDate(today)}
-            </span>
-          </div>
-          {todayEntries.length ? (
-            <div className="today-leader">
-              <Avatar
-                profile={profiles.find(
-                  (p) => p.id === todayLeaders[0].player_id,
-                )}
-              />
-              <div>
-                <strong>
-                  {todayLeaders
-                    .map(
-                      (entry) =>
-                        profiles.find((p) => p.id === entry.player_id)
-                          ?.display_name,
-                    )
-                    .join(", ")}
-                </strong>
-                <small>
-                  {todayLeaders.length > 1 ? "lead" : "leads"} with{" "}
-                  {number.format(todayEntries[0].points)} pts ·{" "}
-                  {todayEntries.length} played
-                </small>
-              </div>
-            </div>
-          ) : (
-            <p className="today-status">
-              Nobody has played yet. First blood is yours.
-            </p>
-          )}
-          {session && (
-            <p className="today-status">
-              {myToday
-                ? `You: ${number.format(myToday.points)} pts · #${
-                    todayEntries.findIndex(
-                      (entry) => entry.points === myToday.points,
-                    ) + 1
-                  } of ${todayEntries.length}`
-                : "You haven’t played today. Scared?"}
-            </p>
-          )}
-          {addScoreButton}
-          <div className="today-links">
-            {randomAction}
-            {extensionAction}
-          </div>
-        </aside>
-      </section>
-    ),
-    toolbar: (
-      <p className="hero-tagline">
-        <strong>History is dead.</strong> So is your score.
-      </p>
-    ),
-  };
+  const playLink = (
+    <a
+      className="external"
+      href="https://timeguessr.com"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Play Timeguessr <ArrowUpRight size={16} />
+    </a>
+  );
   const moreMenu = (
     <details className="more-menu">
       <summary className="subtle-button">More</summary>
       <div className="more-menu-list">
-        <button
-          className="subtle-button"
-          disabled={
-            !configured || loading || (!!session && !randomGames.length)
-          }
-          onClick={() => {
-            if (!session) {
-              setModal("login");
-              return;
-            }
-            const selected =
-              randomGames[Math.floor(Math.random() * randomGames.length)];
-            if (selected)
-              window.open(selected.url, "_blank", "noopener,noreferrer");
-          }}
-        >
-          <Shuffle size={17} /> Random unplayed game
-        </button>
-        <button className="subtle-button" onClick={() => setModal("extension")}>
-          <Download size={17} /> Browser extension
-        </button>
-        <button className="subtle-button" onClick={() => setModal("rules")}>
-          <ScrollText size={17} /> Read the rules
-        </button>
+        {barActions}
+        {playLink}
       </div>
     </details>
   );
@@ -1707,81 +1679,159 @@ export default function App({
       })}
     </nav>
   );
-  return (
+  const brand = (
+    <a className="brand" href={import.meta.env.BASE_URL}>
+      <span className="brand-icon">
+        <Clock3 size={24} />
+      </span>
+      <span>
+        timeguessr<span className="brand-club">club</span>
+      </span>
+    </a>
+  );
+  const account = (
     <>
-      <header className="header">
-        <a className="brand" href={import.meta.env.BASE_URL}>
-          <span className="brand-icon">
-            <Clock3 size={24} />
-          </span>
-          <span>
-            timeguessr<span className="brand-club">club</span>
-          </span>
-        </a>
-        <nav>
-          <ThemeToggle />
-          {session ? (
-            <>
-              <button
-                className="profile-button"
-                onClick={() => {
-                  setDisplayName(me?.display_name || "");
-                  setModal("profile");
-                }}
-              >
-                <Avatar profile={me} />
-                <span>{me?.display_name || "My profile"}</span>
-              </button>
-              {admin && (
-                <button
-                  className="icon-button"
-                  aria-label="Manage club"
-                  onClick={() => setModal("admin")}
-                >
-                  <Settings size={20} />
-                </button>
-              )}
-            </>
-          ) : (
-            <button className="subtle-button" onClick={() => setModal("login")}>
-              <LogIn size={17} /> Sign in
+      <ThemeToggle />
+      {session ? (
+        <>
+          <button
+            className="profile-button"
+            onClick={() => {
+              setDisplayName(me?.display_name || "");
+              setModal("profile");
+            }}
+          >
+            <Avatar profile={me} />
+            <span>{me?.display_name || "My profile"}</span>
+          </button>
+          {admin && (
+            <button
+              className="icon-button"
+              aria-label="Manage club"
+              onClick={() => setModal("admin")}
+            >
+              <Settings size={20} />
             </button>
           )}
-          <a
-            className="external"
-            href="https://timeguessr.com"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Play Timeguessr <ArrowUpRight size={16} />
-          </a>
-        </nav>
-      </header>
-      {layout === "classic" ? (
-        <main>
-          {intro}
-          {alerts}
-          {standingsPanel}
-          {shamePanel}
-          {historyPanel}
-          {footer}
-        </main>
+        </>
       ) : (
-        <main className="lab-main">
-          {hero === "current" ? intro : heroes[hero]}
-          {alerts}
-          {hero === "toolbar" ? (
-            <div className="lab-toolbar">
+        <button className="subtle-button" onClick={() => setModal("login")}>
+          <LogIn size={17} /> Sign in
+        </button>
+      )}
+    </>
+  );
+  return (
+    <>
+      {layout === "classic" ? (
+        <>
+          <header className="header">
+            {brand}
+            <nav>
+              {account}
+              {playLink}
+            </nav>
+          </header>
+          <main>
+            {intro}
+            {alerts}
+            {standingsPanel}
+            {shamePanel}
+            {historyPanel}
+            {footer}
+          </main>
+        </>
+      ) : hero === "current" ? (
+        <>
+          <header className="header">
+            {brand}
+            <nav>
+              {account}
+              {playLink}
+            </nav>
+          </header>
+          <main className="lab-main">
+            {intro}
+            {alerts}
+            {tabNav}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
+        </>
+      ) : hero === "tabsbar" ? (
+        <>
+          <header className="header bar-tabs">
+            {brand}
+            {tabNav}
+            <nav>
+              {barAddScore}
+              {account}
+            </nav>
+          </header>
+          <main className="lab-main">
+            <div className="subbar">
+              <p className="bar-tagline">
+                <strong>History is dead.</strong> So is your score.
+              </p>
+              <div className="subbar-actions">
+                {barActions}
+                {playLink}
+              </div>
+            </div>
+            {alerts}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
+        </>
+      ) : hero === "actionbar" ? (
+        <>
+          <header className="header bar-actions">
+            <div className="brand-block">
+              {brand}
+              <small>History is dead. So is your score.</small>
+            </div>
+            <nav>
+              {barActions}
+              {barAddScore}
+              {account}
+            </nav>
+          </header>
+          <main className="lab-main">
+            <div className="today-strip">
+              {todaySummary}
+              {playLink}
+            </div>
+            {alerts}
+            {tabNav}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
+        </>
+      ) : (
+        <>
+          <header className="appbar">
+            <div className="header appbar-top">
+              <div className="brand-block">
+                {brand}
+                <small>History is dead. So is your score.</small>
+              </div>
+              {todaySummary}
+              <nav>
+                {barAddScore}
+                {account}
+              </nav>
+            </div>
+            <div className="appbar-tabs">
               {tabNav}
-              {addScoreButton}
               {moreMenu}
             </div>
-          ) : (
-            tabNav
-          )}
-          <div className="lab-panel">{panels[tab]}</div>
-          {footer}
-        </main>
+          </header>
+          <main className="lab-main">
+            {alerts}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
+        </>
       )}
       {modal && (
         <Modal
