@@ -178,3 +178,36 @@ test("average records stay empty below 20 detailed pictures", async ({
   );
   await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });
+
+test("the top bar shows the helpers and keeps account controls in a menu", async ({
+  page,
+}) => {
+  await serve(page, 4);
+  await page.goto("./layouts.html");
+  for (const name of [
+    "Random game",
+    "Browser extension",
+    "Read the rules",
+    "Add your score",
+  ])
+    await expect(page.getByRole("button", { name })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Play Timeguessr/ }),
+  ).toBeHidden();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeHidden();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  const menu = page.getByLabel("Account and settings");
+  await menu.click();
+  await expect(
+    page.getByRole("link", { name: /Play Timeguessr/ }),
+  ).toBeVisible();
+  await page.getByRole("switch", { name: "Dark mode" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await menu.click();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+});

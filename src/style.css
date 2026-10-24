@@ -1492,3 +1492,133 @@ textarea:focus-visible {
 .player-stats > .empty {
   padding: 40px;
 }
+.bar-actions nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.bar-action {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 2px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bar-action:hover {
+  color: var(--gold);
+}
+.bar-add {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+.bar-actions nav .subtle-button {
+  white-space: nowrap;
+}
+.brand-block {
+  display: grid;
+  gap: 3px;
+}
+.brand-block small {
+  padding-left: 49px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+}
+.bar-actions ~ .lab-main {
+  padding-top: 30px;
+}
+.more-menu {
+  position: relative;
+}
+.menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.menu-trigger::-webkit-details-marker {
+  display: none;
+}
+.menu-trigger:hover,
+.more-menu[open] .menu-trigger {
+  color: var(--gold);
+}
+.menu-trigger .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 10px;
+}
+.more-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  min-width: 230px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px var(--shadow);
+}
+.more-menu-list > * {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  min-height: 40px;
+  padding: 0;
+}
+.more-menu-list .bar-action span {
+  display: inline;
+}
+.more-menu-list .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 9px;
+}
+.more-menu-list .external {
+  border-left: 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+}
+@media (max-width: 1150px) {
+  .bar-actions nav > .bar-action span {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .bar-add span {
+    display: none;
+  }
+  .bar-add {
+    padding: 10px 12px;
+  }
+}
+@media (max-width: 680px) {
+  .brand-block small,
+  .bar-actions .brand > span:last-child {
+    display: none;
+  }
+  .bar-actions nav {
+    gap: 10px;
+  }
+  .more-menu-list .external {
+    display: flex;
+  }
+  .more-menu-list .profile-button > span:last-child {
+    display: inline;
+  }
+}

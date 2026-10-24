@@ -25,6 +25,7 @@ import {
   ScrollText,
   Medal,
   ChartColumn,
+  UserRound,
   Skull,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
@@ -230,7 +231,7 @@ function ManualExtensionInstall() {
     </>
   );
 }
-function ThemeToggle() {
+function ThemeToggle({ label = false }: { label?: boolean }) {
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme !== "light",
   );
@@ -245,14 +246,17 @@ function ThemeToggle() {
   }, [dark]);
   return (
     <button
-      className="icon-button theme-toggle"
+      className={
+        label ? "subtle-button theme-toggle" : "icon-button theme-toggle"
+      }
       role="switch"
       aria-label="Dark mode"
       aria-checked={dark}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => setDark(!dark)}
     >
-      {dark ? <Sun size={20} /> : <Moon size={20} />}
+      {dark ? <Sun size={label ? 17 : 20} /> : <Moon size={label ? 17 : 20} />}
+      {label && (dark ? " Light mode" : " Dark mode")}
     </button>
   );
 }
@@ -1144,6 +1148,65 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
     setTab(next);
     history.replaceState(null, "", `${location.search}#${next}`);
   }
+  const addScoreButton = (
+    <button
+      className="primary"
+      onClick={() => openScore()}
+      disabled={!configured}
+    >
+      <Plus size={19} /> Add your score
+    </button>
+  );
+  const randomAction = (
+    <div className="extension-actions">
+      <button
+        className="subtle-button"
+        disabled={!configured || loading || (!!session && !randomGames.length)}
+        onClick={() => {
+          if (!session) {
+            setModal("login");
+            return;
+          }
+          const selected =
+            randomGames[Math.floor(Math.random() * randomGames.length)];
+          if (selected)
+            window.open(selected.url, "_blank", "noopener,noreferrer");
+        }}
+      >
+        <Shuffle size={17} /> Play random unplayed game
+      </button>
+      <HelpTooltip
+        id="random-game-tooltip"
+        label="How does random unplayed game work?"
+      >
+        {!session
+          ? "Sign in to find games you haven’t recorded a score for. "
+          : !randomGames.length
+            ? "No unplayed games with replay links are available. "
+            : ""}
+        Picks a random game from the club’s full history that someone has played
+        and you haven’t submitted a score for. Only games with replay links are
+        included. Opens Timeguessr in a new tab; it counts as played once your
+        score is saved here.
+      </HelpTooltip>
+    </div>
+  );
+  const extensionAction = (
+    <div className="extension-actions">
+      <button className="subtle-button" onClick={() => setModal("extension")}>
+        <Download size={17} /> Install browser extension
+      </button>
+      <HelpTooltip
+        id="extension-help-tooltip"
+        label="What does the browser extension do?"
+      >
+        Automatically saves your completed Timeguessr games, including picture
+        scores, year errors and distances, to this friends’ scoreboard. Sign in
+        with your tracker account and keep the results page open until captured.
+        You can pause imports at any time.
+      </HelpTooltip>
+    </div>
+  );
   const intro = (
     <section className="intro">
       <div>
@@ -1169,69 +1232,181 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
           <CalendarDays size={16} />
           {europeanDate(madridToday())}
         </div>
-        <button
-          className="primary"
-          onClick={() => openScore()}
-          disabled={!configured}
-        >
-          <Plus size={19} /> Add your score
-        </button>
-        <div className="extension-actions">
-          <button
-            className="subtle-button"
-            disabled={
-              !configured || loading || (!!session && !randomGames.length)
-            }
-            onClick={() => {
-              if (!session) {
-                setModal("login");
-                return;
-              }
-              const selected =
-                randomGames[Math.floor(Math.random() * randomGames.length)];
-              if (selected)
-                window.open(selected.url, "_blank", "noopener,noreferrer");
-            }}
-          >
-            <Shuffle size={17} /> Play random unplayed game
-          </button>
-          <HelpTooltip
-            id="random-game-tooltip"
-            label="How does random unplayed game work?"
-          >
-            {!session
-              ? "Sign in to find games you haven’t recorded a score for. "
-              : !randomGames.length
-                ? "No unplayed games with replay links are available. "
-                : ""}
-            Picks a random game from the club’s full history that someone has
-            played and you haven’t submitted a score for. Only games with replay
-            links are included. Opens Timeguessr in a new tab; it counts as
-            played once your score is saved here.
-          </HelpTooltip>
-        </div>
-        <div className="extension-actions">
-          <button
-            className="subtle-button"
-            onClick={() => setModal("extension")}
-          >
-            <Download size={17} /> Install browser extension
-          </button>
-          <HelpTooltip
-            id="extension-help-tooltip"
-            label="What does the browser extension do?"
-          >
-            Automatically saves your completed Timeguessr games, including
-            picture scores, year errors and distances, to this friends’
-            scoreboard. Sign in with your tracker account and keep the results
-            page open until captured. You can pause imports at any time.
-          </HelpTooltip>
-        </div>
+        {addScoreButton}
+        {randomAction}
+        {extensionAction}
         <span className="hint">
           Daily humiliation. Extra suffering available.
         </span>
       </div>
     </section>
+  );
+  const brand = (
+    <a className="brand" href={import.meta.env.BASE_URL}>
+      <span className="brand-icon">
+        <Clock3 size={24} />
+      </span>
+      <span>
+        timeguessr<span className="brand-club">club</span>
+      </span>
+    </a>
+  );
+  const account = (
+    <>
+      <ThemeToggle />
+      {session ? (
+        <>
+          <button
+            className="profile-button"
+            onClick={() => {
+              setDisplayName(me?.display_name || "");
+              setModal("profile");
+            }}
+          >
+            <Avatar profile={me} />
+            <span>{me?.display_name || "My profile"}</span>
+          </button>
+          {admin && (
+            <button
+              className="icon-button"
+              aria-label="Manage club"
+              onClick={() => setModal("admin")}
+            >
+              <Settings size={20} />
+            </button>
+          )}
+        </>
+      ) : (
+        <button className="subtle-button" onClick={() => setModal("login")}>
+          <LogIn size={17} /> Sign in
+        </button>
+      )}
+    </>
+  );
+  const playRandom = () => {
+    if (!session) {
+      setModal("login");
+      return;
+    }
+    const selected =
+      randomGames[Math.floor(Math.random() * randomGames.length)];
+    if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
+  };
+  const randomBar = (
+    <button
+      className="bar-action"
+      disabled={!configured || loading || (!!session && !randomGames.length)}
+      onClick={playRandom}
+      title="A random club game you haven’t played"
+      aria-label="Random game"
+    >
+      <Shuffle size={17} />
+      <span>Random game</span>
+    </button>
+  );
+  const extensionBar = (
+    <button
+      className="bar-action"
+      onClick={() => setModal("extension")}
+      title="Saves your games automatically"
+      aria-label="Browser extension"
+    >
+      <Download size={17} />
+      <span>Browser extension</span>
+    </button>
+  );
+  const rulesBar = (
+    <button
+      className="bar-action"
+      onClick={() => setModal("rules")}
+      aria-label="Read the rules"
+    >
+      <ScrollText size={17} />
+      <span>Read the rules</span>
+    </button>
+  );
+  const barAddScore = (
+    <button
+      className="primary bar-add"
+      onClick={() => openScore()}
+      disabled={!configured}
+      aria-label="Add your score"
+    >
+      <Plus size={18} />
+      <span>Add score</span>
+    </button>
+  );
+  const playLink = (
+    <a
+      className="external"
+      href="https://timeguessr.com"
+      target="_blank"
+      rel="noreferrer"
+    >
+      Play Timeguessr <ArrowUpRight size={16} />
+    </a>
+  );
+  const menuAccount = session ? (
+    <>
+      <button
+        className="subtle-button"
+        onClick={() => {
+          setDisplayName(me?.display_name || "");
+          setModal("profile");
+        }}
+      >
+        <Avatar profile={me} />
+        <span>{me?.display_name || "My profile"}</span>
+      </button>
+      {admin && (
+        <button className="subtle-button" onClick={() => setModal("admin")}>
+          <Settings size={17} /> Manage club
+        </button>
+      )}
+    </>
+  ) : (
+    <button className="subtle-button" onClick={() => setModal("login")}>
+      <LogIn size={17} /> Sign in
+    </button>
+  );
+  const menu = (summary: ReactNode, label: string, items: ReactNode) => (
+    <details className="more-menu">
+      <summary className="menu-trigger" aria-label={label}>
+        {summary}
+      </summary>
+      <div className="more-menu-list">{items}</div>
+    </details>
+  );
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      for (const open of document.querySelectorAll("details.more-menu[open]"))
+        if (
+          !open.contains(event.target as Node) ||
+          (event.target as Element).closest(
+            ".more-menu-list button, .more-menu-list a",
+          )
+        )
+          open.removeAttribute("open");
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
+  const barNav = (
+    <nav>
+      {extensionBar}
+      {rulesBar}
+      {randomBar}
+      {barAddScore}
+      {menu(
+        session ? <Avatar profile={me} /> : <UserRound size={20} />,
+        "Account and settings",
+        <>
+          {menuAccount}
+          <ThemeToggle label />
+          {playLink}
+        </>,
+      )}
+    </nav>
   );
   const alerts = (
     <>
@@ -1559,71 +1734,40 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
   );
   return (
     <>
-      <header className="header">
-        <a className="brand" href={import.meta.env.BASE_URL}>
-          <span className="brand-icon">
-            <Clock3 size={24} />
-          </span>
-          <span>
-            timeguessr<span className="brand-club">club</span>
-          </span>
-        </a>
-        <nav>
-          <ThemeToggle />
-          {session ? (
-            <>
-              <button
-                className="profile-button"
-                onClick={() => {
-                  setDisplayName(me?.display_name || "");
-                  setModal("profile");
-                }}
-              >
-                <Avatar profile={me} />
-                <span>{me?.display_name || "My profile"}</span>
-              </button>
-              {admin && (
-                <button
-                  className="icon-button"
-                  aria-label="Manage club"
-                  onClick={() => setModal("admin")}
-                >
-                  <Settings size={20} />
-                </button>
-              )}
-            </>
-          ) : (
-            <button className="subtle-button" onClick={() => setModal("login")}>
-              <LogIn size={17} /> Sign in
-            </button>
-          )}
-          <a
-            className="external"
-            href="https://timeguessr.com"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Play Timeguessr <ArrowUpRight size={16} />
-          </a>
-        </nav>
-      </header>
       {layout === "classic" ? (
-        <main>
-          {intro}
-          {alerts}
-          {standingsPanel}
-          {shamePanel}
-          {historyPanel}
-          {footer}
-        </main>
+        <>
+          <header className="header">
+            {brand}
+            <nav>
+              {account}
+              {playLink}
+            </nav>
+          </header>
+          <main>
+            {intro}
+            {alerts}
+            {standingsPanel}
+            {shamePanel}
+            {historyPanel}
+            {footer}
+          </main>
+        </>
       ) : (
-        <main className="lab-main">
-          {intro}
-          {alerts}
-          {tabNav}
-          <div className="lab-panel">{panels[tab]}</div>
-          {footer}
-        </main>
+        <>
+          <header className="header bar-actions">
+            <div className="brand-block">
+              {brand}
+              <small>History is dead. So is your score.</small>
+            </div>
+            {barNav}
+          </header>
+          <main className="lab-main">
+            {alerts}
+            {tabNav}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
+        </>
       )}
       {modal && (
         <Modal
