@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Check,
   Clock3,
-  CircleHelp,
   Shuffle,
   Flag,
   LogIn,
@@ -67,42 +66,6 @@ import {
 const number = new Intl.NumberFormat("en");
 const gameTitle = (g: Game) =>
   g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
-function HelpTooltip({
-  id,
-  label,
-  children,
-}: {
-  id: string;
-  label: string;
-  children: ReactNode;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <span
-      className="extension-help"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
-      onBlur={() => setOpen(false)}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") setOpen(false);
-      }}
-    >
-      <button
-        className="icon-button"
-        aria-label={label}
-        aria-describedby={open ? id : undefined}
-      >
-        <CircleHelp size={18} />
-      </button>
-      {open && (
-        <span id={id} role="tooltip">
-          {children}
-        </span>
-      )}
-    </span>
-  );
-}
 function StoreExtensionInstall() {
   const firefox = /Firefox\//i.test(navigator.userAgent);
   return (
@@ -397,29 +360,25 @@ function ShameBoard({
   games,
   period,
   controls,
-  extended = false,
 }: {
   profiles: Profile[];
   results: Result[];
   games: Game[];
-  period?: StandingsPeriod;
-  controls?: ReactNode;
-  extended?: boolean;
+  period: StandingsPeriod;
+  controls: ReactNode;
 }) {
-  const metrics: (ShameMetric | ExtraShameMetric)[] = extended
-    ? [
-        "avgYears",
-        "avgDistance",
-        "years",
-        "distance",
-        "worstGame",
-        "zeros",
-        "worstPicture",
-      ]
-    : (Object.keys(shameMetrics) as ShameMetric[]);
+  const metrics: (ShameMetric | ExtraShameMetric)[] = [
+    "avgYears",
+    "avgDistance",
+    "years",
+    "distance",
+    "worstGame",
+    "zeros",
+    "worstPicture",
+  ];
   return (
     <section className="shame-section" aria-labelledby="shame-heading">
-      <div className={`section-heading${controls ? " standings-heading" : ""}`}>
+      <div className="section-heading standings-heading">
         <div>
           <h2 id="shame-heading">The hall of shame</h2>
           <p>Your mates forget. The database doesn’t.</p>
@@ -458,11 +417,7 @@ function ShameBoard({
                 <tr key={metric} data-metric={metric}>
                   <th scope="row" title={definition.description}>
                     {definition.label}
-                    {extended && (
-                      <small className="record-quip">
-                        {shameQuips[metric]}
-                      </small>
-                    )}
+                    <small className="record-quip">{shameQuips[metric]}</small>
                   </th>
                   <td>
                     {winners.length ? (
@@ -512,8 +467,8 @@ function ShameBoard({
           </tbody>
         </table>
         <div className="board-foot">
-          {period && `${periodLabels[period]} records · `}Ties share the blame.
-          Picture records use detailed results only.
+          {periodLabels[period]} records · Ties share the blame. Picture records
+          use detailed results only.
         </div>
       </div>
     </section>
@@ -816,7 +771,6 @@ function Modal({
     </div>
   );
 }
-export type Layout = "classic" | "tabs";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -829,7 +783,7 @@ const tabFromHash = (): LabTab =>
   location.hash.slice(1) in labTabs
     ? (location.hash.slice(1) as LabTab)
     : "standings";
-export default function App({ layout = "classic" }: { layout?: Layout }) {
+export default function App() {
   const [tab, setTab] = useState<LabTab>(tabFromHash);
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
@@ -1148,99 +1102,6 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
     setTab(next);
     history.replaceState(null, "", `${location.search}#${next}`);
   }
-  const addScoreButton = (
-    <button
-      className="primary"
-      onClick={() => openScore()}
-      disabled={!configured}
-    >
-      <Plus size={19} /> Add your score
-    </button>
-  );
-  const randomAction = (
-    <div className="extension-actions">
-      <button
-        className="subtle-button"
-        disabled={!configured || loading || (!!session && !randomGames.length)}
-        onClick={() => {
-          if (!session) {
-            setModal("login");
-            return;
-          }
-          const selected =
-            randomGames[Math.floor(Math.random() * randomGames.length)];
-          if (selected)
-            window.open(selected.url, "_blank", "noopener,noreferrer");
-        }}
-      >
-        <Shuffle size={17} /> Play random unplayed game
-      </button>
-      <HelpTooltip
-        id="random-game-tooltip"
-        label="How does random unplayed game work?"
-      >
-        {!session
-          ? "Sign in to find games you haven’t recorded a score for. "
-          : !randomGames.length
-            ? "No unplayed games with replay links are available. "
-            : ""}
-        Picks a random game from the club’s full history that someone has played
-        and you haven’t submitted a score for. Only games with replay links are
-        included. Opens Timeguessr in a new tab; it counts as played once your
-        score is saved here.
-      </HelpTooltip>
-    </div>
-  );
-  const extensionAction = (
-    <div className="extension-actions">
-      <button className="subtle-button" onClick={() => setModal("extension")}>
-        <Download size={17} /> Install browser extension
-      </button>
-      <HelpTooltip
-        id="extension-help-tooltip"
-        label="What does the browser extension do?"
-      >
-        Automatically saves your completed Timeguessr games, including picture
-        scores, year errors and distances, to this friends’ scoreboard. Sign in
-        with your tracker account and keep the results page open until captured.
-        You can pause imports at any time.
-      </HelpTooltip>
-    </div>
-  );
-  const intro = (
-    <section className="intro">
-      <div>
-        <div className="eyebrow intro-label">
-          <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
-        </div>
-        <h1>
-          History is dead.
-          <br />
-          <span>So is your score.</span>
-        </h1>
-        <p>
-          Five guesses. Zero dignity.
-          <br className="desktop-break" /> A permanent record of your mates
-          being confidently wrong.
-        </p>
-        <button className="rules-link" onClick={() => setModal("rules")}>
-          <ScrollText size={15} /> Read the rules
-        </button>
-      </div>
-      <div className="intro-right">
-        <div className="date-stamp">
-          <CalendarDays size={16} />
-          {europeanDate(madridToday())}
-        </div>
-        {addScoreButton}
-        {randomAction}
-        {extensionAction}
-        <span className="hint">
-          Daily humiliation. Extra suffering available.
-        </span>
-      </div>
-    </section>
-  );
   const brand = (
     <a className="brand" href={import.meta.env.BASE_URL}>
       <span className="brand-icon">
@@ -1488,9 +1349,6 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
       </div>
     </>
   );
-  const shamePanel = (
-    <ShameBoard profiles={profiles} results={results} games={games} />
-  );
   const historyPanel = (
     <section className="history">
       <div className="section-heading">
@@ -1700,7 +1558,6 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
         games={games}
         period={standingsPeriod}
         controls={standingsControls}
-        extended
       />
     ),
     stats: (
@@ -1715,13 +1572,13 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
     history: historyPanel,
   };
   const tabNav = (
-    <nav className="lab-tabs" aria-label="Sections">
+    <nav className="section-tabs" aria-label="Sections">
       {(Object.keys(labTabs) as LabTab[]).map((key) => {
         const { label, icon: Icon } = labTabs[key];
         return (
           <button
             key={key}
-            className="lab-tab"
+            className="section-tab"
             aria-current={tab === key ? "page" : undefined}
             onClick={() => openTab(key)}
           >
@@ -1734,41 +1591,19 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
   );
   return (
     <>
-      {layout === "classic" ? (
-        <>
-          <header className="header">
-            {brand}
-            <nav>
-              {account}
-              {playLink}
-            </nav>
-          </header>
-          <main>
-            {intro}
-            {alerts}
-            {standingsPanel}
-            {shamePanel}
-            {historyPanel}
-            {footer}
-          </main>
-        </>
-      ) : (
-        <>
-          <header className="header bar-actions">
-            <div className="brand-block">
-              {brand}
-              <small>History is dead. So is your score.</small>
-            </div>
-            {barNav}
-          </header>
-          <main className="lab-main">
-            {alerts}
-            {tabNav}
-            <div className="lab-panel">{panels[tab]}</div>
-            {footer}
-          </main>
-        </>
-      )}
+      <header className="header bar-actions">
+        <div className="brand-block">
+          {brand}
+          <small>History is dead. So is your score.</small>
+        </div>
+        {barNav}
+      </header>
+      <main>
+        {alerts}
+        {tabNav}
+        <div className="section-panel">{panels[tab]}</div>
+        {footer}
+      </main>
       {modal && (
         <Modal
           key={modal}

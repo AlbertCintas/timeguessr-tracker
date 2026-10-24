@@ -51,7 +51,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   page,
 }) => {
   await serve(page, 4);
-  await page.goto("./layouts.html");
+  await page.goto("./");
   const sections = page.getByRole("navigation", { name: "Sections" });
   await expect(
     sections.getByRole("button", { name: "Standings" }),
@@ -162,7 +162,7 @@ test("average records stay empty below 20 detailed pictures", async ({
   page,
 }) => {
   await serve(page, 3);
-  await page.goto("./layouts.html#fame");
+  await page.goto("./#fame");
   const fame = page.getByRole("table", { name: "Hall of fame records" });
   await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
     "Nobody has 20 detailed pictures yet",
@@ -183,7 +183,7 @@ test("the top bar shows the helpers and keeps account controls in a menu", async
   page,
 }) => {
   await serve(page, 4);
-  await page.goto("./layouts.html");
+  await page.goto("./");
   for (const name of [
     "Random game",
     "Browser extension",
