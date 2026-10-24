@@ -1400,7 +1400,7 @@ textarea:focus-visible {
 .fame-board .shame-value {
   color: var(--gold);
 }
-.fame-blurb {
+.record-quip {
   display: block;
   margin-top: 6px;
   color: var(--muted);

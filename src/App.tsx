@@ -43,6 +43,7 @@ import { parseTimeguessrResults } from "./importResults";
 import {
   extraShameMetrics,
   shameMetrics,
+  shameQuips,
   shameRankings,
   type ExtraShameMetric,
   type ShameMetric,
@@ -453,6 +454,11 @@ function ShameBoard({
                 <tr key={metric} data-metric={metric}>
                   <th scope="row" title={definition.description}>
                     {definition.label}
+                    {extended && shameQuips[metric] && (
+                      <small className="record-quip">
+                        {shameQuips[metric]}
+                      </small>
+                    )}
                   </th>
                   <td>
                     {winners.length ? (
@@ -558,7 +564,7 @@ function FameBoard({
                   <th scope="row">
                     {definition.label}
                     {definition.quip && (
-                      <small className="fame-blurb">{definition.quip}</small>
+                      <small className="record-quip">{definition.quip}</small>
                     )}
                   </th>
                   <td>
