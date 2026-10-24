@@ -454,7 +454,7 @@ function ShameBoard({
                 <tr key={metric} data-metric={metric}>
                   <th scope="row" title={definition.description}>
                     {definition.label}
-                    {extended && shameQuips[metric] && (
+                    {extended && (
                       <small className="record-quip">
                         {shameQuips[metric]}
                       </small>
@@ -563,9 +563,7 @@ function FameBoard({
                 <tr key={metric} data-metric={metric}>
                   <th scope="row">
                     {definition.label}
-                    {definition.quip && (
-                      <small className="record-quip">{definition.quip}</small>
-                    )}
+                    <small className="record-quip">{definition.quip}</small>
                   </th>
                   <td>
                     {winners.length ? (

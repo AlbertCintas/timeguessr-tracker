@@ -5,7 +5,7 @@ export const minimumAveragePictures = 20;
 export const fameMetrics = {
   avgYears: {
     label: "Lowest average years off",
-    quip: null,
+    quip: "Great with dates. Historical ones only.",
     unit: "years avg",
     ascending: true,
   },
@@ -17,7 +17,7 @@ export const fameMetrics = {
   },
   exactYears: {
     label: "Most exact years",
-    quip: null,
+    quip: "Perfect timing. Except in life.",
     unit: "exact",
     ascending: false,
   },
@@ -35,7 +35,7 @@ export const fameMetrics = {
   },
   perfect: {
     label: "Most perfect pictures",
-    quip: null,
+    quip: "Even a broken clock.",
     unit: "perfect",
     ascending: false,
   },

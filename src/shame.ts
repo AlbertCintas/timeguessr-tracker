@@ -51,13 +51,14 @@ export const extraShameMetrics = {
 } as const;
 export type ExtraShameMetric = keyof typeof extraShameMetrics;
 
-export const shameQuips: Partial<
-  Record<ShameMetric | ExtraShameMetric, string>
-> = {
-  avgDistance: "Not lost. Just everywhere.",
-  years: "Different century, same confidence.",
-  distance: "Geography has filed a restraining order.",
+export const shameQuips: Record<ShameMetric | ExtraShameMetric, string> = {
+  avgYears: "Consistently wrong, on average.",
+  avgDistance: "Plays the map like darts. Blindfolded.",
+  years: "Carbon dating, but drunk.",
+  distance: "Wrong continent. Possibly wrong planet.",
   worstGame: "A five-picture cry for help.",
+  zeros: "Rock bottom has a counter.",
+  worstPicture: "One photo, no survivors.",
 };
 
 export function shameRankings(

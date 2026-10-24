@@ -111,6 +111,9 @@ test("tabs show one section at a time and remember it in the URL", async ({
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
     "A five-picture cry for help.",
   );
+  await expect(shame.locator('[data-metric="years"]')).toContainText(
+    "Carbon dating, but drunk.",
+  );
   await expect
     .poll(() =>
       shame
