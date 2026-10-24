@@ -24,6 +24,7 @@ import {
   Sun,
   ScrollText,
   Medal,
+  ChartColumn,
   Skull,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
@@ -48,6 +49,7 @@ import {
   type FameMetric,
 } from "./fame";
 import { PictureBreakdown } from "./PictureBreakdown";
+import { playerStats } from "./playerStats";
 import {
   gameReplayUrl,
   timeguessrGameId,
@@ -472,10 +474,14 @@ function FameBoard({
   profiles,
   results,
   games,
+  period,
+  controls,
 }: {
   profiles: Profile[];
   results: Result[];
   games: Game[];
+  period: StandingsPeriod;
+  controls: ReactNode;
 }) {
   const decimals = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
   return (
@@ -483,19 +489,20 @@ function FameBoard({
       className="shame-section fame-section"
       aria-labelledby="fame-heading"
     >
-      <div className="section-heading">
+      <div className="section-heading standings-heading">
         <div>
           <h2 id="fame-heading">The hall of fame</h2>
-          <p>Brief moments of competence. We’re as surprised as you are.</p>
+          <p>The club’s best records.</p>
         </div>
+        {controls}
       </div>
       <div className="board shame-board fame-board">
         <table className="shame-table" aria-label="Hall of fame records">
           <thead>
             <tr>
-              <th scope="col">The honour</th>
-              <th scope="col">The suspect</th>
-              <th scope="col">The evidence</th>
+              <th scope="col">Record</th>
+              <th scope="col">Player</th>
+              <th scope="col">Value</th>
             </tr>
           </thead>
           <tbody>
@@ -528,7 +535,7 @@ function FameBoard({
                               <small>
                                 {game
                                   ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
-                                  : metric === "streak" || metric === "games"
+                                  : metric === "streak"
                                     ? `${row.samples} games played`
                                     : `${row.samples} pictures recorded`}
                               </small>
@@ -567,10 +574,93 @@ function FameBoard({
           </tbody>
         </table>
         <div className="board-foot">
-          Ties share the glory. Averages need {minimumAveragePictures} detailed
-          pictures. Enjoy it while it lasts.
+          {periodLabels[period]} records · Ties share a record · Averages need{" "}
+          {minimumAveragePictures} detailed pictures
         </div>
       </div>
+    </section>
+  );
+}
+
+function PlayerStats({
+  profiles,
+  results,
+  period,
+  controls,
+}: {
+  profiles: Profile[];
+  results: Result[];
+  period: StandingsPeriod;
+  controls: ReactNode;
+}) {
+  const format = (value: number | null, digits = 0, unit = "") =>
+    value === null
+      ? "—"
+      : `${new Intl.NumberFormat("en", { maximumFractionDigits: digits }).format(value)}${unit}`;
+  const rows = playerStats(profiles, results);
+  return (
+    <section className="player-stats" aria-labelledby="stats-heading">
+      <div className="section-heading standings-heading">
+        <div>
+          <h2 id="stats-heading">Player stats</h2>
+          <p>{periodLabels[period]} numbers for every player.</p>
+        </div>
+        {controls}
+      </div>
+      {!rows.length ? (
+        <div className="board empty">
+          <Users size={28} />
+          <strong>No games in this period.</strong>
+        </div>
+      ) : (
+        <div className="stats-grid">
+          {rows.map((row) => (
+            <article
+              className="board stats-card"
+              key={row.id}
+              aria-label={`${row.display_name} stats`}
+            >
+              <div className="player">
+                <Avatar profile={row} />
+                <span>
+                  <strong>{row.display_name}</strong>
+                  <small>@{row.username}</small>
+                </span>
+              </div>
+              <dl>
+                <dt>Games</dt>
+                <dd>{row.games}</dd>
+                <dt>Wins</dt>
+                <dd>
+                  {row.wins} <small>{row.winRate.toFixed(1)}%</small>
+                </dd>
+                <dt>Average game</dt>
+                <dd>{format(row.average)}</dd>
+                <dt>Best game</dt>
+                <dd>{format(row.bestGame)}</dd>
+                <dt>Worst game</dt>
+                <dd>{format(row.worstGame)}</dd>
+                <dt>Detailed pictures</dt>
+                <dd>{row.pictures}</dd>
+                <dt>Average picture</dt>
+                <dd>{format(row.avgPicture)}</dd>
+                <dt>Average years off</dt>
+                <dd>{format(row.avgYears, 1)}</dd>
+                <dt>Average distance</dt>
+                <dd>{format(row.avgDistance, 1, " km")}</dd>
+                <dt>Closest guess</dt>
+                <dd>{format(row.closest, 2, " km")}</dd>
+                <dt>Exact years</dt>
+                <dd>{row.exactYears}</dd>
+                <dt>Perfect pictures</dt>
+                <dd>{row.perfect}</dd>
+                <dt>Zero-point pictures</dt>
+                <dd>{row.zeros}</dd>
+              </dl>
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -679,8 +769,9 @@ function Modal({
 export type Layout = "classic" | "tabs" | "sidebar";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
-  fame: { label: "Hall of fame", icon: Medal },
   shame: { label: "Hall of shame", icon: Skull },
+  fame: { label: "Hall of fame", icon: Medal },
+  stats: { label: "Player stats", icon: ChartColumn },
   history: { label: "History", icon: CalendarDays },
 } as const;
 type LabTab = keyof typeof labTabs;
@@ -1007,6 +1098,11 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
       randomGames[Math.floor(Math.random() * randomGames.length)];
     if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
   }
+  useEffect(() => {
+    const sync = () => setTab(tabFromHash());
+    addEventListener("hashchange", sync);
+    return () => removeEventListener("hashchange", sync);
+  }, []);
   function openTab(next: LabTab) {
     setTab(next);
     history.replaceState(null, "", `${location.search}#${next}`);
@@ -1128,6 +1224,34 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
       )}
     </>
   );
+  const standingsControls = (
+    <div className="standings-controls">
+      <label className="period-picker">
+        <span>Period</span>
+        <select
+          aria-label="Standings period"
+          value={standingsPeriod}
+          onChange={(e) =>
+            setStandingsPeriod(e.target.value as StandingsPeriod)
+          }
+        >
+          {Object.entries(periodLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        className="icon-button"
+        aria-label="Refresh standings"
+        onClick={() => void load()}
+        disabled={loading || !configured}
+      >
+        <RefreshCw size={18} className={loading ? "spin" : ""} />
+      </button>
+    </div>
+  );
   const standingsPanel = (
     <>
       <div className="section-heading standings-heading">
@@ -1135,32 +1259,7 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
           <h2>The standings</h2>
           <p>Someone has to finish last. We’re keeping receipts.</p>
         </div>
-        <div className="standings-controls">
-          <label className="period-picker">
-            <span>Period</span>
-            <select
-              aria-label="Standings period"
-              value={standingsPeriod}
-              onChange={(e) =>
-                setStandingsPeriod(e.target.value as StandingsPeriod)
-              }
-            >
-              {Object.entries(periodLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="icon-button"
-            aria-label="Refresh standings"
-            onClick={() => void load()}
-            disabled={loading || !configured}
-          >
-            <RefreshCw size={18} className={loading ? "spin" : ""} />
-          </button>
-        </div>
+        {standingsControls}
       </div>
       <div className="boards" aria-busy={loading}>
         <Board rows={rows} kind="wins" period={standingsPeriod} />
@@ -1364,8 +1463,24 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
   );
   const panels: Record<LabTab, ReactNode> = {
     standings: standingsPanel,
-    fame: <FameBoard profiles={profiles} results={results} games={games} />,
+    fame: (
+      <FameBoard
+        profiles={profiles}
+        results={resultsForPeriod(games, results, standingsPeriod)}
+        games={games}
+        period={standingsPeriod}
+        controls={standingsControls}
+      />
+    ),
     shame: shamePanel,
+    stats: (
+      <PlayerStats
+        profiles={profiles}
+        results={resultsForPeriod(games, results, standingsPeriod)}
+        period={standingsPeriod}
+        controls={standingsControls}
+      />
+    ),
     history: historyPanel,
   };
   const tabNav = (

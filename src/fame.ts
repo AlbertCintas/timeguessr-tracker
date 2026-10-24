@@ -5,56 +5,44 @@ export const minimumAveragePictures = 20;
 export const fameMetrics = {
   avgYears: {
     label: "Human carbon dating",
-    description:
-      "Lowest average years off per picture. Dates photos perfectly. Still can’t get a date.",
+    description: "Lowest average years off per picture.",
     unit: "years avg",
     ascending: true,
   },
   avgDistance: {
-    label: "Walking GPS",
-    description:
-      "Lowest average distance per picture. Always knows where they are. Nobody asked.",
+    label: "Human GPS",
+    description: "Lowest average distance per picture.",
     unit: "km avg",
     ascending: true,
   },
   exactYears: {
-    label: "Most bang-on years",
-    description:
-      "Pictures guessed to the exact year. Suspiciously like they were there.",
+    label: "Most exact years",
+    description: "Pictures guessed to the exact year.",
     unit: "exact",
     ascending: false,
   },
   closest: {
     label: "Closest guess",
-    description:
-      "Smallest single-picture distance. Closer than their family has ever been.",
+    description: "Smallest distance on a single picture.",
     unit: "km",
     ascending: true,
   },
   bestGame: {
     label: "Best game",
-    description: "Highest game total. Peaked. It’s all downhill from here.",
+    description: "Highest game total.",
     unit: "pts",
     ascending: false,
   },
   perfect: {
     label: "Most perfect pictures",
-    description:
-      "Pictures scoring the full 10,000. Flawless. Enjoy it, it won’t last.",
+    description: "Pictures scoring the full 10,000 points.",
     unit: "perfect",
     ascending: false,
   },
   streak: {
     label: "Longest daily win streak",
-    description:
-      "Consecutive daily challenges won. A dynasty. Ends when they get a social life.",
+    description: "Consecutive daily challenges won. Ties count as wins.",
     unit: "days",
-    ascending: false,
-  },
-  games: {
-    label: "Most games played",
-    description: "Games on record. Touch grass. Please.",
-    unit: "games",
     ascending: false,
   },
 } as const;
@@ -173,12 +161,10 @@ export function fameRankings(
                         scores.length,
                         scores.filter((s) => s.value === 10000).length,
                       )
-                    : metric === "streak"
-                      ? total(
-                          entries.length,
-                          longestDailyStreak(entries, results, games),
-                        )
-                      : total(entries.length, entries.length);
+                    : total(
+                        entries.length,
+                        longestDailyStreak(entries, results, games),
+                      );
       return record ? [{ ...profile, ...record }] : [];
     })
     .sort(

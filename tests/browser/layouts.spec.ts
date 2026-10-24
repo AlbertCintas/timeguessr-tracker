@@ -82,12 +82,38 @@ test("top tabs show one section at a time and remember it in the URL", async ({
   await expect(fame.locator('[data-metric="bestGame"]')).toContainText(
     "Daily · 11/10/26",
   );
+  await expect(page.getByText("All time records")).toBeVisible();
+  await page.getByLabel("Standings period").selectOption("last7");
+  await expect(fame.locator('[data-metric="bestGame"]')).toContainText(
+    "No scores yet",
+  );
+  await expect(page.getByText("Last 7 days records")).toBeVisible();
+  await page.getByLabel("Standings period").selectOption("all");
   await page.screenshot({
     path: `/private/tmp/timeguessr-lab-tabs-${test.info().project.name}.png`,
     fullPage: true,
   });
   await page.reload();
   await expect(fame).toBeVisible();
+  await expect(sections.getByRole("button")).toHaveText([
+    "Standings",
+    "Hall of shame",
+    "Hall of fame",
+    "Player stats",
+    "History",
+  ]);
+  await sections.getByRole("button", { name: "Player stats" }).click();
+  const alice = page.getByRole("article", { name: "Alice stats" });
+  await expect(alice).toContainText("Games4");
+  await expect(alice).toContainText("Exact years5");
+  await expect(alice).toContainText("Average distance12.5 km");
+  await expect(page.getByRole("article", { name: "Bob stats" })).toContainText(
+    "Detailed pictures0",
+  );
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-lab-stats-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   await sections.getByRole("button", { name: "History" }).click();
   await expect(
     page.getByRole("heading", { name: /Game history/ }),

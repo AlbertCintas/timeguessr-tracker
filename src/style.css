@@ -1590,3 +1590,38 @@ textarea:focus-visible {
     width: 40%;
   }
 }
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+.stats-card {
+  padding: 22px 24px;
+}
+.stats-card dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  margin: 18px 0 0;
+  font-size: 12px;
+}
+.stats-card dt,
+.stats-card dd {
+  margin: 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.stats-card dt {
+  color: var(--muted);
+}
+.stats-card dd {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.stats-card dd small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.player-stats > .empty {
+  padding: 40px;
+}

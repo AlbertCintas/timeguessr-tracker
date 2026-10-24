@@ -124,8 +124,4 @@ test("daily win streaks break on a loss or a missed day", () => {
     ["a", 2, 1],
     ["b", 2, 1],
   ]);
-  assert.deepEqual(top("games", results, games), [
-    ["a", 4, 1],
-    ["b", 4, 1],
-  ]);
 });
