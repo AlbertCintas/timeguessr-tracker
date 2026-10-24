@@ -40,10 +40,17 @@ import {
 } from "./scoring";
 import type { Game, Profile, Result, Standing, PictureResult } from "./types";
 import { parseTimeguessrResults } from "./importResults";
-import { shameMetrics, shameRankings, type ShameMetric } from "./shame";
+import {
+  extraShameMetrics,
+  shameMetrics,
+  shameRankings,
+  type ExtraShameMetric,
+  type ShameMetric,
+} from "./shame";
 import {
   fameMetrics,
   fameRankings,
+  recordRankings,
   hiddenWhenZero,
   minimumAveragePictures,
   type FameMetric,
@@ -385,13 +392,26 @@ function ShameBoard({
   games,
   period,
   controls,
+  extended = false,
 }: {
   profiles: Profile[];
   results: Result[];
   games: Game[];
   period?: StandingsPeriod;
   controls?: ReactNode;
+  extended?: boolean;
 }) {
+  const metrics: (ShameMetric | ExtraShameMetric)[] = extended
+    ? [
+        "avgYears",
+        "avgDistance",
+        "years",
+        "distance",
+        "worstGame",
+        "zeros",
+        "worstPicture",
+      ]
+    : (Object.keys(shameMetrics) as ShameMetric[]);
   return (
     <section className="shame-section" aria-labelledby="shame-heading">
       <div className={`section-heading${controls ? " standings-heading" : ""}`}>
@@ -411,12 +431,24 @@ function ShameBoard({
             </tr>
           </thead>
           <tbody>
-            {(Object.keys(shameMetrics) as ShameMetric[]).map((metric) => {
-              const definition = shameMetrics[metric];
-              const rows = shameRankings(profiles, results, metric);
+            {metrics.map((metric) => {
+              const extra = metric in extraShameMetrics;
+              const definition = extra
+                ? extraShameMetrics[metric as ExtraShameMetric]
+                : shameMetrics[metric as ShameMetric];
+              const rows = extra
+                ? recordRankings(
+                    profiles,
+                    results,
+                    games,
+                    metric as ExtraShameMetric,
+                    false,
+                  )
+                : shameRankings(profiles, results, metric as ShameMetric);
               if (metric === "zeros" && !rows.some((row) => row.value > 0))
                 return null;
               const winners = rows.filter((row) => row.rank === 1);
+              const average = metric === "avgYears" || metric === "avgDistance";
               return (
                 <tr key={metric} data-metric={metric}>
                   <th scope="row" title={definition.description}>
@@ -446,7 +478,9 @@ function ShameBoard({
                       <span className="shame-missing">
                         {metric === "worstGame"
                           ? "No scores yet"
-                          : "No picture details yet"}
+                          : average
+                            ? `Nobody has ${minimumAveragePictures} detailed pictures yet`
+                            : "No picture details yet"}
                       </span>
                     )}
                   </td>
@@ -454,7 +488,7 @@ function ShameBoard({
                     {winners.length ? (
                       <>
                         {new Intl.NumberFormat("en", {
-                          maximumFractionDigits: 3,
+                          maximumFractionDigits: average ? 1 : 3,
                         }).format(winners[0].value)}{" "}
                         <small>{definition.unit}</small>
                       </>
@@ -523,9 +557,9 @@ function FameBoard({
                 <tr key={metric} data-metric={metric}>
                   <th scope="row">
                     {definition.label}
-                    <small className="fame-blurb">
-                      {definition.description}
-                    </small>
+                    {definition.quip && (
+                      <small className="fame-blurb">{definition.quip}</small>
+                    )}
                   </th>
                   <td>
                     {winners.length ? (
@@ -772,7 +806,7 @@ function Modal({
     </div>
   );
 }
-export type Layout = "classic" | "tabs" | "sidebar";
+export type Layout = "classic" | "tabs";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -1095,15 +1129,6 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
   useEffect(() => {
     setHistoryPage((page) => Math.min(page, historyPages - 1));
   }, [historyPages]);
-  function playRandomGame() {
-    if (!session) {
-      setModal("login");
-      return;
-    }
-    const selected =
-      randomGames[Math.floor(Math.random() * randomGames.length)];
-    if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
-  }
   useEffect(() => {
     const sync = () => setTab(tabFromHash());
     addEventListener("hashchange", sync);
@@ -1151,7 +1176,16 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
             disabled={
               !configured || loading || (!!session && !randomGames.length)
             }
-            onClick={playRandomGame}
+            onClick={() => {
+              if (!session) {
+                setModal("login");
+                return;
+              }
+              const selected =
+                randomGames[Math.floor(Math.random() * randomGames.length)];
+              if (selected)
+                window.open(selected.url, "_blank", "noopener,noreferrer");
+            }}
           >
             <Shuffle size={17} /> Play random unplayed game
           </button>
@@ -1485,6 +1519,7 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
         games={games}
         period={standingsPeriod}
         controls={standingsControls}
+        extended
       />
     ),
     stats: (
@@ -1574,7 +1609,7 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
           {historyPanel}
           {footer}
         </main>
-      ) : layout === "tabs" ? (
+      ) : (
         <main className="lab-main">
           {intro}
           {alerts}
@@ -1582,59 +1617,6 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
           <div className="lab-panel">{panels[tab]}</div>
           {footer}
         </main>
-      ) : (
-        <div className="lab-shell">
-          <aside className="lab-sidebar">
-            <div className="lab-side-intro">
-              <div className="eyebrow intro-label">
-                <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
-              </div>
-              <strong>
-                History is dead. <span>So is your score.</span>
-              </strong>
-              <div className="date-stamp">
-                <CalendarDays size={16} />
-                {europeanDate(madridToday())}
-              </div>
-            </div>
-            <div className="lab-side-actions">
-              <button
-                className="primary"
-                onClick={() => openScore()}
-                disabled={!configured}
-              >
-                <Plus size={19} /> Add your score
-              </button>
-              <button
-                className="subtle-button"
-                disabled={
-                  !configured || loading || (!!session && !randomGames.length)
-                }
-                onClick={playRandomGame}
-              >
-                <Shuffle size={17} /> Random unplayed game
-              </button>
-              <button
-                className="subtle-button"
-                onClick={() => setModal("extension")}
-              >
-                <Download size={17} /> Browser extension
-              </button>
-              <button
-                className="subtle-button"
-                onClick={() => setModal("rules")}
-              >
-                <ScrollText size={17} /> The rules
-              </button>
-            </div>
-            {tabNav}
-          </aside>
-          <main className="lab-main">
-            {alerts}
-            <div className="lab-panel">{panels[tab]}</div>
-            {footer}
-          </main>
-        </div>
       )}
       {modal && (
         <Modal

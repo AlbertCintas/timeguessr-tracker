@@ -47,7 +47,7 @@ async function serve(page: Page, aliceGames: number) {
   });
 }
 
-test("top tabs show one section at a time and remember it in the URL", async ({
+test("tabs show one section at a time and remember it in the URL", async ({
   page,
 }) => {
   await serve(page, 4);
@@ -105,6 +105,23 @@ test("top tabs show one section at a time and remember it in the URL", async ({
   await sections.getByRole("button", { name: "Hall of shame" }).click();
   const shame = page.getByRole("table", { name: "Hall of shame records" });
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
+  await expect(shame.locator('[data-metric="avgYears"]')).toContainText(
+    "3 years avg",
+  );
+  await expect
+    .poll(() =>
+      shame
+        .locator("tbody tr")
+        .evaluateAll((rows) => rows.map((row) => row.dataset.metric)),
+    )
+    .toEqual([
+      "avgYears",
+      "avgDistance",
+      "years",
+      "distance",
+      "worstGame",
+      "worstPicture",
+    ]);
   await page.getByLabel("Standings period").selectOption("last7");
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
     "No scores yet",
@@ -135,40 +152,23 @@ test("top tabs show one section at a time and remember it in the URL", async ({
   ).toBe(true);
 });
 
-test("sidebar variant keeps the actions and hides averages below 20 pictures", async ({
+test("average records stay empty below 20 detailed pictures", async ({
   page,
 }) => {
   await serve(page, 3);
-  await page.goto("./layouts.html?layout=sidebar#fame");
-  await expect(
-    page.getByRole("button", { name: "B · Sidebar" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("button", { name: "Add your score" }),
-  ).toBeVisible();
+  await page.goto("./layouts.html#fame");
   const fame = page.getByRole("table", { name: "Hall of fame records" });
   await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
     "Nobody has 20 detailed pictures yet",
   );
   await expect(fame.locator('[data-metric="closest"]')).toContainText("Alice");
-  await expect(
-    page.getByRole("navigation", { name: "Sections" }).getByRole("button", {
-      name: "Hall of shame",
-    }),
-  ).toBeVisible();
-  await page.screenshot({
-    path: `/private/tmp/timeguessr-lab-sidebar-${test.info().project.name}.png`,
-    fullPage: true,
-  });
-  await page.getByRole("button", { name: "A · Top tabs" }).click();
-  await expect(page).toHaveURL(/\?layout=tabs#fame$/);
-  await expect(
-    page.getByRole("heading", { name: /History is dead/ }),
-  ).toBeVisible();
-  await expect(fame).toBeVisible();
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
-  ).toBe(true);
+  await page
+    .getByRole("navigation", { name: "Sections" })
+    .getByRole("button", { name: "Hall of shame" })
+    .click();
+  const shame = page.getByRole("table", { name: "Hall of shame records" });
+  await expect(shame.locator('[data-metric="avgDistance"]')).toContainText(
+    "Nobody has 20 detailed pictures yet",
+  );
+  await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });

@@ -4,44 +4,44 @@ export const minimumAveragePictures = 20;
 
 export const fameMetrics = {
   avgYears: {
-    label: "Human carbon dating",
-    description: "Lowest average years off per picture.",
+    label: "Lowest average years off",
+    quip: null,
     unit: "years avg",
     ascending: true,
   },
   avgDistance: {
-    label: "Human GPS",
-    description: "Lowest average distance per picture.",
+    label: "Lowest average distance",
+    quip: "Always knows where they are. Nobody asked.",
     unit: "km avg",
     ascending: true,
   },
   exactYears: {
     label: "Most exact years",
-    description: "Pictures guessed to the exact year.",
+    quip: null,
     unit: "exact",
     ascending: false,
   },
   closest: {
     label: "Closest guess",
-    description: "Smallest distance on a single picture.",
+    quip: "Closer than their family has ever been.",
     unit: "km",
     ascending: true,
   },
   bestGame: {
     label: "Best game",
-    description: "Highest game total.",
+    quip: "Peaked. It’s all downhill from here.",
     unit: "pts",
     ascending: false,
   },
   perfect: {
     label: "Most perfect pictures",
-    description: "Pictures scoring the full 10,000 points.",
+    quip: null,
     unit: "perfect",
     ascending: false,
   },
   streak: {
     label: "Longest daily win streak",
-    description: "Consecutive daily challenges won. Ties count as wins.",
+    quip: "Touch grass.",
     unit: "days",
     ascending: false,
   },
@@ -62,7 +62,7 @@ function longestDailyStreak(
   const best = new Map<string, number>();
   for (const r of results)
     best.set(r.game_id, Math.max(best.get(r.game_id) ?? -1, r.points));
-  const wonDates = entries
+  const dates = entries
     .filter((entry) => entry.points === best.get(entry.game_id))
     .map((entry) => games.find((game) => game.id === entry.game_id))
     .filter((game) => game?.kind === "daily" && game.daily_date)
@@ -70,21 +70,34 @@ function longestDailyStreak(
     .sort((a, b) => a - b);
   let longest = 0,
     current = 0;
-  wonDates.forEach((date, index) => {
-    current =
-      index && date - wonDates[index - 1] === 86_400_000 ? current + 1 : 1;
+  dates.forEach((date, index) => {
+    current = index && date - dates[index - 1] === 86_400_000 ? current + 1 : 1;
     longest = Math.max(longest, current);
   });
   return longest;
 }
 
-export function fameRankings(
+export const fameRankings = (
   profiles: Profile[],
   results: Result[],
   games: Game[],
   metric: FameMetric,
+) =>
+  recordRankings(
+    profiles,
+    results,
+    games,
+    metric,
+    fameMetrics[metric].ascending,
+  );
+
+export function recordRankings(
+  profiles: Profile[],
+  results: Result[],
+  games: Game[],
+  metric: FameMetric,
+  ascending: boolean,
 ) {
-  const { ascending } = fameMetrics[metric];
   const rows = profiles
     .flatMap((profile) => {
       const entries = results.filter(
