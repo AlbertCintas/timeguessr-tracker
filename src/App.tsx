@@ -25,6 +25,9 @@ import {
   ScrollText,
   Medal,
   ChartColumn,
+  Ellipsis,
+  ChevronDown,
+  UserRound,
   Skull,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
@@ -230,7 +233,7 @@ function ManualExtensionInstall() {
     </>
   );
 }
-function ThemeToggle() {
+function ThemeToggle({ label = false }: { label?: boolean }) {
   const [dark, setDark] = useState(
     document.documentElement.dataset.theme !== "light",
   );
@@ -245,14 +248,17 @@ function ThemeToggle() {
   }, [dark]);
   return (
     <button
-      className="icon-button theme-toggle"
+      className={
+        label ? "subtle-button theme-toggle" : "icon-button theme-toggle"
+      }
       role="switch"
       aria-label="Dark mode"
       aria-checked={dark}
       title={dark ? "Switch to light mode" : "Switch to dark mode"}
       onClick={() => setDark(!dark)}
     >
-      {dark ? <Sun size={20} /> : <Moon size={20} />}
+      {dark ? <Sun size={label ? 17 : 20} /> : <Moon size={label ? 17 : 20} />}
+      {label && (dark ? " Light mode" : " Dark mode")}
     </button>
   );
 }
@@ -813,7 +819,7 @@ function Modal({
   );
 }
 export type Layout = "classic" | "tabs";
-export type Hero = "current" | "tabsbar" | "actionbar" | "appbar";
+export type Hero = "b1" | "b2" | "b3" | "b4";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -828,7 +834,7 @@ const tabFromHash = (): LabTab =>
     : "standings";
 export default function App({
   layout = "classic",
-  hero = "current",
+  hero = "b1",
 }: {
   layout?: Layout;
   hero?: Hero;
@@ -1244,18 +1250,47 @@ export default function App({
       </div>
     </section>
   );
-  const today = madridToday();
-  const todayGame = games.find(
-    (game) => game.kind === "daily" && game.daily_date === today,
+  const brand = (
+    <a className="brand" href={import.meta.env.BASE_URL}>
+      <span className="brand-icon">
+        <Clock3 size={24} />
+      </span>
+      <span>
+        timeguessr<span className="brand-club">club</span>
+      </span>
+    </a>
   );
-  const todayEntries = results
-    .filter((result) => result.game_id === todayGame?.id)
-    .sort((a, b) => b.points - a.points);
-  const myToday = todayEntries.find(
-    (entry) => entry.player_id === session?.user.id,
-  );
-  const todayLeaders = todayEntries.filter(
-    (entry) => entry.points === todayEntries[0].points,
+  const account = (
+    <>
+      <ThemeToggle />
+      {session ? (
+        <>
+          <button
+            className="profile-button"
+            onClick={() => {
+              setDisplayName(me?.display_name || "");
+              setModal("profile");
+            }}
+          >
+            <Avatar profile={me} />
+            <span>{me?.display_name || "My profile"}</span>
+          </button>
+          {admin && (
+            <button
+              className="icon-button"
+              aria-label="Manage club"
+              onClick={() => setModal("admin")}
+            >
+              <Settings size={20} />
+            </button>
+          )}
+        </>
+      ) : (
+        <button className="subtle-button" onClick={() => setModal("login")}>
+          <LogIn size={17} /> Sign in
+        </button>
+      )}
+    </>
   );
   const playRandom = () => {
     if (!session) {
@@ -1266,64 +1301,38 @@ export default function App({
       randomGames[Math.floor(Math.random() * randomGames.length)];
     if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
   };
-  const randomDisabled =
-    !configured || loading || (!!session && !randomGames.length);
-  const todaySummary = (
-    <p className="today-summary" aria-label="Today’s daily">
-      <span className="eyebrow">TODAY’S DAILY</span>
-      {todayEntries.length ? (
-        <span>
-          <strong>
-            {todayLeaders
-              .map(
-                (entry) =>
-                  profiles.find((p) => p.id === entry.player_id)?.display_name,
-              )
-              .join(", ")}
-          </strong>{" "}
-          {todayLeaders.length > 1 ? "lead" : "leads"} with{" "}
-          {number.format(todayEntries[0].points)} · {todayEntries.length} played
-        </span>
-      ) : (
-        <span>Nobody has played yet. First blood is yours.</span>
-      )}
-      {session && (
-        <span className="today-you">
-          {myToday
-            ? `You: ${number.format(myToday.points)} · #${
-                todayEntries.findIndex(
-                  (entry) => entry.points === myToday.points,
-                ) + 1
-              } of ${todayEntries.length}`
-            : "You haven’t played today. Scared?"}
-        </span>
-      )}
-    </p>
+  const randomBar = (
+    <button
+      className="bar-action"
+      disabled={!configured || loading || (!!session && !randomGames.length)}
+      onClick={playRandom}
+      title="A random club game you haven’t played"
+      aria-label="Random game"
+    >
+      <Shuffle size={17} />
+      <span>Random game</span>
+    </button>
   );
-  const barActions = (
-    <>
-      <button
-        className="bar-action"
-        disabled={randomDisabled}
-        onClick={playRandom}
-        title="A random club game you haven’t played"
-      >
-        <Shuffle size={17} />
-        <span>Random game</span>
-      </button>
-      <button
-        className="bar-action"
-        onClick={() => setModal("extension")}
-        title="Saves your games automatically"
-      >
-        <Download size={17} />
-        <span>Extension</span>
-      </button>
-      <button className="bar-action" onClick={() => setModal("rules")}>
-        <ScrollText size={17} />
-        <span>Rules</span>
-      </button>
-    </>
+  const extensionBar = (
+    <button
+      className="bar-action"
+      onClick={() => setModal("extension")}
+      title="Saves your games automatically"
+      aria-label="Browser extension"
+    >
+      <Download size={17} />
+      <span>Browser extension</span>
+    </button>
+  );
+  const rulesBar = (
+    <button
+      className="bar-action"
+      onClick={() => setModal("rules")}
+      aria-label="Read the rules"
+    >
+      <ScrollText size={17} />
+      <span>Read the rules</span>
+    </button>
   );
   const barAddScore = (
     <button
@@ -1346,15 +1355,131 @@ export default function App({
       Play Timeguessr <ArrowUpRight size={16} />
     </a>
   );
-  const moreMenu = (
+  const playButton = (
+    <a
+      className="play-button"
+      href="https://timeguessr.com"
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Play Timeguessr"
+    >
+      <span>Play Timeguessr</span> <ArrowUpRight size={17} />
+    </a>
+  );
+  const menuAccount = session ? (
+    <>
+      <button
+        className="subtle-button"
+        onClick={() => {
+          setDisplayName(me?.display_name || "");
+          setModal("profile");
+        }}
+      >
+        <Avatar profile={me} />
+        <span>{me?.display_name || "My profile"}</span>
+      </button>
+      {admin && (
+        <button className="subtle-button" onClick={() => setModal("admin")}>
+          <Settings size={17} /> Manage club
+        </button>
+      )}
+    </>
+  ) : (
+    <button className="subtle-button" onClick={() => setModal("login")}>
+      <LogIn size={17} /> Sign in
+    </button>
+  );
+  const menu = (summary: ReactNode, label: string, items: ReactNode) => (
     <details className="more-menu">
-      <summary className="subtle-button">More</summary>
-      <div className="more-menu-list">
-        {barActions}
-        {playLink}
-      </div>
+      <summary className="menu-trigger" aria-label={label}>
+        {summary}
+      </summary>
+      <div className="more-menu-list">{items}</div>
     </details>
   );
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      for (const open of document.querySelectorAll("details.more-menu[open]"))
+        if (
+          !open.contains(event.target as Node) ||
+          (event.target as Element).closest(
+            ".more-menu-list button, .more-menu-list a",
+          )
+        )
+          open.removeAttribute("open");
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
+  const barNavs: Record<Hero, ReactNode> = {
+    b1: (
+      <nav>
+        {randomBar}
+        {extensionBar}
+        {rulesBar}
+        {barAddScore}
+        {menu(
+          <Ellipsis size={20} />,
+          "More options",
+          <>
+            {menuAccount}
+            <ThemeToggle label />
+            {playLink}
+          </>,
+        )}
+      </nav>
+    ),
+    b2: (
+      <nav>
+        {menu(
+          <>
+            <span>Tools</span> <ChevronDown size={16} />
+          </>,
+          "Tools",
+          <>
+            {randomBar}
+            {extensionBar}
+            {rulesBar}
+          </>,
+        )}
+        {playButton}
+        {barAddScore}
+        <span className="bar-divider" />
+        {account}
+      </nav>
+    ),
+    b3: (
+      <div className="bar-stack">
+        <div className="bar-utility">
+          {account}
+          {playLink}
+        </div>
+        <nav>
+          {randomBar}
+          {extensionBar}
+          {rulesBar}
+          {barAddScore}
+        </nav>
+      </div>
+    ),
+    b4: (
+      <nav>
+        {randomBar}
+        {playButton}
+        {barAddScore}
+        {menu(
+          session ? <Avatar profile={me} /> : <UserRound size={20} />,
+          "Account and settings",
+          <>
+            {menuAccount}
+            <ThemeToggle label />
+            {extensionBar}
+            {rulesBar}
+          </>,
+        )}
+      </nav>
+    ),
+  };
   const alerts = (
     <>
       {!configured && (
@@ -1679,48 +1804,6 @@ export default function App({
       })}
     </nav>
   );
-  const brand = (
-    <a className="brand" href={import.meta.env.BASE_URL}>
-      <span className="brand-icon">
-        <Clock3 size={24} />
-      </span>
-      <span>
-        timeguessr<span className="brand-club">club</span>
-      </span>
-    </a>
-  );
-  const account = (
-    <>
-      <ThemeToggle />
-      {session ? (
-        <>
-          <button
-            className="profile-button"
-            onClick={() => {
-              setDisplayName(me?.display_name || "");
-              setModal("profile");
-            }}
-          >
-            <Avatar profile={me} />
-            <span>{me?.display_name || "My profile"}</span>
-          </button>
-          {admin && (
-            <button
-              className="icon-button"
-              aria-label="Manage club"
-              onClick={() => setModal("admin")}
-            >
-              <Settings size={20} />
-            </button>
-          )}
-        </>
-      ) : (
-        <button className="subtle-button" onClick={() => setModal("login")}>
-          <LogIn size={17} /> Sign in
-        </button>
-      )}
-    </>
-  );
   return (
     <>
       {layout === "classic" ? (
@@ -1741,90 +1824,18 @@ export default function App({
             {footer}
           </main>
         </>
-      ) : hero === "current" ? (
+      ) : (
         <>
-          <header className="header">
-            {brand}
-            <nav>
-              {account}
-              {playLink}
-            </nav>
-          </header>
-          <main className="lab-main">
-            {intro}
-            {alerts}
-            {tabNav}
-            <div className="lab-panel">{panels[tab]}</div>
-            {footer}
-          </main>
-        </>
-      ) : hero === "tabsbar" ? (
-        <>
-          <header className="header bar-tabs">
-            {brand}
-            {tabNav}
-            <nav>
-              {barAddScore}
-              {account}
-            </nav>
-          </header>
-          <main className="lab-main">
-            <div className="subbar">
-              <p className="bar-tagline">
-                <strong>History is dead.</strong> So is your score.
-              </p>
-              <div className="subbar-actions">
-                {barActions}
-                {playLink}
-              </div>
-            </div>
-            {alerts}
-            <div className="lab-panel">{panels[tab]}</div>
-            {footer}
-          </main>
-        </>
-      ) : hero === "actionbar" ? (
-        <>
-          <header className="header bar-actions">
+          <header className={`header bar-actions bar-${hero}`}>
             <div className="brand-block">
               {brand}
               <small>History is dead. So is your score.</small>
             </div>
-            <nav>
-              {barActions}
-              {barAddScore}
-              {account}
-              {playLink}
-            </nav>
+            {barNavs[hero]}
           </header>
           <main className="lab-main">
             {alerts}
             {tabNav}
-            <div className="lab-panel">{panels[tab]}</div>
-            {footer}
-          </main>
-        </>
-      ) : (
-        <>
-          <header className="appbar">
-            <div className="header appbar-top">
-              <div className="brand-block">
-                {brand}
-                <small>History is dead. So is your score.</small>
-              </div>
-              {todaySummary}
-              <nav>
-                {barAddScore}
-                {account}
-              </nav>
-            </div>
-            <div className="appbar-tabs">
-              {tabNav}
-              {moreMenu}
-            </div>
-          </header>
-          <main className="lab-main">
-            {alerts}
             <div className="lab-panel">{panels[tab]}</div>
             {footer}
           </main>

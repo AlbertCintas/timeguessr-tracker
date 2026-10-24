@@ -1519,46 +1519,10 @@ textarea:focus-visible {
   background: var(--gold);
   color: var(--bg);
 }
-.more-menu {
-  position: relative;
-}
-.more-menu summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 12px 8px;
-}
-.more-menu summary::-webkit-details-marker {
-  display: none;
-}
-.more-menu-list {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 12;
-  display: grid;
-  min-width: 220px;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: 0 8px 20px var(--shadow);
-}
-.more-menu-list .subtle-button {
+.bar-actions nav {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-height: 40px;
-}
-@media (max-width: 680px) {
-  .lab-switcher {
-    left: 8px;
-    right: 8px;
-    justify-content: space-between;
-  }
-  .lab-switcher button {
-    padding: 7px 6px;
-    font-size: 10px;
-  }
+  gap: 18px;
 }
 .bar-action {
   display: flex;
@@ -1571,7 +1535,8 @@ textarea:focus-visible {
   font-weight: 600;
   white-space: nowrap;
 }
-.bar-action:hover {
+.bar-action:hover,
+.play-button:hover {
   color: var(--gold);
 }
 .bar-add {
@@ -1579,6 +1544,24 @@ textarea:focus-visible {
   align-items: center;
   gap: 7px;
   padding: 10px 16px;
+  white-space: nowrap;
+}
+.play-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.bar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+.bar-actions nav .subtle-button {
   white-space: nowrap;
 }
 .brand-block {
@@ -1591,176 +1574,143 @@ textarea:focus-visible {
   font-size: 11px;
   font-weight: 600;
 }
-.bar-tabs {
-  gap: 24px;
-}
-.bar-tabs .lab-tabs {
-  flex: 1;
-  max-width: 660px;
-  margin: 0;
-  padding: 4px;
-  border: 0;
-  background: transparent;
-}
-.bar-tabs .lab-tab {
-  min-height: 40px;
-  padding: 0 10px;
-  gap: 6px;
-  font-size: 13px;
-  white-space: nowrap;
-}
-.bar-tabs nav,
-.bar-actions nav {
-  gap: 18px;
-}
-.subbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 24px;
-  margin-bottom: 30px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
-.bar-tagline {
-  margin: 0;
-  color: var(--green);
-  font:
-    600 15px Manrope,
-    sans-serif;
-}
-.bar-tagline strong {
-  color: var(--text);
-}
-.subbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
 .bar-actions ~ .lab-main {
   padding-top: 30px;
 }
-.today-summary {
+.bar-stack {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+.bar-utility {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
-  margin: 0;
-  font-size: 13px;
+  gap: 14px;
+  font-size: 12px;
 }
-.today-summary .eyebrow {
-  color: var(--gold);
+.bar-utility .icon-button {
+  padding: 4px;
 }
-.today-you {
+.bar-utility .subtle-button,
+.bar-utility .profile-button {
+  padding: 2px 0;
+  font-size: 12px;
   color: var(--muted);
 }
-.appbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+.bar-utility .external {
+  padding-left: 14px;
 }
-.appbar .appbar-top {
-  gap: 24px;
-  height: 80px;
-  border-bottom: 0;
+.bar-b3 {
+  height: 96px;
 }
-.appbar .today-summary {
-  flex: 1;
-  justify-content: center;
+.more-menu {
+  position: relative;
 }
-.appbar-tabs {
-  max-width: 1156px;
-  margin: auto;
+.menu-trigger {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 10px;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
 }
-.appbar-tabs .lab-tabs {
-  flex: 1;
-  margin: 0;
+.menu-trigger::-webkit-details-marker {
+  display: none;
 }
-.appbar ~ .lab-main {
-  padding-top: 30px;
+.menu-trigger:hover,
+.more-menu[open] .menu-trigger {
+  color: var(--gold);
 }
-@media (max-width: 1240px) {
-  .appbar-tabs {
-    margin: 0 42px;
-  }
+.menu-trigger .avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 10px;
+}
+.more-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  min-width: 230px;
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 8px 20px var(--shadow);
+}
+.bar-b2 .more-menu-list {
+  left: 0;
+  right: auto;
+}
+.more-menu-list > * {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  padding: 0;
+}
+.more-menu-list .bar-action span {
+  display: inline;
+}
+.more-menu-list .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 9px;
+}
+.more-menu-list .external {
+  border-left: 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
 }
 @media (max-width: 1150px) {
-  .bar-tabs .brand > span:last-child {
-    display: none;
-  }
-  .bar-actions .bar-action span {
+  .bar-b1 nav > .bar-action span,
+  .bar-b3 nav > .bar-action span,
+  .bar-b4 nav > .bar-action span {
     display: none;
   }
 }
 @media (max-width: 900px) {
   .bar-add span,
-  .bar-tabs .lab-tab svg {
+  .play-button span {
     display: none;
   }
-  .bar-add {
+  .bar-add,
+  .play-button {
     padding: 10px 12px;
   }
-  .appbar .today-summary {
-    display: none;
-  }
 }
 @media (max-width: 680px) {
-  .brand-block small {
-    display: none;
+  .lab-switcher {
+    left: 8px;
+    right: 8px;
+    justify-content: space-between;
   }
-  .bar-tabs .lab-tab svg {
-    display: block;
-  }
-  .bar-tabs .lab-tabs {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 15;
-    max-width: none;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--border);
-    border-radius: 0;
-    background: var(--surface);
-  }
-  .bar-tabs .lab-tab {
-    padding: 6px 2px;
+  .lab-switcher button {
+    padding: 7px 6px;
     font-size: 10px;
-    white-space: normal;
   }
-  .bar-tabs ~ .lab-main {
-    padding-bottom: 90px;
-  }
-  .bar-tabs ~ .lab-switcher {
-    bottom: 84px;
-  }
-  .subbar-actions {
-    gap: 16px;
-  }
-  .bar-actions .brand > span:last-child {
+  .brand-block small,
+  .bar-actions .brand > span:last-child,
+  .bar-divider {
     display: none;
   }
-  .appbar .appbar-top {
-    height: 70px;
+  .bar-actions nav {
+    gap: 10px;
   }
-  .appbar-tabs {
-    margin: 0 20px;
+  .bar-b3 {
+    height: 84px;
   }
-}
-.bar-tabs nav .subtle-button,
-.bar-actions nav .subtle-button,
-.appbar nav .subtle-button {
-  white-space: nowrap;
-}
-@media (max-width: 680px) {
-  .appbar .brand > span:last-child {
+  .bar-utility .profile-button > span:last-child {
     display: none;
+  }
+  .more-menu-list .external {
+    display: flex;
+  }
+  .more-menu-list .profile-button > span:last-child {
+    display: inline;
   }
 }

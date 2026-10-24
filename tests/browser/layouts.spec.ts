@@ -179,18 +179,18 @@ test("average records stay empty below 20 detailed pictures", async ({
   await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });
 
-test("header options keep the score button and the tabs", async ({ page }) => {
+test("every B variant reaches every control without horizontal scroll", async ({
+  page,
+}) => {
   await serve(page, 4);
-  await page.goto("./layouts.html?hero=appbar");
-  await expect(page.getByLabel("Today’s daily")).toContainText(
-    "Nobody has played yet",
-  );
-  for (const [option, label] of [
-    ["tabsbar", "A · Tabs in bar"],
-    ["actionbar", "B · Actions in bar"],
-    ["appbar", "C · App bar"],
-    ["current", "Current"],
-  ]) {
+  const variants: [string, string, string | null, string | null][] = [
+    ["b1", "B1 · Menu", "More options", "More options"],
+    ["b2", "B2 · Play first", "Tools", null],
+    ["b3", "B3 · Two lines", null, null],
+    ["b4", "B4 · Account menu", "Account and settings", "Account and settings"],
+  ];
+  await page.goto("./layouts.html");
+  for (const [option, label, toolsMenu, accountMenu] of variants) {
     await page.getByRole("button", { name: label }).click();
     await expect(page).toHaveURL(new RegExp(`\\?hero=${option}`));
     await expect(
@@ -204,9 +204,22 @@ test("header options keep the score button and the tabs", async ({ page }) => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    if (toolsMenu) await page.getByLabel(toolsMenu, { exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "Read the rules" }),
+    ).toBeVisible();
+    if (toolsMenu) await page.getByLabel(toolsMenu, { exact: true }).click();
+    if (accountMenu)
+      await page.getByLabel(accountMenu, { exact: true }).click();
+    await expect(page.getByRole("switch", { name: "Dark mode" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Sign in" }).first(),
+    ).toBeVisible();
+    if (accountMenu)
+      await page.getByLabel(accountMenu, { exact: true }).click();
   }
-  await page.getByRole("button", { name: "C · App bar" }).click();
-  await page.getByText("More", { exact: true }).click();
-  await page.getByRole("button", { name: "Rules" }).click();
-  await expect(page.getByRole("dialog")).toContainText("Guillem");
+  await page.getByRole("button", { name: "B4 · Account menu" }).click();
+  await page.getByLabel("Account and settings").click();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
 });
