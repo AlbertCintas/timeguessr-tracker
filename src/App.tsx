@@ -23,6 +23,8 @@ import {
   Moon,
   Sun,
   ScrollText,
+  Medal,
+  Skull,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
 import {
@@ -38,6 +40,13 @@ import {
 import type { Game, Profile, Result, Standing, PictureResult } from "./types";
 import { parseTimeguessrResults } from "./importResults";
 import { shameMetrics, shameRankings, type ShameMetric } from "./shame";
+import {
+  fameMetrics,
+  fameRankings,
+  hiddenWhenZero,
+  minimumAveragePictures,
+  type FameMetric,
+} from "./fame";
 import { PictureBreakdown } from "./PictureBreakdown";
 import {
   gameReplayUrl,
@@ -459,6 +468,113 @@ function ShameBoard({
   );
 }
 
+function FameBoard({
+  profiles,
+  results,
+  games,
+}: {
+  profiles: Profile[];
+  results: Result[];
+  games: Game[];
+}) {
+  const decimals = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
+  return (
+    <section
+      className="shame-section fame-section"
+      aria-labelledby="fame-heading"
+    >
+      <div className="section-heading">
+        <div>
+          <h2 id="fame-heading">The hall of fame</h2>
+          <p>Brief moments of competence. We’re as surprised as you are.</p>
+        </div>
+      </div>
+      <div className="board shame-board fame-board">
+        <table className="shame-table" aria-label="Hall of fame records">
+          <thead>
+            <tr>
+              <th scope="col">The honour</th>
+              <th scope="col">The suspect</th>
+              <th scope="col">The evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(Object.keys(fameMetrics) as FameMetric[]).map((metric) => {
+              const definition = fameMetrics[metric];
+              const rows = fameRankings(profiles, results, games, metric);
+              if (hiddenWhenZero(metric) && !rows.some((row) => row.value > 0))
+                return null;
+              const winners = rows.filter((row) => row.rank === 1);
+              const average = metric === "avgYears" || metric === "avgDistance";
+              return (
+                <tr key={metric} data-metric={metric}>
+                  <th scope="row">
+                    {definition.label}
+                    <small className="fame-blurb">
+                      {definition.description}
+                    </small>
+                  </th>
+                  <td>
+                    {winners.length ? (
+                      winners.map((row) => {
+                        const game = games.find(
+                          (item) => item.id === row.gameId,
+                        );
+                        return (
+                          <div className="shame-holder" key={row.id}>
+                            <Avatar profile={row} />
+                            <div className="shame-player">
+                              <strong>{row.display_name}</strong>
+                              <small>
+                                {game
+                                  ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
+                                  : metric === "streak" || metric === "games"
+                                    ? `${row.samples} games played`
+                                    : `${row.samples} pictures recorded`}
+                              </small>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <span className="shame-missing">
+                        {average
+                          ? `Nobody has ${minimumAveragePictures} detailed pictures yet`
+                          : metric === "closest"
+                            ? "No picture details yet"
+                            : "No scores yet"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="shame-value">
+                    {winners.length ? (
+                      <>
+                        {(average
+                          ? decimals
+                          : new Intl.NumberFormat("en", {
+                              maximumFractionDigits: 3,
+                            })
+                        ).format(winners[0].value)}{" "}
+                        <small>{definition.unit}</small>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="board-foot">
+          Ties share the glory. Averages need {minimumAveragePictures} detailed
+          pictures. Enjoy it while it lasts.
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Rules() {
   return (
     <div className="rules">
@@ -560,7 +676,20 @@ function Modal({
     </div>
   );
 }
-export default function App() {
+export type Layout = "classic" | "tabs" | "sidebar";
+const labTabs = {
+  standings: { label: "Standings", icon: Trophy },
+  fame: { label: "Hall of fame", icon: Medal },
+  shame: { label: "Hall of shame", icon: Skull },
+  history: { label: "History", icon: CalendarDays },
+} as const;
+type LabTab = keyof typeof labTabs;
+const tabFromHash = (): LabTab =>
+  location.hash.slice(1) in labTabs
+    ? (location.hash.slice(1) as LabTab)
+    : "standings";
+export default function App({ layout = "classic" }: { layout?: Layout }) {
+  const [tab, setTab] = useState<LabTab>(tabFromHash);
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
     [results, setResults] = useState<Result[]>([]);
@@ -869,6 +998,394 @@ export default function App() {
   useEffect(() => {
     setHistoryPage((page) => Math.min(page, historyPages - 1));
   }, [historyPages]);
+  function playRandomGame() {
+    if (!session) {
+      setModal("login");
+      return;
+    }
+    const selected =
+      randomGames[Math.floor(Math.random() * randomGames.length)];
+    if (selected) window.open(selected.url, "_blank", "noopener,noreferrer");
+  }
+  function openTab(next: LabTab) {
+    setTab(next);
+    history.replaceState(null, "", `${location.search}#${next}`);
+  }
+  const intro = (
+    <section className="intro">
+      <div>
+        <div className="eyebrow intro-label">
+          <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
+        </div>
+        <h1>
+          History is dead.
+          <br />
+          <span>So is your score.</span>
+        </h1>
+        <p>
+          Five guesses. Zero dignity.
+          <br className="desktop-break" /> A permanent record of your mates
+          being confidently wrong.
+        </p>
+        <button className="rules-link" onClick={() => setModal("rules")}>
+          <ScrollText size={15} /> Read the rules
+        </button>
+      </div>
+      <div className="intro-right">
+        <div className="date-stamp">
+          <CalendarDays size={16} />
+          {europeanDate(madridToday())}
+        </div>
+        <button
+          className="primary"
+          onClick={() => openScore()}
+          disabled={!configured}
+        >
+          <Plus size={19} /> Add your score
+        </button>
+        <div className="extension-actions">
+          <button
+            className="subtle-button"
+            disabled={
+              !configured || loading || (!!session && !randomGames.length)
+            }
+            onClick={playRandomGame}
+          >
+            <Shuffle size={17} /> Play random unplayed game
+          </button>
+          <HelpTooltip
+            id="random-game-tooltip"
+            label="How does random unplayed game work?"
+          >
+            {!session
+              ? "Sign in to find games you haven’t recorded a score for. "
+              : !randomGames.length
+                ? "No unplayed games with replay links are available. "
+                : ""}
+            Picks a random game from the club’s full history that someone has
+            played and you haven’t submitted a score for. Only games with replay
+            links are included. Opens Timeguessr in a new tab; it counts as
+            played once your score is saved here.
+          </HelpTooltip>
+        </div>
+        <div className="extension-actions">
+          <button
+            className="subtle-button"
+            onClick={() => setModal("extension")}
+          >
+            <Download size={17} /> Install browser extension
+          </button>
+          <HelpTooltip
+            id="extension-help-tooltip"
+            label="What does the browser extension do?"
+          >
+            Automatically saves your completed Timeguessr games, including
+            picture scores, year errors and distances, to this friends’
+            scoreboard. Sign in with your tracker account and keep the results
+            page open until captured. You can pause imports at any time.
+          </HelpTooltip>
+        </div>
+        <span className="hint">
+          Daily humiliation. Extra suffering available.
+        </span>
+      </div>
+    </section>
+  );
+  const alerts = (
+    <>
+      {!configured && (
+        <div className="setup-notice">
+          <Clock3 size={20} />
+          <div>
+            <strong>The scoreboard is clinically offline.</strong>
+            <p>
+              Shared scores and sign-in will be available once the database is
+              connected.
+            </p>
+          </div>
+        </div>
+      )}
+      {error && (
+        <div className="alert" role="alert">
+          {error}
+          <button
+            className="subtle-button"
+            onClick={() => {
+              setError("");
+              void load();
+            }}
+            disabled={busy}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {notice && (
+        <div className="notice" role="status">
+          <Check size={17} />
+          {notice}
+        </div>
+      )}
+    </>
+  );
+  const standingsPanel = (
+    <>
+      <div className="section-heading standings-heading">
+        <div>
+          <h2>The standings</h2>
+          <p>Someone has to finish last. We’re keeping receipts.</p>
+        </div>
+        <div className="standings-controls">
+          <label className="period-picker">
+            <span>Period</span>
+            <select
+              aria-label="Standings period"
+              value={standingsPeriod}
+              onChange={(e) =>
+                setStandingsPeriod(e.target.value as StandingsPeriod)
+              }
+            >
+              {Object.entries(periodLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="icon-button"
+            aria-label="Refresh standings"
+            onClick={() => void load()}
+            disabled={loading || !configured}
+          >
+            <RefreshCw size={18} className={loading ? "spin" : ""} />
+          </button>
+        </div>
+      </div>
+      <div className="boards" aria-busy={loading}>
+        <Board rows={rows} kind="wins" period={standingsPeriod} />
+        <Board rows={rows} kind="points" period={standingsPeriod} />
+      </div>
+    </>
+  );
+  const shamePanel = (
+    <ShameBoard profiles={profiles} results={results} games={games} />
+  );
+  const historyPanel = (
+    <section className="history">
+      <div className="section-heading">
+        <div>
+          <h2>
+            Game history <span className="count">{playedGames.length}</span>
+          </h2>
+          <p>The evidence locker. Deleting your browser history won’t help.</p>
+        </div>
+        <span className="history-caption">
+          <Users size={15} />
+          {profiles.length} {profiles.length === 1 ? "player" : "players"} in
+          the club
+        </span>
+      </div>
+      {!playedGames.length ? (
+        <div className="history-empty">
+          <CalendarDays size={26} />
+          <div>
+            <strong>Suspiciously clean record.</strong>
+            <p>Submit a score. Your dignity has had a good run.</p>
+          </div>
+          <button
+            className="subtle-button"
+            disabled={!configured}
+            onClick={() => openScore()}
+          >
+            Add a score <Plus size={16} />
+          </button>
+        </div>
+      ) : (
+        [...playedGames]
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
+          .map((game) => {
+            const replayUrl = gameReplayUrl(game);
+            const entries = results
+              .filter((r) => r.game_id === game.id)
+              .sort((a, b) => b.points - a.points);
+            return (
+              <details className="game" key={game.id}>
+                <summary>
+                  <span className={`game-icon ${game.kind}`}>
+                    <CalendarDays size={19} />
+                  </span>
+                  <span className="game-info">
+                    <strong>{gameTitle(game)}</strong>
+                    <small>
+                      {entries.length}{" "}
+                      {entries.length === 1
+                        ? "player · only submission so far"
+                        : "players"}
+                      {game.kind === "custom" ? " · non-daily" : ""}
+                    </small>
+                    {session &&
+                      replayUrl &&
+                      !entries.some(
+                        (entry) => entry.player_id === session.user.id,
+                      ) && (
+                        <a
+                          className="game-play-link"
+                          href={replayUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(event) => event.stopPropagation()}
+                          aria-label={`Play ${gameTitle(game)} on Timeguessr`}
+                        >
+                          Play game <ArrowUpRight size={14} />
+                        </a>
+                      )}
+                  </span>
+                  <span className="winner">
+                    <Trophy size={15} />
+                    {entries
+                      .filter((r) => r.points === entries[0].points)
+                      .map(
+                        (r) =>
+                          profiles.find((p) => p.id === r.player_id)
+                            ?.display_name,
+                      )
+                      .join(", ")}
+                  </span>
+                  <span className="game-points">
+                    {number.format(entries[0].points)} <small>pts</small>
+                  </span>
+                </summary>
+                <div className="game-results">
+                  {entries.map((entry) => {
+                    const profile = profiles.find(
+                      (p) => p.id === entry.player_id,
+                    );
+                    return (
+                      <div className="result-entry" key={entry.player_id}>
+                        <div className="result">
+                          <Avatar profile={profile} />
+                          <span>{profile?.display_name}</span>
+                          <strong>{number.format(entry.points)}</strong>
+                          {(admin || entry.player_id === session?.user.id) && (
+                            <>
+                              <button
+                                className="icon-button"
+                                aria-label={`Edit ${profile?.display_name}'s score`}
+                                disabled={busy}
+                                onClick={() => openScore(entry)}
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                className="icon-button"
+                                aria-label={`Delete ${profile?.display_name}'s score`}
+                                disabled={busy}
+                                onClick={() => void deleteScore(entry)}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        {entry.rounds && (
+                          <details className="result-breakdown">
+                            <summary>
+                              {profile?.display_name}’s picture breakdown
+                              {entry.daily_number
+                                ? ` · #${entry.daily_number}`
+                                : ""}
+                            </summary>
+                            <PictureBreakdown rounds={entry.rounds} />
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {session &&
+                    !entries.some((r) => r.player_id === session.user.id) && (
+                      <button
+                        className="subtle-button"
+                        onClick={() => {
+                          openScore();
+                          setKind(game.kind);
+                          setDate(
+                            europeanDate(game.daily_date || madridToday()),
+                          );
+                          setSelectedGame(
+                            game.kind === "custom" ? game.id : "",
+                          );
+                        }}
+                      >
+                        Add my score <Plus size={16} />
+                      </button>
+                    )}
+                </div>
+              </details>
+            );
+          })
+      )}
+      {historyPages > 1 && (
+        <nav
+          className="history-pagination"
+          aria-label="Game history pagination"
+        >
+          <button
+            className="subtle-button"
+            disabled={currentHistoryPage === 0}
+            onClick={() => setHistoryPage(currentHistoryPage - 1)}
+          >
+            Newer games
+          </button>
+          <span role="status">
+            Page {currentHistoryPage + 1} of {historyPages}
+          </span>
+          <button
+            className="subtle-button"
+            disabled={currentHistoryPage === historyPages - 1}
+            onClick={() => setHistoryPage(currentHistoryPage + 1)}
+          >
+            Older games
+          </button>
+        </nav>
+      )}
+    </section>
+  );
+  const footer = (
+    <footer>
+      <span>
+        <Clock3 size={15} /> Time well wasted.
+      </span>
+      <span>Unofficial. Unqualified. Unreasonably competitive.</span>
+      <a href="/timeguessr-tracker/about.html">About</a>
+      <a href="/timeguessr-tracker/privacy.html">Privacy</a>
+    </footer>
+  );
+  const panels: Record<LabTab, ReactNode> = {
+    standings: standingsPanel,
+    fame: <FameBoard profiles={profiles} results={results} games={games} />,
+    shame: shamePanel,
+    history: historyPanel,
+  };
+  const tabNav = (
+    <nav className="lab-tabs" aria-label="Sections">
+      {(Object.keys(labTabs) as LabTab[]).map((key) => {
+        const { label, icon: Icon } = labTabs[key];
+        return (
+          <button
+            key={key}
+            className="lab-tab"
+            aria-current={tab === key ? "page" : undefined}
+            onClick={() => openTab(key)}
+          >
+            <Icon size={17} />
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
   return (
     <>
       <header className="header">
@@ -919,358 +1436,77 @@ export default function App() {
           </a>
         </nav>
       </header>
-      <main>
-        <section className="intro">
-          <div>
-            <div className="eyebrow intro-label">
-              <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
+      {layout === "classic" ? (
+        <main>
+          {intro}
+          {alerts}
+          {standingsPanel}
+          {shamePanel}
+          {historyPanel}
+          {footer}
+        </main>
+      ) : layout === "tabs" ? (
+        <main className="lab-main">
+          {intro}
+          {alerts}
+          {tabNav}
+          <div className="lab-panel">{panels[tab]}</div>
+          {footer}
+        </main>
+      ) : (
+        <div className="lab-shell">
+          <aside className="lab-sidebar">
+            <div className="lab-side-intro">
+              <div className="eyebrow intro-label">
+                <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
+              </div>
+              <strong>
+                History is dead. <span>So is your score.</span>
+              </strong>
+              <div className="date-stamp">
+                <CalendarDays size={16} />
+                {europeanDate(madridToday())}
+              </div>
             </div>
-            <h1>
-              History is dead.
-              <br />
-              <span>So is your score.</span>
-            </h1>
-            <p>
-              Five guesses. Zero dignity.
-              <br className="desktop-break" /> A permanent record of your mates
-              being confidently wrong.
-            </p>
-            <button className="rules-link" onClick={() => setModal("rules")}>
-              <ScrollText size={15} /> Read the rules
-            </button>
-          </div>
-          <div className="intro-right">
-            <div className="date-stamp">
-              <CalendarDays size={16} />
-              {europeanDate(madridToday())}
-            </div>
-            <button
-              className="primary"
-              onClick={() => openScore()}
-              disabled={!configured}
-            >
-              <Plus size={19} /> Add your score
-            </button>
-            <div className="extension-actions">
+            <div className="lab-side-actions">
+              <button
+                className="primary"
+                onClick={() => openScore()}
+                disabled={!configured}
+              >
+                <Plus size={19} /> Add your score
+              </button>
               <button
                 className="subtle-button"
                 disabled={
                   !configured || loading || (!!session && !randomGames.length)
                 }
-                onClick={() => {
-                  if (!session) {
-                    setModal("login");
-                    return;
-                  }
-                  const selected =
-                    randomGames[Math.floor(Math.random() * randomGames.length)];
-                  if (selected)
-                    window.open(selected.url, "_blank", "noopener,noreferrer");
-                }}
+                onClick={playRandomGame}
               >
-                <Shuffle size={17} /> Play random unplayed game
+                <Shuffle size={17} /> Random unplayed game
               </button>
-              <HelpTooltip
-                id="random-game-tooltip"
-                label="How does random unplayed game work?"
-              >
-                {!session
-                  ? "Sign in to find games you haven’t recorded a score for. "
-                  : !randomGames.length
-                    ? "No unplayed games with replay links are available. "
-                    : ""}
-                Picks a random game from the club’s full history that someone
-                has played and you haven’t submitted a score for. Only games
-                with replay links are included. Opens Timeguessr in a new tab;
-                it counts as played once your score is saved here.
-              </HelpTooltip>
-            </div>
-            <div className="extension-actions">
               <button
                 className="subtle-button"
                 onClick={() => setModal("extension")}
               >
-                <Download size={17} /> Install browser extension
+                <Download size={17} /> Browser extension
               </button>
-              <HelpTooltip
-                id="extension-help-tooltip"
-                label="What does the browser extension do?"
+              <button
+                className="subtle-button"
+                onClick={() => setModal("rules")}
               >
-                Automatically saves your completed Timeguessr games, including
-                picture scores, year errors and distances, to this friends’
-                scoreboard. Sign in with your tracker account and keep the
-                results page open until captured. You can pause imports at any
-                time.
-              </HelpTooltip>
+                <ScrollText size={17} /> The rules
+              </button>
             </div>
-            <span className="hint">
-              Daily humiliation. Extra suffering available.
-            </span>
-          </div>
-        </section>
-        {!configured && (
-          <div className="setup-notice">
-            <Clock3 size={20} />
-            <div>
-              <strong>The scoreboard is clinically offline.</strong>
-              <p>
-                Shared scores and sign-in will be available once the database is
-                connected.
-              </p>
-            </div>
-          </div>
-        )}
-        {error && (
-          <div className="alert" role="alert">
-            {error}
-            <button
-              className="subtle-button"
-              onClick={() => {
-                setError("");
-                void load();
-              }}
-              disabled={busy}
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        {notice && (
-          <div className="notice" role="status">
-            <Check size={17} />
-            {notice}
-          </div>
-        )}
-        <div className="section-heading standings-heading">
-          <div>
-            <h2>The standings</h2>
-            <p>Someone has to finish last. We’re keeping receipts.</p>
-          </div>
-          <div className="standings-controls">
-            <label className="period-picker">
-              <span>Period</span>
-              <select
-                aria-label="Standings period"
-                value={standingsPeriod}
-                onChange={(e) =>
-                  setStandingsPeriod(e.target.value as StandingsPeriod)
-                }
-              >
-                {Object.entries(periodLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="icon-button"
-              aria-label="Refresh standings"
-              onClick={() => void load()}
-              disabled={loading || !configured}
-            >
-              <RefreshCw size={18} className={loading ? "spin" : ""} />
-            </button>
-          </div>
+            {tabNav}
+          </aside>
+          <main className="lab-main">
+            {alerts}
+            <div className="lab-panel">{panels[tab]}</div>
+            {footer}
+          </main>
         </div>
-        <div className="boards" aria-busy={loading}>
-          <Board rows={rows} kind="wins" period={standingsPeriod} />
-          <Board rows={rows} kind="points" period={standingsPeriod} />
-        </div>
-        <ShameBoard profiles={profiles} results={results} games={games} />
-        <section className="history">
-          <div className="section-heading">
-            <div>
-              <h2>
-                Game history <span className="count">{playedGames.length}</span>
-              </h2>
-              <p>
-                The evidence locker. Deleting your browser history won’t help.
-              </p>
-            </div>
-            <span className="history-caption">
-              <Users size={15} />
-              {profiles.length} {profiles.length === 1 ? "player" : "players"}{" "}
-              in the club
-            </span>
-          </div>
-          {!playedGames.length ? (
-            <div className="history-empty">
-              <CalendarDays size={26} />
-              <div>
-                <strong>Suspiciously clean record.</strong>
-                <p>Submit a score. Your dignity has had a good run.</p>
-              </div>
-              <button
-                className="subtle-button"
-                disabled={!configured}
-                onClick={() => openScore()}
-              >
-                Add a score <Plus size={16} />
-              </button>
-            </div>
-          ) : (
-            [...playedGames]
-              .sort((a, b) => b.created_at.localeCompare(a.created_at))
-              .slice(currentHistoryPage * 10, (currentHistoryPage + 1) * 10)
-              .map((game) => {
-                const replayUrl = gameReplayUrl(game);
-                const entries = results
-                  .filter((r) => r.game_id === game.id)
-                  .sort((a, b) => b.points - a.points);
-                return (
-                  <details className="game" key={game.id}>
-                    <summary>
-                      <span className={`game-icon ${game.kind}`}>
-                        <CalendarDays size={19} />
-                      </span>
-                      <span className="game-info">
-                        <strong>{gameTitle(game)}</strong>
-                        <small>
-                          {entries.length}{" "}
-                          {entries.length === 1
-                            ? "player · only submission so far"
-                            : "players"}
-                          {game.kind === "custom" ? " · non-daily" : ""}
-                        </small>
-                        {session &&
-                          replayUrl &&
-                          !entries.some(
-                            (entry) => entry.player_id === session.user.id,
-                          ) && (
-                            <a
-                              className="game-play-link"
-                              href={replayUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(event) => event.stopPropagation()}
-                              aria-label={`Play ${gameTitle(game)} on Timeguessr`}
-                            >
-                              Play game <ArrowUpRight size={14} />
-                            </a>
-                          )}
-                      </span>
-                      <span className="winner">
-                        <Trophy size={15} />
-                        {entries
-                          .filter((r) => r.points === entries[0].points)
-                          .map(
-                            (r) =>
-                              profiles.find((p) => p.id === r.player_id)
-                                ?.display_name,
-                          )
-                          .join(", ")}
-                      </span>
-                      <span className="game-points">
-                        {number.format(entries[0].points)} <small>pts</small>
-                      </span>
-                    </summary>
-                    <div className="game-results">
-                      {entries.map((entry) => {
-                        const profile = profiles.find(
-                          (p) => p.id === entry.player_id,
-                        );
-                        return (
-                          <div className="result-entry" key={entry.player_id}>
-                            <div className="result">
-                              <Avatar profile={profile} />
-                              <span>{profile?.display_name}</span>
-                              <strong>{number.format(entry.points)}</strong>
-                              {(admin ||
-                                entry.player_id === session?.user.id) && (
-                                <>
-                                  <button
-                                    className="icon-button"
-                                    aria-label={`Edit ${profile?.display_name}'s score`}
-                                    disabled={busy}
-                                    onClick={() => openScore(entry)}
-                                  >
-                                    <Pencil size={15} />
-                                  </button>
-                                  <button
-                                    className="icon-button"
-                                    aria-label={`Delete ${profile?.display_name}'s score`}
-                                    disabled={busy}
-                                    onClick={() => void deleteScore(entry)}
-                                  >
-                                    <Trash2 size={15} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                            {entry.rounds && (
-                              <details className="result-breakdown">
-                                <summary>
-                                  {profile?.display_name}’s picture breakdown
-                                  {entry.daily_number
-                                    ? ` · #${entry.daily_number}`
-                                    : ""}
-                                </summary>
-                                <PictureBreakdown rounds={entry.rounds} />
-                              </details>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {session &&
-                        !entries.some(
-                          (r) => r.player_id === session.user.id,
-                        ) && (
-                          <button
-                            className="subtle-button"
-                            onClick={() => {
-                              openScore();
-                              setKind(game.kind);
-                              setDate(
-                                europeanDate(game.daily_date || madridToday()),
-                              );
-                              setSelectedGame(
-                                game.kind === "custom" ? game.id : "",
-                              );
-                            }}
-                          >
-                            Add my score <Plus size={16} />
-                          </button>
-                        )}
-                    </div>
-                  </details>
-                );
-              })
-          )}
-          {historyPages > 1 && (
-            <nav
-              className="history-pagination"
-              aria-label="Game history pagination"
-            >
-              <button
-                className="subtle-button"
-                disabled={currentHistoryPage === 0}
-                onClick={() => setHistoryPage(currentHistoryPage - 1)}
-              >
-                Newer games
-              </button>
-              <span role="status">
-                Page {currentHistoryPage + 1} of {historyPages}
-              </span>
-              <button
-                className="subtle-button"
-                disabled={currentHistoryPage === historyPages - 1}
-                onClick={() => setHistoryPage(currentHistoryPage + 1)}
-              >
-                Older games
-              </button>
-            </nav>
-          )}
-        </section>
-        <footer>
-          <span>
-            <Clock3 size={15} /> Time well wasted.
-          </span>
-          <span>Unofficial. Unqualified. Unreasonably competitive.</span>
-          <a href="/timeguessr-tracker/about.html">About</a>
-          <a href="/timeguessr-tracker/privacy.html">Privacy</a>
-        </footer>
-      </main>
+      )}
       {modal && (
         <Modal
           key={modal}

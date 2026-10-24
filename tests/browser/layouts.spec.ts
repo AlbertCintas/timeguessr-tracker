@@ -1,0 +1,139 @@
+import { test, expect, type Page } from "@playwright/test";
+const profiles = [
+  { id: "alice", username: "alice", display_name: "Alice", avatar_path: null },
+  { id: "bob", username: "bob", display_name: "Bob", avatar_path: null },
+];
+const games = [8, 9, 10, 11].map((day) => ({
+  id: `daily${day}`,
+  kind: "daily",
+  daily_date: `2026-10-${String(day).padStart(2, "0")}`,
+  name: null,
+  created_at: `2026-10-${String(day).padStart(2, "0")}T12:00:00Z`,
+}));
+const rounds = (years: number, km: number, points = 6000) =>
+  Array.from({ length: 5 }, () => ({
+    points,
+    years_off: years,
+    distance_km: km,
+  }));
+
+async function serve(page: Page, aliceGames: number) {
+  const results = games.flatMap((game, index) => [
+    ...(index < aliceGames
+      ? [
+          {
+            game_id: game.id,
+            player_id: "alice",
+            points: 30000 + index,
+            rounds: rounds(index === 0 ? 0 : 4, 12.5, index ? 6000 : 10000),
+          },
+        ]
+      : []),
+    { game_id: game.id, player_id: "bob", points: 20000 },
+  ]);
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const data = url.includes("/profiles")
+      ? profiles
+      : url.includes("/games")
+        ? games
+        : url.includes("/results")
+          ? results
+          : [];
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+}
+
+test("top tabs show one section at a time and remember it in the URL", async ({
+  page,
+}) => {
+  await serve(page, 4);
+  await page.goto("./layouts.html");
+  const sections = page.getByRole("navigation", { name: "Sections" });
+  await expect(
+    sections.getByRole("button", { name: "Standings" }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    page.getByRole("heading", { name: "Win percentage" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("table", { name: "Hall of shame records" }),
+  ).toHaveCount(0);
+  await sections.getByRole("button", { name: "Hall of fame" }).click();
+  await expect(page).toHaveURL(/#fame$/);
+  const fame = page.getByRole("table", { name: "Hall of fame records" });
+  await expect(fame.locator('[data-metric="avgYears"]')).toContainText("Alice");
+  await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
+    "3 years avg",
+  );
+  await expect(fame.locator('[data-metric="avgDistance"]')).toContainText(
+    "12.5 km avg",
+  );
+  await expect(fame.locator('[data-metric="exactYears"]')).toContainText(
+    "5 exact",
+  );
+  await expect(fame.locator('[data-metric="perfect"]')).toContainText(
+    "5 perfect",
+  );
+  await expect(fame.locator('[data-metric="streak"]')).toContainText("4 days");
+  await expect(fame.locator('[data-metric="bestGame"]')).toContainText(
+    "Daily · 11/10/26",
+  );
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-lab-tabs-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(fame).toBeVisible();
+  await sections.getByRole("button", { name: "History" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Game history/ }),
+  ).toBeVisible();
+  await expect(fame).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("sidebar variant keeps the actions and hides averages below 20 pictures", async ({
+  page,
+}) => {
+  await serve(page, 3);
+  await page.goto("./layouts.html?layout=sidebar#fame");
+  await expect(
+    page.getByRole("button", { name: "B · Sidebar" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("button", { name: "Add your score" }),
+  ).toBeVisible();
+  const fame = page.getByRole("table", { name: "Hall of fame records" });
+  await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
+    "Nobody has 20 detailed pictures yet",
+  );
+  await expect(fame.locator('[data-metric="closest"]')).toContainText("Alice");
+  await expect(
+    page.getByRole("navigation", { name: "Sections" }).getByRole("button", {
+      name: "Hall of shame",
+    }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: `/private/tmp/timeguessr-lab-sidebar-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "A · Top tabs" }).click();
+  await expect(page).toHaveURL(/\?layout=tabs#fame$/);
+  await expect(
+    page.getByRole("heading", { name: /History is dead/ }),
+  ).toBeVisible();
+  await expect(fame).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
