@@ -627,17 +627,19 @@ function PlayerStats({
   results,
   period,
   controls,
+  viewerId,
 }: {
   profiles: Profile[];
   results: Result[];
   period: StandingsPeriod;
   controls: ReactNode;
+  viewerId?: string;
 }) {
   const format = (value: number | null, digits = 0, unit = "") =>
     value === null
       ? "—"
       : `${new Intl.NumberFormat("en", { maximumFractionDigits: digits }).format(value)}${unit}`;
-  const rows = playerStats(profiles, results);
+  const rows = playerStats(profiles, results, viewerId);
   return (
     <section className="player-stats" aria-labelledby="stats-heading">
       <div className="section-heading standings-heading">
@@ -1528,6 +1530,7 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
         results={resultsForPeriod(games, results, standingsPeriod)}
         period={standingsPeriod}
         controls={standingsControls}
+        viewerId={session?.user.id}
       />
     ),
     history: historyPanel,

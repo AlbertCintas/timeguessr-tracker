@@ -37,3 +37,19 @@ test("player stats combine game totals with picture details", () => {
     ["b", 0, null, null],
   );
 });
+
+test("the signed-in player comes first", () => {
+  const results = [
+    { game_id: "1", player_id: "a", points: 1 },
+    { game_id: "2", player_id: "a", points: 1 },
+    { game_id: "1", player_id: "b", points: 1 },
+  ];
+  assert.deepEqual(
+    playerStats(profiles, results, "b").map((row) => row.id),
+    ["b", "a"],
+  );
+  assert.deepEqual(
+    playerStats(profiles, results, "c").map((row) => row.id),
+    ["a", "b"],
+  );
+});

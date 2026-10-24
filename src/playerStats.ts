@@ -4,7 +4,11 @@ import type { Profile, Result } from "./types.ts";
 const mean = (values: number[]) =>
   values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : null;
 
-export function playerStats(profiles: Profile[], results: Result[]) {
+export function playerStats(
+  profiles: Profile[],
+  results: Result[],
+  viewerId?: string,
+) {
   return standings(profiles, results)
     .filter((row) => row.games > 0)
     .map((row) => {
@@ -33,6 +37,8 @@ export function playerStats(profiles: Profile[], results: Result[]) {
     })
     .sort(
       (a, b) =>
-        b.games - a.games || a.display_name.localeCompare(b.display_name),
+        Number(b.id === viewerId) - Number(a.id === viewerId) ||
+        b.games - a.games ||
+        a.display_name.localeCompare(b.display_name),
     );
 }
