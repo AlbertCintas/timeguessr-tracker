@@ -38,7 +38,6 @@ export function playerStats(
     .sort(
       (a, b) =>
         Number(b.id === viewerId) - Number(a.id === viewerId) ||
-        b.games - a.games ||
         a.display_name.localeCompare(b.display_name),
     );
 }

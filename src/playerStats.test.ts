@@ -53,3 +53,15 @@ test("the signed-in player comes first", () => {
     ["a", "b"],
   );
 });
+
+test("players are ordered alphabetically, not by games played", () => {
+  const results = [
+    { game_id: "1", player_id: "c", points: 1 },
+    { game_id: "2", player_id: "c", points: 1 },
+    { game_id: "1", player_id: "a", points: 1 },
+  ];
+  assert.deepEqual(
+    playerStats(profiles, results).map((row) => row.id),
+    ["a", "c"],
+  );
+});
