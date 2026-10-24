@@ -102,6 +102,15 @@ test("top tabs show one section at a time and remember it in the URL", async ({
     "Player stats",
     "History",
   ]);
+  await sections.getByRole("button", { name: "Hall of shame" }).click();
+  const shame = page.getByRole("table", { name: "Hall of shame records" });
+  await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
+  await page.getByLabel("Standings period").selectOption("last7");
+  await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
+    "No scores yet",
+  );
+  await expect(page.getByText("Last 7 days records")).toBeVisible();
+  await page.getByLabel("Standings period").selectOption("all");
   await sections.getByRole("button", { name: "Player stats" }).click();
   const alice = page.getByRole("article", { name: "Alice stats" });
   await expect(alice).toContainText("Games4");

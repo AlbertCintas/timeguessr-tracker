@@ -383,18 +383,23 @@ function ShameBoard({
   profiles,
   results,
   games,
+  period,
+  controls,
 }: {
   profiles: Profile[];
   results: Result[];
   games: Game[];
+  period?: StandingsPeriod;
+  controls?: ReactNode;
 }) {
   return (
     <section className="shame-section" aria-labelledby="shame-heading">
-      <div className="section-heading">
+      <div className={`section-heading${controls ? " standings-heading" : ""}`}>
         <div>
           <h2 id="shame-heading">The hall of shame</h2>
           <p>Your mates forget. The database doesn’t.</p>
         </div>
+        {controls}
       </div>
       <div className="board shame-board">
         <table className="shame-table" aria-label="Hall of shame records">
@@ -463,7 +468,8 @@ function ShameBoard({
           </tbody>
         </table>
         <div className="board-foot">
-          Ties share the blame. Picture records use detailed results only.
+          {period && `${periodLabels[period]} records · `}Ties share the blame.
+          Picture records use detailed results only.
         </div>
       </div>
     </section>
@@ -1472,7 +1478,15 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
         controls={standingsControls}
       />
     ),
-    shame: shamePanel,
+    shame: (
+      <ShameBoard
+        profiles={profiles}
+        results={resultsForPeriod(games, results, standingsPeriod)}
+        games={games}
+        period={standingsPeriod}
+        controls={standingsControls}
+      />
+    ),
     stats: (
       <PlayerStats
         profiles={profiles}
