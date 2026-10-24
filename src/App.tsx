@@ -813,6 +813,7 @@ function Modal({
   );
 }
 export type Layout = "classic" | "tabs";
+export type Hero = "current" | "compact" | "today" | "toolbar";
 const labTabs = {
   standings: { label: "Standings", icon: Trophy },
   shame: { label: "Hall of shame", icon: Skull },
@@ -825,7 +826,13 @@ const tabFromHash = (): LabTab =>
   location.hash.slice(1) in labTabs
     ? (location.hash.slice(1) as LabTab)
     : "standings";
-export default function App({ layout = "classic" }: { layout?: Layout }) {
+export default function App({
+  layout = "classic",
+  hero = "current",
+}: {
+  layout?: Layout;
+  hero?: Hero;
+}) {
   const [tab, setTab] = useState<LabTab>(tabFromHash);
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
@@ -1144,6 +1151,65 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
     setTab(next);
     history.replaceState(null, "", `${location.search}#${next}`);
   }
+  const addScoreButton = (
+    <button
+      className="primary"
+      onClick={() => openScore()}
+      disabled={!configured}
+    >
+      <Plus size={19} /> Add your score
+    </button>
+  );
+  const randomAction = (
+    <div className="extension-actions">
+      <button
+        className="subtle-button"
+        disabled={!configured || loading || (!!session && !randomGames.length)}
+        onClick={() => {
+          if (!session) {
+            setModal("login");
+            return;
+          }
+          const selected =
+            randomGames[Math.floor(Math.random() * randomGames.length)];
+          if (selected)
+            window.open(selected.url, "_blank", "noopener,noreferrer");
+        }}
+      >
+        <Shuffle size={17} /> Play random unplayed game
+      </button>
+      <HelpTooltip
+        id="random-game-tooltip"
+        label="How does random unplayed game work?"
+      >
+        {!session
+          ? "Sign in to find games you haven’t recorded a score for. "
+          : !randomGames.length
+            ? "No unplayed games with replay links are available. "
+            : ""}
+        Picks a random game from the club’s full history that someone has played
+        and you haven’t submitted a score for. Only games with replay links are
+        included. Opens Timeguessr in a new tab; it counts as played once your
+        score is saved here.
+      </HelpTooltip>
+    </div>
+  );
+  const extensionAction = (
+    <div className="extension-actions">
+      <button className="subtle-button" onClick={() => setModal("extension")}>
+        <Download size={17} /> Install browser extension
+      </button>
+      <HelpTooltip
+        id="extension-help-tooltip"
+        label="What does the browser extension do?"
+      >
+        Automatically saves your completed Timeguessr games, including picture
+        scores, year errors and distances, to this friends’ scoreboard. Sign in
+        with your tracker account and keep the results page open until captured.
+        You can pause imports at any time.
+      </HelpTooltip>
+    </div>
+  );
   const intro = (
     <section className="intro">
       <div>
@@ -1169,69 +1235,153 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
           <CalendarDays size={16} />
           {europeanDate(madridToday())}
         </div>
-        <button
-          className="primary"
-          onClick={() => openScore()}
-          disabled={!configured}
-        >
-          <Plus size={19} /> Add your score
-        </button>
-        <div className="extension-actions">
-          <button
-            className="subtle-button"
-            disabled={
-              !configured || loading || (!!session && !randomGames.length)
-            }
-            onClick={() => {
-              if (!session) {
-                setModal("login");
-                return;
-              }
-              const selected =
-                randomGames[Math.floor(Math.random() * randomGames.length)];
-              if (selected)
-                window.open(selected.url, "_blank", "noopener,noreferrer");
-            }}
-          >
-            <Shuffle size={17} /> Play random unplayed game
-          </button>
-          <HelpTooltip
-            id="random-game-tooltip"
-            label="How does random unplayed game work?"
-          >
-            {!session
-              ? "Sign in to find games you haven’t recorded a score for. "
-              : !randomGames.length
-                ? "No unplayed games with replay links are available. "
-                : ""}
-            Picks a random game from the club’s full history that someone has
-            played and you haven’t submitted a score for. Only games with replay
-            links are included. Opens Timeguessr in a new tab; it counts as
-            played once your score is saved here.
-          </HelpTooltip>
-        </div>
-        <div className="extension-actions">
-          <button
-            className="subtle-button"
-            onClick={() => setModal("extension")}
-          >
-            <Download size={17} /> Install browser extension
-          </button>
-          <HelpTooltip
-            id="extension-help-tooltip"
-            label="What does the browser extension do?"
-          >
-            Automatically saves your completed Timeguessr games, including
-            picture scores, year errors and distances, to this friends’
-            scoreboard. Sign in with your tracker account and keep the results
-            page open until captured. You can pause imports at any time.
-          </HelpTooltip>
-        </div>
+        {addScoreButton}
+        {randomAction}
+        {extensionAction}
         <span className="hint">
           Daily humiliation. Extra suffering available.
         </span>
       </div>
     </section>
+  );
+  const today = madridToday();
+  const todayGame = games.find(
+    (game) => game.kind === "daily" && game.daily_date === today,
+  );
+  const todayEntries = results
+    .filter((result) => result.game_id === todayGame?.id)
+    .sort((a, b) => b.points - a.points);
+  const myToday = todayEntries.find(
+    (entry) => entry.player_id === session?.user.id,
+  );
+  const todayLeaders = todayEntries.filter(
+    (entry) => entry.points === todayEntries[0].points,
+  );
+  const rulesLink = (
+    <button className="rules-link" onClick={() => setModal("rules")}>
+      <ScrollText size={15} /> Read the rules
+    </button>
+  );
+  const heroes: Record<Exclude<Hero, "current">, ReactNode> = {
+    compact: (
+      <section className="hero-compact">
+        <div>
+          <h1>
+            History is dead. <span>So is your score.</span>
+          </h1>
+          <p>Five guesses. Zero dignity. {rulesLink}</p>
+        </div>
+        <div className="hero-compact-actions">
+          {addScoreButton}
+          {randomAction}
+          {extensionAction}
+        </div>
+      </section>
+    ),
+    today: (
+      <section className="hero-today">
+        <div>
+          <div className="eyebrow intro-label">
+            <span className="dot" /> OUR GROUP CHAT, WITH EVIDENCE
+          </div>
+          <h1>
+            History is dead. <span>So is your score.</span>
+          </h1>
+          <p>A permanent record of your mates being confidently wrong.</p>
+          {rulesLink}
+        </div>
+        <aside className="today-card" aria-label="Today’s daily">
+          <div className="today-heading">
+            <span className="eyebrow">TODAY’S DAILY</span>
+            <span className="date-stamp">
+              <CalendarDays size={14} />
+              {europeanDate(today)}
+            </span>
+          </div>
+          {todayEntries.length ? (
+            <div className="today-leader">
+              <Avatar
+                profile={profiles.find(
+                  (p) => p.id === todayLeaders[0].player_id,
+                )}
+              />
+              <div>
+                <strong>
+                  {todayLeaders
+                    .map(
+                      (entry) =>
+                        profiles.find((p) => p.id === entry.player_id)
+                          ?.display_name,
+                    )
+                    .join(", ")}
+                </strong>
+                <small>
+                  {todayLeaders.length > 1 ? "lead" : "leads"} with{" "}
+                  {number.format(todayEntries[0].points)} pts ·{" "}
+                  {todayEntries.length} played
+                </small>
+              </div>
+            </div>
+          ) : (
+            <p className="today-status">
+              Nobody has played yet. First blood is yours.
+            </p>
+          )}
+          {session && (
+            <p className="today-status">
+              {myToday
+                ? `You: ${number.format(myToday.points)} pts · #${
+                    todayEntries.findIndex(
+                      (entry) => entry.points === myToday.points,
+                    ) + 1
+                  } of ${todayEntries.length}`
+                : "You haven’t played today. Scared?"}
+            </p>
+          )}
+          {addScoreButton}
+          <div className="today-links">
+            {randomAction}
+            {extensionAction}
+          </div>
+        </aside>
+      </section>
+    ),
+    toolbar: (
+      <p className="hero-tagline">
+        <strong>History is dead.</strong> So is your score.
+      </p>
+    ),
+  };
+  const moreMenu = (
+    <details className="more-menu">
+      <summary className="subtle-button">More</summary>
+      <div className="more-menu-list">
+        <button
+          className="subtle-button"
+          disabled={
+            !configured || loading || (!!session && !randomGames.length)
+          }
+          onClick={() => {
+            if (!session) {
+              setModal("login");
+              return;
+            }
+            const selected =
+              randomGames[Math.floor(Math.random() * randomGames.length)];
+            if (selected)
+              window.open(selected.url, "_blank", "noopener,noreferrer");
+          }}
+        >
+          <Shuffle size={17} /> Random unplayed game
+        </button>
+        <button className="subtle-button" onClick={() => setModal("extension")}>
+          <Download size={17} /> Browser extension
+        </button>
+        <button className="subtle-button" onClick={() => setModal("rules")}>
+          <ScrollText size={17} /> Read the rules
+        </button>
+      </div>
+    </details>
   );
   const alerts = (
     <>
@@ -1618,9 +1768,17 @@ export default function App({ layout = "classic" }: { layout?: Layout }) {
         </main>
       ) : (
         <main className="lab-main">
-          {intro}
+          {hero === "current" ? intro : heroes[hero]}
           {alerts}
-          {tabNav}
+          {hero === "toolbar" ? (
+            <div className="lab-toolbar">
+              {tabNav}
+              {addScoreButton}
+              {moreMenu}
+            </div>
+          ) : (
+            tabNav
+          )}
           <div className="lab-panel">{panels[tab]}</div>
           {footer}
         </main>

@@ -178,3 +178,34 @@ test("average records stay empty below 20 detailed pictures", async ({
   );
   await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });
+
+test("header options keep the score button and the tabs", async ({ page }) => {
+  await serve(page, 4);
+  await page.goto("./layouts.html?hero=today");
+  const today = page.getByRole("complementary", { name: "Today’s daily" });
+  await expect(today).toContainText("Nobody has played yet");
+  for (const [option, label] of [
+    ["compact", "A · Compact"],
+    ["today", "B · Today"],
+    ["toolbar", "C · Toolbar"],
+    ["current", "Current"],
+  ]) {
+    await page.getByRole("button", { name: label }).click();
+    await expect(page).toHaveURL(new RegExp(`\\?hero=${option}`));
+    await expect(
+      page.getByRole("button", { name: "Add your score" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Sections" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
+  await page.getByRole("button", { name: "C · Toolbar" }).click();
+  await page.getByText("More", { exact: true }).click();
+  await page.getByRole("button", { name: "Read the rules" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Guillem");
+});
