@@ -578,7 +578,7 @@ function FameBoard({
               <th scope="row">
                 Most complaints
                 <small className="record-quip">
-                  Filed more appeals than scores.
+                  Filed more appeals than valid scores.
                 </small>
               </th>
               <td>
