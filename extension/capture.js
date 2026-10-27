@@ -57,30 +57,7 @@ export function validateCapture(input) {
         ))
     )
       throw new Error("Invalid picture details.");
-    const actualYear = r.actual_year;
-    const location = r.actual_location;
-    if (
-      actualYear != null &&
-      (!Number.isInteger(actualYear) || actualYear < 1 || actualYear > 9999)
-    )
-      throw new Error("Invalid actual year.");
-    if (
-      location != null &&
-      !(
-        typeof location.lat === "number" &&
-        Number.isFinite(location.lat) &&
-        Math.abs(location.lat) <= 90 &&
-        typeof location.lng === "number" &&
-        Number.isFinite(location.lng) &&
-        Math.abs(location.lng) <= 180
-      )
-    )
-      throw new Error("Invalid actual location.");
     return {
-      ...(actualYear != null ? { actual_year: actualYear } : {}),
-      ...(location != null
-        ? { actual_location: { lat: location.lat, lng: location.lng } }
-        : {}),
       points: r.points,
       years_off: r.years_off,
       distance_km: r.distance_km,
@@ -125,17 +102,6 @@ export function validateCapture(input) {
   };
 }
 
-// Only answer metadata is used; guesses and error magnitudes cannot recover it.
-function answerFields(year, location) {
-  const actualYear = number(year);
-  const lat = number(location?.lat);
-  const lng = number(location?.lng);
-  return {
-    ...(actualYear !== null && actualYear !== 0 ? { actual_year: actualYear } : {}),
-    ...(lat !== null && lng !== null ? { actual_location: { lat, lng } } : {}),
-  };
-}
-
 export function captureModern(data, href, playedOn = playedToday()) {
   const url = new URL(href);
   if (!url.pathname.endsWith("/final-score") || !data) return null;
@@ -159,11 +125,7 @@ export function captureModern(data, href, playedOn = playedToday()) {
     number(data.playArray[0].No) !== number(data.dailyNumber)
   )
     return null;
-  const rounds = data.roundResults.map((r, i) => ({
-    ...answerFields(
-      r.actualYear ?? data.playArray?.[i]?.Year,
-      r.actualCoords ?? data.playArray?.[i]?.Location,
-    ),
+  const rounds = data.roundResults.map((r) => ({
     points: number(r.totalScore),
     years_off:
       !r.noGuess &&
@@ -208,13 +170,7 @@ export function captureLegacy(
   const path = new URL(href).pathname;
   const daily = path.endsWith("/finalscoredaily");
   if (!daily && !path.endsWith("/finalscore")) return null;
-  let pictures;
-  try {
-    pictures = JSON.parse(values[daily ? "dailyArray" : "playArray"] ?? "[]");
-  } catch {
-    return null;
-  }
-  const rounds = prefixes.map((prefix, i) => {
+  const rounds = prefixes.map((prefix) => {
     const raw = number(values[`${prefix}DistanceMeters`]);
     const formatted = /^([\d,.]+)\s*(km|m)$/i.exec(
       values[`${prefix}Distance`] ?? "",
@@ -227,7 +183,6 @@ export function captureLegacy(
             (formatted[2].toLowerCase() === "m" ? 1000 : 1)
           : null;
     return {
-      ...answerFields(pictures[i]?.Year, pictures[i]?.Location),
       points: number(values[`${prefix}Total`]),
       years_off: number(values[`${prefix}Year`] ?? values[`${prefix}YearsOff`]),
       distance_km: distance,

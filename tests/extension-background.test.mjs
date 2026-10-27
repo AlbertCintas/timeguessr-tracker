@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
-import { fetchGameAnswers } from "../extension/backfill.js";
 import { IDBFactory } from "fake-indexeddb";
 import {
   validateCapture,
@@ -16,15 +15,12 @@ const source = (
 async function setup(initial = {}, firefox = false) {
   const stored = structuredClone(initial),
     calls = [],
-    backfillCalls = [],
     events = {};
   let session = null,
     offline = false,
     conflict = false,
     expired = false,
-    accesses = [],
-    backfillGames = [],
-    backfillFetch = fetch;
+    accesses = [];
   const chrome = {
     storage: {
       local: {
@@ -113,16 +109,6 @@ async function setup(initial = {}, firefox = false) {
       };
     },
     async rpc(name, args) {
-      if (name === "timeguessr_backfill_candidates")
-        return { data: backfillGames.slice(0, 3), error: null };
-      if (name === "backfill_timeguessr_answers") {
-        backfillCalls.push({ name, args, uid: session.user.id });
-        backfillGames = backfillGames.filter((g) => g.id !== args.target_game);
-        return {
-          data: { status: args.answers ? "enriched" : "unavailable" },
-          error: null,
-        };
-      }
       calls.push({ name, args, uid: session.user.id });
       if (offline) return { error: { message: "Offline" } };
       return {
@@ -138,8 +124,6 @@ async function setup(initial = {}, firefox = false) {
     validateCapture,
     dailyDate,
     externalKey,
-    fetchGameAnswers: (game) =>
-      fetchGameAnswers(game, (...args) => backfillFetch(...args)),
     console,
     AbortSignal,
     fetch,
@@ -179,11 +163,6 @@ async function setup(initial = {}, firefox = false) {
     context,
     stored,
     calls,
-    backfillCalls,
-    setBackfill(games, request) {
-      backfillGames = games;
-      backfillFetch = request;
-    },
     events,
     send,
     idle,
@@ -363,106 +342,8 @@ test("worker enriches pending and saved captures with replay IDs", async () => {
   await saved.send("capture", { capture }, saved.page);
   await saved.idle();
   const count = saved.calls.length;
-  await saved.send(
-    "capture",
-    { capture: { ...capture, replay_id } },
-    saved.page,
-  );
+  await saved.send("capture", { capture: { ...capture, replay_id } }, saved.page);
   await saved.idle();
   assert.equal(saved.calls.length, count + 1);
   assert.equal(saved.calls.at(-1).args.replay_game_id, replay_id);
-});
-
-test("worker enriches both queued and previously uploaded captures with actual answers", async () => {
-  const enriched = {
-    ...capture,
-    rounds: capture.rounds.map((r) => ({
-      ...r,
-      actual_year: 1990,
-      actual_location: { lat: 0, lng: 0 },
-    })),
-  };
-  const app = await setup();
-  await app.send("login", { username: "alice", password: "password" });
-  app.setOffline(true);
-  await app.send("capture", { capture }, app.page);
-  await app.idle();
-  await app.send("capture", { capture: enriched }, app.page);
-  await app.idle();
-  assert.equal(app.stored.queue[0].capture.rounds[0].actual_year, 1990);
-  app.setOffline(false);
-  await app.send("retry");
-  await app.idle();
-  assert.deepEqual(app.calls.at(-1).args.pictures[0].actual_location, {
-    lat: 0,
-    lng: 0,
-  });
-  const saved = await setup();
-  await saved.send("login", { username: "alice", password: "password" });
-  await saved.send("capture", { capture }, saved.page);
-  await saved.idle();
-  const count = saved.calls.length;
-  await saved.send("capture", { capture: enriched }, saved.page);
-  await saved.idle();
-  assert.equal(saved.calls.length, count + 1);
-  assert.equal(saved.calls.at(-1).args.pictures[0].actual_year, 1990);
-  await saved.send("capture", { capture: enriched }, saved.page);
-  await saved.idle();
-  assert.equal(saved.calls.length, count + 1);
-});
-
-test("automatic backfill enriches saved games in bounded batches, persists cooldown and respects pause/sign-out", async () => {
-  const app = await setup();
-  const replay =
-    "486e1bb323cdb6b03defc37a822b41b2b109f5beecca4bee14be81b86a4c1d2e:1aafa2c966819cb349e57d3db9b435a7";
-  const fixture = JSON.parse(
-    await readFile(
-      new URL("./fixtures/timeguessr/replay.json", import.meta.url),
-      "utf8",
-    ),
-  );
-  app.setBackfill(
-    Array.from({ length: 5 }, (_, i) => ({
-      id: `game${i}`,
-      kind: "custom",
-      replay_id: replay,
-    })),
-    async () => Response.json(fixture),
-  );
-  await app.send("login", { username: "alice", password: "password" });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 3);
-  assert.equal(app.backfillCalls[0].args.answers[0].actual_year, 1918);
-  assert.equal(app.backfillCalls[0].uid, "alice");
-  assert.match(app.stored.backfill.message, /3 games backfilled/);
-  app.events.alarm({ name: "retry-imports" });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 3);
-  await app.send("toggle", { enabled: false });
-  app.stored.backfill.next_check = 0;
-  app.events.alarm({ name: "retry-imports" });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 3);
-  await app.send("toggle", { enabled: true });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 5);
-  await app.send("logout");
-  app.stored.backfill.next_check = 0;
-  app.events.alarm({ name: "retry-imports" });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 5);
-  assert.equal((await app.send("state")).backfill, null);
-});
-
-test("automatic backfill retries transient site failures without writing fabricated answers", async () => {
-  const app = await setup();
-  app.setBackfill(
-    [{ id: "daily", kind: "daily", daily_date: "2026-10-09" }],
-    async () => new Response("", { status: 503 }),
-  );
-  await app.send("login", { username: "alice", password: "password" });
-  await app.idle();
-  assert.equal(app.backfillCalls.length, 0);
-  assert.match(app.stored.backfill.message, /retry/i);
-  assert(app.stored.backfill.next_check > Date.now());
 });
