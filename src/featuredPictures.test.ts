@@ -69,3 +69,34 @@ test("heatmap includes zero coordinates and bounds, normalizes dateline, and bin
     ],
   );
 });
+
+test("site backfill covers total-only games, wins over capture disagreement and stays within the selected period", () => {
+  const answers = Array.from({ length: 5 }, () => ({
+    actual_year: 1986,
+    actual_location: { lat: 0, lng: 0 },
+  }));
+  const games = [
+    {
+      id: "daily",
+      kind: "daily" as const,
+      daily_date: "2026-10-09",
+      name: null,
+      created_at: "2026-10-09T12:00:00Z",
+      correct_answers: answers,
+    },
+  ];
+  const results = [
+    { game_id: "daily", player_id: "alice", points: 10000 },
+    {
+      game_id: "daily",
+      player_id: "bob",
+      points: 50000,
+      rounds: [round({ actual_year: 1900 })],
+    },
+  ];
+  const pictures = featuredPictures(results, games);
+  assert.equal(pictures.length, 5);
+  assert.deepEqual(yearDistribution(pictures), [{ year: 1986, count: 5 }]);
+  assert.deepEqual(locationDensity(pictures), [{ lat: 0, lng: 0, count: 5 }]);
+  assert.deepEqual(featuredPictures([], games), []);
+});

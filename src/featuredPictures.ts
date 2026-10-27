@@ -1,4 +1,4 @@
-import type { PictureResult, Result } from "./types.ts";
+import type { CorrectAnswer, Game, PictureResult, Result } from "./types.ts";
 
 /** One answer per game and round, independent of the number of players. */
 export interface FeaturedPicture {
@@ -6,9 +6,10 @@ export interface FeaturedPicture {
   readonly location: { readonly lat: number; readonly lng: number } | null;
 }
 
-/** Merge incomplete imports by game/round; omit conflicting answer fields. */
+/** Prefer backfilled site answers, then merge captures by game/round and omit conflicting fields. */
 export function featuredPictures(
   results: readonly Result[],
+  games: readonly Game[] = [],
 ): FeaturedPicture[] {
   const pictures = new Map<string, PictureResult[]>();
   for (const result of results) {
@@ -19,7 +20,23 @@ export function featuredPictures(
       pictures.set(key, entries);
     });
   }
-  return [...pictures.values()].map((entries) => {
+  const played = new Set(results.map((r) => r.game_id));
+  const originals = new Map<string, CorrectAnswer>();
+  for (const game of games) {
+    if (!played.has(game.id)) continue;
+    // Timeguessr has five pictures even when only a total score was submitted.
+    for (let index = 0; index < 5; index++) {
+      const key = `${game.id}:${index}`;
+      if (!pictures.has(key)) pictures.set(key, []);
+    }
+    game.correct_answers?.forEach((answer, index) => {
+      const key = `${game.id}:${index}`;
+      originals.set(key, answer);
+      if (!pictures.has(key)) pictures.set(key, []);
+    });
+  }
+  return [...pictures].map(([key, entries]) => {
+    const original = originals.get(key);
     const years = new Set(
       entries.flatMap((r) => (r.actual_year == null ? [] : [r.actual_year])),
     );
@@ -36,9 +53,12 @@ export function featuredPictures(
       ),
     );
     return {
-      year: years.size === 1 ? ([...years][0] ?? null) : null,
+      year:
+        original?.actual_year ??
+        (years.size === 1 ? ([...years][0] ?? null) : null),
       location:
-        locations.size === 1 ? ([...locations.values()][0] ?? null) : null,
+        original?.actual_location ??
+        (locations.size === 1 ? ([...locations.values()][0] ?? null) : null),
     };
   });
 }

@@ -244,7 +244,7 @@ test("featured answers count once per game, show heatmap and year bars, and filt
     page.getByRole("heading", { name: "Featured pictures", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("5 mapped · 5 dated · 5 detailed pictures.", {
+    page.getByText("5 mapped · 5 dated · 5 pictures.", {
       exact: false,
     }),
   ).toBeVisible();
@@ -314,6 +314,65 @@ test("correct answers appear in history without overflowing a mobile page", asyn
   await expect(table).toContainText("Correct year");
   await expect(table).toContainText("1990");
   await expect(table).toContainText("48.8°, 2.3°");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("automatic site backfill fills charts and history for games with only total scores", async ({
+  page,
+}) => {
+  const originalAnswers = Array.from({ length: 5 }, () => ({
+    actual_year: 1986,
+    actual_location: { lat: 40.7663, lng: -73.9798 },
+  }));
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const game = {
+      ...games[0],
+      correct_answers: originalAnswers,
+      answers_source_url:
+        "https://timeguessr.com/play?mode=daily&archive=1227-c4325922368acb2a08bd",
+    };
+    await route.fulfill({
+      json: url.includes("/profiles")
+        ? profiles
+        : url.includes("/games")
+          ? [game]
+          : url.includes("/results")
+            ? ["alice", "bob"].map((player_id) => ({
+                game_id: game.id,
+                player_id,
+                points: 30000,
+              }))
+            : [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./#featured");
+  await expect(
+    page.getByText("5 mapped · 5 dated · 5 pictures.", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("listitem", { name: "1986: 5 pictures" }),
+  ).toBeVisible();
+  await page.getByLabel("Standings period").selectOption("last7");
+  await expect(
+    page.getByText("No correct years captured in this period yet."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "History", exact: true }).click();
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await page.getByText("Timeguessr’s correct answers", { exact: true }).click();
+  const answers = page.getByRole("table", {
+    name: "Original photograph answers",
+  });
+  await expect(answers).toContainText("1986");
+  await expect(answers).toContainText("40.7663°, -73.9798°");
+  await expect(
+    page.getByRole("link", { name: "Original Timeguessr game" }),
+  ).toHaveAttribute("href", /timeguessr.com\/play/);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

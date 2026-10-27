@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Result } from "./types";
+import type { Game, Result } from "./types";
 import {
   featuredPictures,
   locationDensity,
@@ -10,11 +10,13 @@ import {
 export function FeaturedPictureCharts({
   results,
   controls,
+  games,
 }: {
   results: Result[];
+  games: Game[];
   controls: ReactNode;
 }) {
-  const pictures = featuredPictures(results);
+  const pictures = featuredPictures(results, games);
   const years = yearDistribution(pictures);
   const cells = locationDensity(pictures);
   const located = pictures.filter((p) => p.location !== null).length;
@@ -31,8 +33,8 @@ export function FeaturedPictureCharts({
         {controls}
       </div>
       <p className="featured-coverage">
-        {located} mapped · {dated} dated · {pictures.length} detailed pictures.
-        Each picture counts once per game across all players.
+        {located} mapped · {dated} dated · {pictures.length} pictures. Each
+        picture counts once per game across all players.
       </p>
       <div className="featured-charts">
         <section className="featured-card">
@@ -146,10 +148,10 @@ export function FeaturedPictureCharts({
         </section>
       </div>
       <p className="featured-coverage">
-        Answers come from completed games captured by extension v1.2.0 or later.
-        Reopen a saved results page to enrich an earlier import. Shared result
-        text contains only guess errors; missing or conflicting answers are
-        excluded.
+        Answers are the original photograph years and locations from Timeguessr,
+        never player guesses. Extension v1.2.0 automatically backfills saved
+        games from the daily archive and replay links while auto-import is
+        enabled. Games without a recoverable source remain missing.
       </p>
     </>
   );

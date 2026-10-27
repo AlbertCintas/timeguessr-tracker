@@ -14,6 +14,17 @@ export interface Game {
   played_on?: string | null;
   replay_id?: string | null;
   timer_seconds?: number;
+  correct_answers?: CorrectAnswer[] | null;
+  answers_source_url?: string | null;
+  answers_backfill_checked_at?: string | null;
+}
+/** Original photograph metadata shared by all players of a game. */
+export interface CorrectAnswer {
+  readonly actual_year: number | null;
+  readonly actual_location: {
+    readonly lat: number;
+    readonly lng: number;
+  } | null;
 }
 export interface PictureResult {
   actual_year?: number | null;

@@ -72,10 +72,22 @@ Run `npm run lint:firefox`, `npm run test:extension`, and `npm run test:firefox`
 
 ## Featured pictures
 
-Extension v1.2.0 captures the actual answer year and latitude/longitude from completed Timeguessr results (modern `roundResults.actualYear` / `actualCoords`, falling back to image `Year` / `Location`; legacy image arrays use the same fields). These are photograph locations, not players’ physical locations. Correct answers also appear in each picture breakdown.
+Extension v1.2.0 captures the actual answer year and latitude/longitude from completed Timeguessr results (modern `roundResults.actualYear` / `actualCoords`, falling back to image `Year` / `Location`; legacy image arrays use the same fields). These are photograph locations, not players’ physical locations. Guessed years, guessed coordinates and error magnitudes are never used to derive correct answers.
 
-The **Featured pictures** tab shows a world heatmap (5° geographic cells) and an exact-year frequency bar chart. The period picker uses the same game dates as the standings. Each round counts once per game across all players; repeated appearances in separate games count separately. Partial imports can supply each other’s missing fields. Conflicting answers between players are excluded field by field. Coverage counts show how much answer metadata is available; missing answers are never inferred from guess errors.
+The **Featured pictures** tab shows a world heatmap (5° geographic cells) and an exact-year frequency bar chart. The period picker uses the same game dates as the standings. Each round counts once per game across all players; repeated appearances in separate games count separately. Backfilled site answers take precedence over capture metadata. Partial captures can supply each other’s missing fields; conflicting capture fields are excluded when no backfilled answer is available. Coverage includes all five pictures of each played game, including total-only submissions with missing answers.
 
-Apply the `featured_answers` database migration **before** releasing the updated extension. Reopening a completed results page with the new extension can enrich an existing matching import without replacing scores or answers. Old share text and historical stored errors do not contain the actual answers, so they cannot be automatically backfilled. Old extension imports remain supported and preserve captured answers.
+### Automatic historical backfill
+
+While signed in with auto-import enabled, the extension automatically fills missing answers for **already-played club games**, including games with total-only submissions. Any signed-in club member’s extension can backfill shared photograph metadata; scores, player guess errors and game identities remain untouched. No Timeguessr sign-in or manual reopening is needed.
+
+- Daily games: read the official archive month, match the exact saved date, follow its published signed link, then verify all five photographs have the expected daily number. For the current daily, follow the archive’s explicitly marked current-game route and verify the same identity. The archive month is retained as dated provenance until a signed archive link exists.
+- Replay games: fetch the original photographs from Timeguessr’s game-settings data and verify that the complete returned replay ID matches the saved one.
+- Read only Timeguessr’s structured JSON page data. Never execute page scripts, submit scores, play a game or infer answers from guesses. Requests omit Timeguessr cookies.
+- Process up to three games per batch on login, browser startup, extension startup and the existing one-minute alarm. Completed backfills are idempotent. Network/server failures retry after five minutes; unavailable or conflicting sources are checked again after 24 hours. Pause auto-import or sign out to pause backfill. The popup shows the latest status.
+- Games without a saved replay ID, or no longer available on the site, remain missing. The existing result capture can still enrich them if a completed results page retains their data.
+
+Shared answers and their source link appear in History even when players submitted only total scores. The tracker refreshes automatically, so recovered answers flow into the charts without another score submission.
+
+Apply `20261027125144_featured_answers.sql` **before** releasing extension v1.2.0. The migration adds shared answer metadata and narrowly scoped backfill functions. Only authenticated club members can backfill an existing game with at least one submitted result; the extension receives no privileged database key, and direct game updates and score permissions remain unchanged. This PR does not deploy the migration or alter production data.
 
 The heatmap uses a bundled [Natural Earth 1:110m land outline](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson), which is public domain. It requires no map account, external tile requests or additional browser permissions.

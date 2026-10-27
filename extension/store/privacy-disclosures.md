@@ -8,7 +8,7 @@ Permissions:
 
 - `storage`: remember account metadata, import settings, pending games and recent upload status; Chrome also stores authentication in restricted storage.
 - `alarms`: retry pending uploads after connectivity returns or the browser restarts.
-- Timeguessr hosts: read completed results and fetch public daily metadata.
+- Timeguessr hosts: read completed results, fetch public daily metadata, and automatically recover original photograph answers for already-played club games from public archive and replay page data. Backfill omits Timeguessr cookies, submits no scores, and pauses with auto-import.
 - The project’s Supabase host: authenticate tracker accounts and upload results.
 - No extra permission: on “Check for updates”, the popup asks the browser store for an update and reads the public `version.json` from the tracker site on GitHub Pages.
 
