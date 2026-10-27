@@ -44,9 +44,6 @@ async function render() {
     (!data.enabled
       ? "Auto-import is paused."
       : "Waiting for the next crime against geography.");
-  $("backfill-status").textContent =
-    data.backfill?.message ||
-    "Original answers for saved games will be backfilled automatically from Timeguessr.";
   $("imports").replaceChildren();
   const items = [...data.queue, ...data.history].slice(0, 30);
   if (!items.length) $("imports").textContent = "No games captured yet.";
@@ -171,9 +168,7 @@ async function checkForUpdate() {
     return;
   }
   status.replaceChildren(
-    published || store
-      ? "You have the latest version."
-      : "Could not check for updates.",
+    published || store ? "You have the latest version." : "Could not check for updates.",
   );
 }
 $("version").textContent = `v${version}`;

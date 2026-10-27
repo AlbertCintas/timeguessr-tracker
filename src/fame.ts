@@ -1,4 +1,4 @@
-import type { Game, Profile, Result } from "./types.ts";
+import type { Game, PictureResult, Profile, Result } from "./types.ts";
 
 export const minimumAveragePictures = 20;
 
@@ -111,7 +111,7 @@ export function recordRankings(
           picture: index + 1,
         })),
       );
-      const field = (key: "points" | "years_off" | "distance_km"): Sample[] =>
+      const field = (key: keyof PictureResult): Sample[] =>
         pictures.flatMap((round) =>
           round[key] === null
             ? []
