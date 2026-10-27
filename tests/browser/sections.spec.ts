@@ -79,6 +79,9 @@ test("tabs show one section at a time and remember it in the URL", async ({
     "5 perfect",
   );
   await expect(fame.locator('[data-metric="streak"]')).toContainText("4 days");
+  await expect(fame.locator('[data-metric="complaints"]')).toContainText(
+    "albertthegreatestLifetime achievementconstantly",
+  );
   await expect(fame.locator('[data-metric="bestGame"]')).toContainText(
     "Daily · 11/10/26",
   );

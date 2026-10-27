@@ -574,6 +574,28 @@ function FameBoard({
                 </tr>
               );
             })}
+            <tr data-metric="complaints">
+              <th scope="row">
+                Most complaints
+                <small className="record-quip">
+                  Filed more appeals than valid scores.
+                </small>
+              </th>
+              <td>
+                <div className="shame-holder">
+                  <Avatar
+                    profile={profiles.find(
+                      (profile) => profile.display_name === "albertthegreatest",
+                    )}
+                  />
+                  <div className="shame-player">
+                    <strong>albertthegreatest</strong>
+                    <small>Lifetime achievement</small>
+                  </div>
+                </div>
+              </td>
+              <td className="shame-value">constantly</td>
+            </tr>
           </tbody>
         </table>
         <div className="board-foot">
