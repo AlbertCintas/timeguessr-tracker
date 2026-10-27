@@ -342,8 +342,50 @@ test("worker enriches pending and saved captures with replay IDs", async () => {
   await saved.send("capture", { capture }, saved.page);
   await saved.idle();
   const count = saved.calls.length;
-  await saved.send("capture", { capture: { ...capture, replay_id } }, saved.page);
+  await saved.send(
+    "capture",
+    { capture: { ...capture, replay_id } },
+    saved.page,
+  );
   await saved.idle();
   assert.equal(saved.calls.length, count + 1);
   assert.equal(saved.calls.at(-1).args.replay_game_id, replay_id);
+});
+
+test("worker enriches both queued and previously uploaded captures with actual answers", async () => {
+  const enriched = {
+    ...capture,
+    rounds: capture.rounds.map((r) => ({
+      ...r,
+      actual_year: 1990,
+      actual_location: { lat: 0, lng: 0 },
+    })),
+  };
+  const app = await setup();
+  await app.send("login", { username: "alice", password: "password" });
+  app.setOffline(true);
+  await app.send("capture", { capture }, app.page);
+  await app.idle();
+  await app.send("capture", { capture: enriched }, app.page);
+  await app.idle();
+  assert.equal(app.stored.queue[0].capture.rounds[0].actual_year, 1990);
+  app.setOffline(false);
+  await app.send("retry");
+  await app.idle();
+  assert.deepEqual(app.calls.at(-1).args.pictures[0].actual_location, {
+    lat: 0,
+    lng: 0,
+  });
+  const saved = await setup();
+  await saved.send("login", { username: "alice", password: "password" });
+  await saved.send("capture", { capture }, saved.page);
+  await saved.idle();
+  const count = saved.calls.length;
+  await saved.send("capture", { capture: enriched }, saved.page);
+  await saved.idle();
+  assert.equal(saved.calls.length, count + 1);
+  assert.equal(saved.calls.at(-1).args.pictures[0].actual_year, 1990);
+  await saved.send("capture", { capture: enriched }, saved.page);
+  await saved.idle();
+  assert.equal(saved.calls.length, count + 1);
 });

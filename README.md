@@ -4,7 +4,7 @@ A shared tracker for a group of friends, with cumulative wins and points, win pe
 
 The highest submitted score wins; ties award one win to each leader. Scores count immediately, including games with a single submission. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
-New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame, the hall of fame and player stats. The site has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. Average records need 20 detailed pictures.
+New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame, the hall of fame and player stats. The site has six tabs: Standings, Hall of shame, Hall of fame, Player stats, Featured pictures and History. The period picker applies to the standings, both halls and player stats. Average records need 20 detailed pictures.
 
 ## Run locally
 
@@ -69,3 +69,13 @@ Store installations update automatically. To update a manual installation, downl
 `npm run build:store` prepares Chrome and Firefox upload ZIPs, a matching source archive, and listing material in `store-artifacts/`. Firefox uses an event page and stores authentication in the extension’s IndexedDB database. Firefox 140 or later is required. The source archive includes build instructions and the dependency lockfile.
 
 Run `npm run lint:firefox`, `npm run test:extension`, and `npm run test:firefox` to validate the packages. Firefox browser tests use an isolated profile and require an installed Firefox; set `FIREFOX_BINARY` if it is outside the standard macOS location. The privacy policy is served at `privacy.html`.
+
+## Featured pictures
+
+Extension v1.2.0 captures the actual answer year and latitude/longitude from completed Timeguessr results (modern `roundResults.actualYear` / `actualCoords`, falling back to image `Year` / `Location`; legacy image arrays use the same fields). These are photograph locations, not players’ physical locations. Correct answers also appear in each picture breakdown.
+
+The **Featured pictures** tab shows a world heatmap (5° geographic cells) and an exact-year frequency bar chart. The period picker uses the same game dates as the standings. Each round counts once per game across all players; repeated appearances in separate games count separately. Partial imports can supply each other’s missing fields. Conflicting answers between players are excluded field by field. Coverage counts show how much answer metadata is available; missing answers are never inferred from guess errors.
+
+Apply the `featured_answers` database migration **before** releasing the updated extension. Reopening a completed results page with the new extension can enrich an existing matching import without replacing scores or answers. Old share text and historical stored errors do not contain the actual answers, so they cannot be automatically backfilled. Old extension imports remain supported and preserve captured answers.
+
+The heatmap uses a bundled [Natural Earth 1:110m land outline](https://github.com/nvkelso/natural-earth-vector/blob/master/geojson/ne_110m_land.geojson), which is public domain. It requires no map account, external tile requests or additional browser permissions.

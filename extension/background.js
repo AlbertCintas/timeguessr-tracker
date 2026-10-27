@@ -220,8 +220,16 @@ async function handle(message, sender) {
       if (
         previous &&
         previous.capture.rounds.every((round, i) =>
-          ["points", "years_off", "distance_km"].every(
-            (key) => round[key] === capture.rounds[i][key],
+          [
+            "points",
+            "years_off",
+            "distance_km",
+            "actual_year",
+            "actual_location",
+          ].every(
+            (key) =>
+              JSON.stringify(round[key] ?? null) ===
+              JSON.stringify(capture.rounds[i][key] ?? null),
           ),
         ) &&
         previous.capture.points === capture.points &&
@@ -245,6 +253,17 @@ async function handle(message, sender) {
       await save(data);
     } else {
       const queued = data.queue.find((entry) => entry.id === id);
+      // A page can finish loading answer metadata while its upload is pending.
+      for (let i = 0; i < 5; i++) {
+        for (const key of ["actual_year", "actual_location"]) {
+          if (
+            queued.capture.rounds[i][key] == null &&
+            capture.rounds[i][key] != null
+          )
+            queued.capture.rounds[i][key] = capture.rounds[i][key];
+        }
+      }
+      await save(data);
       if (capture.replay_id && !queued.capture.replay_id) {
         queued.capture.replay_id = capture.replay_id;
         await save(data);

@@ -23,6 +23,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       "202610090003_extension_import.sql",
       "202610090004_game_links.sql",
       "202610090005_import_replays.sql",
+      "20261027125144_featured_answers.sql",
     ])
       await db.exec(
         await readFile(
@@ -244,6 +245,69 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       await db.query("select get_or_create_game(null,'My random game') as id")
     ).rows[0].id;
     assert.notEqual(manual, customSaved.game_id);
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261027125144_featured_answers.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await as(alice);
+    const answers = rounds.map((r) => ({
+      ...r,
+      actual_year: 1990,
+      actual_location: { lat: 0, lng: 0 },
+    }));
+    assert.equal(
+      (await importGame({ rounds: JSON.stringify(answers) })).status,
+      "enriched",
+    );
+    assert.equal(
+      (await importGame({ rounds: JSON.stringify(answers) })).status,
+      "already_saved",
+    );
+    assert.equal((await importGame()).status, "already_saved");
+    assert.deepEqual(
+      (
+        await db.query(
+          "select rounds from results where game_id=$1 and player_id=$2",
+          [saved.game_id, alice],
+        )
+      ).rows[0].rounds,
+      answers,
+    );
+    assert.equal(
+      (
+        await importGame({
+          rounds: JSON.stringify(
+            answers.map((r) => ({ ...r, actual_year: 1991 })),
+          ),
+        })
+      ).status,
+      "conflict",
+    );
+    for (const actual_year of [0, 10000, 1990.5, "1990"])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(answers.map((r) => ({ ...r, actual_year }))),
+        }),
+      );
+    for (const actual_location of [
+      { lat: 91, lng: 0 },
+      { lat: 0, lng: 181 },
+      { lat: null, lng: 0 },
+      {},
+    ])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(
+            answers.map((r) => ({ ...r, actual_location })),
+          ),
+        }),
+      );
     await as(bob);
     assert.equal((await importGame()).status, "saved");
     assert.equal((await importGame()).game_id, saved.game_id);

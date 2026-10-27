@@ -77,7 +77,7 @@ test("installed MV3 extension signs in, captures results, uploads and hides auth
     await context.route("https://timeguessr.com/**", (route) =>
       route.fulfill({
         contentType: "text/html",
-        body: `<!doctype html><title>Timeguessr fixture</title><script>sessionStorage.setItem('tg_final_score',JSON.stringify({mode:'play',score:20000,gameId:null,playArray:[...[1,2,3,4,5].map(i=>({ImageId:'picture-'+i})),'${"a".repeat(64)}','${"b".repeat(32)}'],roundResults:[1,2,3,4,5].map(i=>({totalScore:4000,guessYear:2000,actualYear:1990,distanceMeters:1300}))}));</script><h1>20,000</h1>`,
+        body: `<!doctype html><title>Timeguessr fixture</title><script>sessionStorage.setItem('tg_final_score',JSON.stringify({mode:'play',score:20000,gameId:null,playArray:[...[1,2,3,4,5].map(i=>({ImageId:'picture-'+i})),'${"a".repeat(64)}','${"b".repeat(32)}'],roundResults:[1,2,3,4,5].map(i=>({totalScore:4000,guessYear:2000,actualYear:1990,actualCoords:{lat:48.8,lng:2.3},distanceMeters:1300}))}));</script><h1>20,000</h1>`,
       }),
     );
     const game = await context.newPage();
@@ -99,11 +99,41 @@ test("installed MV3 extension signs in, captures results, uploads and hides auth
       total: 20000,
       challenge_date: null,
       pictures: [
-        { points: 4000, years_off: 10, distance_km: 1.3 },
-        { points: 4000, years_off: 10, distance_km: 1.3 },
-        { points: 4000, years_off: 10, distance_km: 1.3 },
-        { points: 4000, years_off: 10, distance_km: 1.3 },
-        { points: 4000, years_off: 10, distance_km: 1.3 },
+        {
+          points: 4000,
+          years_off: 10,
+          distance_km: 1.3,
+          actual_year: 1990,
+          actual_location: { lat: 48.8, lng: 2.3 },
+        },
+        {
+          points: 4000,
+          years_off: 10,
+          distance_km: 1.3,
+          actual_year: 1990,
+          actual_location: { lat: 48.8, lng: 2.3 },
+        },
+        {
+          points: 4000,
+          years_off: 10,
+          distance_km: 1.3,
+          actual_year: 1990,
+          actual_location: { lat: 48.8, lng: 2.3 },
+        },
+        {
+          points: 4000,
+          years_off: 10,
+          distance_km: 1.3,
+          actual_year: 1990,
+          actual_location: { lat: 48.8, lng: 2.3 },
+        },
+        {
+          points: 4000,
+          years_off: 10,
+          distance_km: 1.3,
+          actual_year: 1990,
+          actual_location: { lat: 48.8, lng: 2.3 },
+        },
       ],
     });
     await expect(popup.locator("#imports")).toContainText("Saved");

@@ -16,6 +16,8 @@ export interface Game {
   timer_seconds?: number;
 }
 export interface PictureResult {
+  actual_year?: number | null;
+  actual_location?: { lat: number; lng: number } | null;
   points: number;
   years_off: number | null;
   distance_km: number | null;

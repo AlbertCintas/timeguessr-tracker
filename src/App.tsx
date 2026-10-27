@@ -56,6 +56,7 @@ import {
   minimumAveragePictures,
   type FameMetric,
 } from "./fame";
+import { FeaturedPictureCharts } from "./FeaturedPictureCharts";
 import { PictureBreakdown } from "./PictureBreakdown";
 import { playerStats } from "./playerStats";
 import {
@@ -776,6 +777,7 @@ const labTabs = {
   shame: { label: "Hall of shame", icon: Skull },
   fame: { label: "Hall of fame", icon: Medal },
   stats: { label: "Player stats", icon: ChartColumn },
+  featured: { label: "Featured pictures", icon: Camera },
   history: { label: "History", icon: CalendarDays },
 } as const;
 type LabTab = keyof typeof labTabs;
@@ -1567,6 +1569,12 @@ export default function App() {
         period={standingsPeriod}
         controls={standingsControls}
         viewerId={session?.user.id}
+      />
+    ),
+    featured: (
+      <FeaturedPictureCharts
+        results={resultsForPeriod(games, results, standingsPeriod)}
+        controls={standingsControls}
       />
     ),
     history: historyPanel,
