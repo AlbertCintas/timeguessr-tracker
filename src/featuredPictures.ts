@@ -84,6 +84,15 @@ export function yearDistribution(pictures: readonly FeaturedPicture[]) {
 }
 
 /** Bin answers into square geographic cells, including the poles and dateline. */
+/** South-west corner of the grid cell that holds a location. */
+export const cellOf = (
+  location: { readonly lat: number; readonly lng: number },
+  size: number,
+) => ({
+  lat: Math.min(90 - size, Math.floor(location.lat / size) * size),
+  lng: Math.floor((location.lng === 180 ? -180 : location.lng) / size) * size,
+});
+
 export function locationDensity(
   pictures: readonly Pick<FeaturedPicture, "location">[],
   size = 5,
@@ -91,9 +100,7 @@ export function locationDensity(
   const cells = new Map<string, { lat: number; lng: number; count: number }>();
   for (const { location } of pictures) {
     if (location === null) continue;
-    const lat = Math.min(90 - size, Math.floor(location.lat / size) * size);
-    const lng =
-      Math.floor((location.lng === 180 ? -180 : location.lng) / size) * size;
+    const { lat, lng } = cellOf(location, size);
     const key = `${lat}:${lng}`;
     const cell = cells.get(key) ?? { lat, lng, count: 0 };
     cell.count++;

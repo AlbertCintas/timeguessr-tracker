@@ -1640,6 +1640,43 @@ textarea:focus-visible {
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+.atlas-map circle[aria-expanded="true"],
+.atlas-map circle:focus-visible {
+  stroke: var(--text);
+  stroke-width: 2;
+  outline: none;
+}
+.map-tip {
+  position: absolute;
+  z-index: 10;
+  width: max-content;
+  max-width: min(280px, 80%);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--raised);
+  box-shadow: 0 8px 20px var(--shadow);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.map-tip p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.map-tip ul {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.map-tip li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.map-tip small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 .map-zoom {
   position: absolute;
   top: 10px;
