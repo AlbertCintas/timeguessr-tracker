@@ -24,7 +24,7 @@ export const fameMetrics = {
   closest: {
     label: "Closest guess",
     quip: "Closer than their family has ever been.",
-    unit: "km",
+    unit: "m",
     ascending: true,
   },
   bestGame: {

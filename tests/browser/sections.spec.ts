@@ -142,6 +142,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   await expect(alice).toContainText("Games4");
   await expect(alice).toContainText("Exact years5");
   await expect(alice).toContainText("Average distance12.5 km");
+  await expect(alice).toContainText("Closest guess12,500 m");
   await expect(page.getByRole("article", { name: "Bob stats" })).toContainText(
     "Detailed pictures0",
   );
@@ -171,6 +172,9 @@ test("average records stay empty below 20 detailed pictures", async ({
     "Nobody has 20 detailed pictures yet",
   );
   await expect(fame.locator('[data-metric="closest"]')).toContainText("Alice");
+  await expect(fame.locator('[data-metric="closest"]')).toContainText(
+    "12,500 m",
+  );
   await page
     .getByRole("navigation", { name: "Sections" })
     .getByRole("button", { name: "Hall of shame" })

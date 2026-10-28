@@ -64,6 +64,8 @@ import {
   unplayedReplayGames,
 } from "./gameLinks";
 const number = new Intl.NumberFormat("en");
+const meters = (km: number) =>
+  new Intl.NumberFormat("en", { maximumFractionDigits: 0 }).format(km * 1000);
 const gameTitle = (g: Game) =>
   g.kind === "daily" ? `Daily · ${europeanDate(g.daily_date!)}` : g.name!;
 function StoreExtensionInstall() {
@@ -559,12 +561,14 @@ function FameBoard({
                   <td className="shame-value">
                     {winners.length ? (
                       <>
-                        {(average
-                          ? decimals
-                          : new Intl.NumberFormat("en", {
-                              maximumFractionDigits: 3,
-                            })
-                        ).format(winners[0].value)}{" "}
+                        {metric === "closest"
+                          ? meters(winners[0].value)
+                          : (average
+                              ? decimals
+                              : new Intl.NumberFormat("en", {
+                                  maximumFractionDigits: 3,
+                                })
+                            ).format(winners[0].value)}{" "}
                         <small>{definition.unit}</small>
                       </>
                     ) : (
@@ -676,7 +680,7 @@ function PlayerStats({
                 <dt>Average distance</dt>
                 <dd>{format(row.avgDistance, 1, " km")}</dd>
                 <dt>Closest guess</dt>
-                <dd>{format(row.closest, 2, " km")}</dd>
+                <dd>{row.closest === null ? "—" : `${meters(row.closest)} m`}</dd>
                 <dt>Exact years</dt>
                 <dd>{row.exactYears}</dd>
                 <dt>Perfect pictures</dt>
