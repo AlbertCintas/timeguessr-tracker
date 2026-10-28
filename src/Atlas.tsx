@@ -1,5 +1,22 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
-import { Flag, Hourglass, Info, Lightbulb, Map as MapIcon } from "lucide-react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
+import {
+  Flag,
+  Hourglass,
+  Info,
+  Lightbulb,
+  Map as MapIcon,
+  Maximize,
+  Minus,
+  Plus,
+} from "lucide-react";
 import type { Game, Result } from "./types";
 import {
   featuredPictures,
@@ -41,7 +58,6 @@ const plural = (n: number, word: string) =>
   `${whole.format(n)} ${n === 1 ? word : word === "country" ? "countries" : `${word}s`}`;
 const distance = (km: number) =>
   km < 1 ? `${whole.format(km * 1000)} m` : `${whole.format(km)} km`;
-const list = new Intl.ListFormat("en", { type: "conjunction" });
 const gameDate = (game: Game) =>
   game.kind === "daily" && game.daily_date
     ? game.daily_date
@@ -78,34 +94,169 @@ function Heading({
   );
 }
 
+type View = { x: number; y: number; zoom: number };
+const fullView: View = { x: 0, y: 0, zoom: 1 };
+const maxZoom = 16;
+
+function clampView({ x, y, zoom }: View): View {
+  const z = Math.min(maxZoom, Math.max(1, zoom));
+  return {
+    zoom: z,
+    x: Math.min(720 - 720 / z, Math.max(0, x)),
+    y: Math.min(360 - 360 / z, Math.max(0, y)),
+  };
+}
+
+/** Zooms by `factor` while keeping the map point (px, py) still. */
+const zoomAt = (view: View, factor: number, px: number, py: number) => {
+  const zoom = Math.min(maxZoom, Math.max(1, view.zoom * factor));
+  const keep = view.zoom / zoom;
+  return clampView({
+    zoom,
+    x: px - (px - view.x) * keep,
+    y: py - (py - view.y) * keep,
+  });
+};
+
+const cellSize = (zoom: number) => (zoom < 3 ? 3 : zoom < 8 ? 1 : 0.25);
+
+function useMapZoom() {
+  const [view, setView] = useState(fullView);
+  const svg = useRef<SVGSVGElement>(null);
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const toMap = (clientX: number, clientY: number, from: View) => {
+    const box = svg.current!.getBoundingClientRect();
+    return {
+      x: from.x + ((clientX - box.left) / box.width) * (720 / from.zoom),
+      y: from.y + ((clientY - box.top) / box.height) * (360 / from.zoom),
+    };
+  };
+  const zoomAround = (factor: number, clientX: number, clientY: number) =>
+    setView((v) => {
+      const at = toMap(clientX, clientY, v);
+      return zoomAt(v, factor, at.x, at.y);
+    });
+  const zoomedIn = view.zoom > 1;
+  useEffect(() => {
+    const node = svg.current!;
+    const wheel = (event: WheelEvent) => {
+      if (event.deltaY > 0 && !zoomedIn) return;
+      event.preventDefault();
+      zoomAround(Math.exp(-event.deltaY * 0.002), event.clientX, event.clientY);
+    };
+    node.addEventListener("wheel", wheel, { passive: false });
+    return () => node.removeEventListener("wheel", wheel);
+  }, [zoomedIn]);
+  const release = (event: PointerEvent<SVGSVGElement>) =>
+    pointers.current.delete(event.pointerId);
+  const handlers = {
+    onPointerDown(event: PointerEvent<SVGSVGElement>) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+      pointers.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+    },
+    onPointerMove(event: PointerEvent<SVGSVGElement>) {
+      const before = pointers.current.get(event.pointerId);
+      if (!before) return;
+      const after = { x: event.clientX, y: event.clientY };
+      const others = [...pointers.current.entries()].filter(
+        ([id]) => id !== event.pointerId,
+      );
+      pointers.current.set(event.pointerId, after);
+      if (others.length === 1) {
+        const other = others[0]![1];
+        zoomAround(
+          Math.hypot(after.x - other.x, after.y - other.y) /
+            Math.max(1, Math.hypot(before.x - other.x, before.y - other.y)),
+          (after.x + other.x) / 2,
+          (after.y + other.y) / 2,
+        );
+      } else if (!others.length)
+        setView((v) => {
+          const from = toMap(before.x, before.y, v);
+          const to = toMap(after.x, after.y, v);
+          return clampView({
+            ...v,
+            x: v.x + from.x - to.x,
+            y: v.y + from.y - to.y,
+          });
+        });
+    },
+    onPointerUp: release,
+    onPointerCancel: release,
+    onDoubleClick(event: MouseEvent<SVGSVGElement>) {
+      zoomAround(2, event.clientX, event.clientY);
+    },
+  };
+  const zoomBy = (factor: number) =>
+    setView((v) => zoomAt(v, factor, v.x + 360 / v.zoom, v.y + 180 / v.zoom));
+  return { view, svg, handlers, zoomBy, reset: () => setView(fullView) };
+}
+
 function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
+  const { view, svg, handlers, zoomBy, reset } = useMapZoom();
+  const size = cellSize(view.zoom);
   const points = located(pictures);
-  const cells = locationDensity(points, 3);
+  const cells = locationDensity(points, size);
   const steps = colorSteps(Math.max(1, ...cells.map((c) => c.count)));
+  const shrink = Math.min(1, (size * 2 * view.zoom) / 6) / view.zoom;
   return (
     <section className="atlas-hero">
-      <svg
-        className="atlas-map"
-        viewBox="0 0 720 360"
-        role="img"
-        aria-label={`Heat map of ${plural(points.length, "picture")} in 3° areas`}
-      >
-        {land}
-        {cells.map((cell) => {
-          const step = stepOf(cell.count, steps);
-          return (
-            <circle
-              key={`${cell.lat}:${cell.lng}`}
-              cx={x(cell.lng + 1.5)}
-              cy={y(cell.lat + 1.5)}
-              r={3 + stepIndex(step, steps) * 0.6}
-              style={{ fill: stepFill(step, steps) }}
-            >
-              <title>{plural(cell.count, "picture")}</title>
-            </circle>
-          );
-        })}
-      </svg>
+      <div className="atlas-map-frame">
+        <svg
+          ref={svg}
+          className="atlas-map"
+          data-zoomed={view.zoom > 1 || undefined}
+          viewBox={`${view.x} ${view.y} ${720 / view.zoom} ${360 / view.zoom}`}
+          role="img"
+          aria-label={`Heat map of ${plural(points.length, "picture")} in ${size}° areas`}
+          {...handlers}
+        >
+          {land}
+          {cells.map((cell) => {
+            const step = stepOf(cell.count, steps);
+            return (
+              <circle
+                key={`${cell.lat}:${cell.lng}`}
+                cx={x(cell.lng + size / 2)}
+                cy={y(cell.lat + size / 2)}
+                r={(3 + stepIndex(step, steps) * 0.6) * shrink}
+                style={{ fill: stepFill(step, steps) }}
+              >
+                <title>{plural(cell.count, "picture")}</title>
+              </circle>
+            );
+          })}
+        </svg>
+        <div className="map-zoom" role="group" aria-label="Map zoom">
+          <button
+            type="button"
+            aria-label="Zoom in"
+            disabled={view.zoom >= maxZoom}
+            onClick={() => zoomBy(2)}
+          >
+            <Plus size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom out"
+            disabled={view.zoom <= 1}
+            onClick={() => zoomBy(0.5)}
+          >
+            <Minus size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Show the whole world"
+            disabled={view.zoom <= 1}
+            onClick={reset}
+          >
+            <Maximize size={16} />
+          </button>
+        </div>
+      </div>
       <ul className="map-legend" aria-label="Pictures per circle">
         {steps.map((_, i) => (
           <li key={i}>
@@ -121,7 +272,8 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
         ))}
       </ul>
       <p className="map-note">
-        {plural(points.length, "picture")} · each circle covers a 3° area
+        {plural(points.length, "picture")} · each circle covers a {size}° area ·
+        scroll, pinch or double-click to zoom, drag to move
       </p>
     </section>
   );
@@ -205,8 +357,9 @@ function DecadeBars({
           <div
             key={decade}
             className="decade"
+            data-top={count === max || undefined}
             role="listitem"
-            aria-label={`${decade}s: ${plural(count, "picture")}`}
+            aria-label={`${decade}s: ${plural(count, "picture")}${count === max ? " · favourite decade" : ""}`}
           >
             <span className="decade-count">{count}</span>
             <span className="decade-track">
@@ -229,7 +382,8 @@ function DecadeBars({
         ))}
       </div>
       <p className="map-note">
-        ± under each decade: how many years off the club guesses on average.
+        Gold: the favourite decade. ± under each decade: how many years off the
+        club guesses on average.
       </p>
     </section>
   );
@@ -255,18 +409,25 @@ function YearChart({ pictures }: { pictures: FeaturedPicture[] }) {
           aria-label={`Pictures per year from ${first} to ${last}`}
         >
           {years.map(({ year, count }) => {
-            const height = (count / max) * 90;
+            const height = (count / max) * 78;
+            const top = count === max && max > 1;
             return (
-              <rect
-                key={year}
-                x={(year - first) * 8 + 1}
-                y={100 - height}
-                width="6"
-                height={height}
-                rx="1.5"
-              >
-                <title>{`${year}: ${plural(count, "picture")}`}</title>
-              </rect>
+              <g key={year} className={top ? "year-top" : undefined}>
+                <rect
+                  x={(year - first) * 8 + 1}
+                  y={100 - height}
+                  width="6"
+                  height={height}
+                  rx="1.5"
+                >
+                  <title>{`${year}: ${plural(count, "picture")}`}</title>
+                </rect>
+                {top && (
+                  <text x={(year - first) * 8 + 4} y={95 - height}>
+                    {year}
+                  </text>
+                )}
+              </g>
             );
           })}
           <line x1="0" x2={width} y1="100.5" y2="100.5" />
@@ -277,6 +438,13 @@ function YearChart({ pictures }: { pictures: FeaturedPicture[] }) {
           ))}
         </svg>
       </div>
+      {max > 1 && (
+        <p className="map-note">
+          {years.filter((y) => y.count === max).length === 1
+            ? `Gold: the most common year (${max} pictures).`
+            : `Gold: the most common years (${max} pictures each).`}
+        </p>
+      )}
     </section>
   );
 }
@@ -482,17 +650,9 @@ export function Atlas({
   );
   const countries = countryCounts(pictures);
   const busiest = [...decades(pictures)].sort((a, b) => b.count - a.count)[0];
-  const years = yearDistribution(pictures);
-  const top = Math.max(0, ...years.map((y) => y.count));
-  const common = years
-    .filter((y) => y.count === top)
-    .map((y) => String(y.year));
-  const commonYears =
-    top < 2
-      ? ""
-      : common.length === 1
-        ? ` Most common year: ${common[0]} (${top} pictures).`
-        : ` Most common years: ${list.format(common.slice(0, 3))} (${top} each).`;
+  const withCountry = countries.reduce((sum, c) => sum + c.count, 0);
+  const withYear = dated(pictures).length;
+  const scored = pictureScores(pictures, results).length;
   const empty = (
     <p className="featured-empty">No pictures captured in this period yet.</p>
   );
@@ -513,7 +673,7 @@ export function Atlas({
           title="Countries"
           summary={
             countries.length
-              ? `${plural(countries.length, "country")} · ${countries.filter((c) => c.count === 1).length} seen only once.`
+              ? `${plural(countries.length, "country")} · ${countries.filter((c) => c.count === 1).length} seen only once. Based on ${plural(withCountry, "picture")} with a known country.`
               : "Where the pictures were taken."
           }
           controls={controls}
@@ -531,7 +691,7 @@ export function Atlas({
           title="Years"
           summary={
             busiest
-              ? `Favourite decade: the ${busiest.decade}s, ${busiest.count} of ${plural(dated(pictures).length, "picture")}.${commonYears}`
+              ? `Based on ${plural(withYear, "picture")} with a known year.`
               : "When the pictures were taken."
           }
           controls={controls}
@@ -550,7 +710,11 @@ export function Atlas({
       <>
         <Heading
           title="Trivia"
-          summary="Pictures worth remembering, for better or worse."
+          summary={
+            pictures.length
+              ? `Based on ${plural(pictures.length, "picture")}.${scored < pictures.length ? ` Average cards use the ${scored} that two or more players shared details for.` : ""}`
+              : "Pictures worth remembering, for better or worse."
+          }
           controls={controls}
         />
         {pictures.length ? (

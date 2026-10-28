@@ -280,10 +280,31 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   await expect(
     page.getByRole("list", { name: "Pictures per circle" }),
   ).toBeVisible();
+  const zoom = page.getByRole("group", { name: "Map zoom" });
+  await zoom.getByRole("button", { name: "Zoom in" }).click();
+  await zoom.getByRole("button", { name: "Zoom in" }).click();
+  await expect(
+    page.getByRole("img", { name: "Heat map of 5 pictures in 1° areas" }),
+  ).toBeVisible();
+  await zoom.getByRole("button", { name: "Show the whole world" }).click();
+  await expect(
+    page.getByRole("img", { name: "Heat map of 5 pictures in 3° areas" }),
+  ).toBeVisible();
+  if (!test.info().project.name.includes("mobile")) {
+    await page.getByRole("img", { name: /Heat map/ }).hover();
+    await page.mouse.wheel(0, -1000);
+    await expect(
+      page.getByRole("img", { name: "Heat map of 5 pictures in 1° areas" }),
+    ).toBeVisible();
+  }
 
   await tabs.getByRole("button", { name: "Countries" }).click();
   await expect(page).toHaveURL(/#countries$/);
-  await expect(page.getByText("4 countries · 3 seen only once.")).toBeVisible();
+  await expect(
+    page.getByText(
+      "4 countries · 3 seen only once. Based on 5 pictures with a known country.",
+    ),
+  ).toBeVisible();
   const countries = page.getByRole("list", { name: "Pictures per country" });
   await expect(countries.getByRole("listitem")).toHaveCount(4);
   await expect(countries.getByRole("listitem").first()).toContainText("USA2");
@@ -293,18 +314,25 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
 
   await tabs.getByRole("button", { name: "Years" }).click();
   await expect(
-    page.getByText("Favourite decade: the 1980s, 3 of 5 pictures.", {
-      exact: false,
-    }),
+    page.getByText("Based on 5 pictures with a known year."),
   ).toBeVisible();
   await expect(
-    page.getByRole("listitem", { name: "1980s: 3 pictures" }),
+    page.getByText("Gold: the most common year (2 pictures)."),
+  ).toBeVisible();
+  await expect(page.locator(".year-top text")).toHaveText(["1986"]);
+  await expect(
+    page.getByRole("listitem", {
+      name: "1980s: 3 pictures · favourite decade",
+    }),
   ).toContainText("±1");
   await expect(
     page.getByRole("img", { name: "Pictures per year from 1904 to 2003" }),
   ).toBeVisible();
 
   await tabs.getByRole("button", { name: "Trivia" }).click();
+  await expect(
+    page.getByText("Based on 5 pictures.", { exact: true }),
+  ).toBeVisible();
   const oldest = page.locator(".trivia-fact", { hasText: "Oldest picture" });
   await expect(oldest).toContainText("1904");
   await oldest.getByRole("button", { name: "What the picture showed" }).focus();

@@ -1620,9 +1620,58 @@ textarea:focus-visible {
   border-radius: 10px;
   background: var(--bg);
 }
+.atlas-map-frame {
+  position: relative;
+}
+.atlas-map {
+  touch-action: pan-y;
+  cursor: zoom-in;
+  user-select: none;
+}
+.atlas-map[data-zoomed] {
+  touch-action: none;
+  cursor: grab;
+}
+.atlas-map[data-zoomed]:active {
+  cursor: grabbing;
+}
 .atlas-map circle {
   stroke: var(--bg);
   stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.map-zoom {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 4px 12px var(--shadow);
+}
+.map-zoom button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+}
+.map-zoom button + button {
+  border-top: 1px solid var(--border);
+}
+.map-zoom button:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--gold);
+}
+.map-zoom button:disabled {
+  color: var(--muted);
+  opacity: 0.45;
 }
 .atlas-map circle:hover {
   stroke: var(--text);
@@ -1872,7 +1921,21 @@ textarea:focus-visible {
   fill: var(--accent);
 }
 .year-chart rect:hover {
+  fill: var(--text);
+}
+.year-chart .year-top rect,
+.decade[data-top] .decade-track i {
   fill: var(--gold);
+  background: var(--gold);
+}
+.year-chart .year-top text {
+  fill: var(--gold);
+  font-weight: 700;
+}
+.decade[data-top] .decade-count,
+.decade[data-top] strong {
+  color: var(--gold);
+  font-weight: 700;
 }
 .year-chart line {
   stroke: var(--border);
