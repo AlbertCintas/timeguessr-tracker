@@ -191,13 +191,17 @@ test("the top bar shows the helpers and keeps account controls in a menu", async
 }) => {
   await serve(page, 4);
   await page.goto("./");
-  for (const name of [
-    "Random game",
-    "Browser extension",
-    "Read the rules",
-    "Add your score",
-  ])
+  for (const name of ["Random game", "Add your score"])
     await expect(page.getByRole("button", { name })).toBeVisible();
+  const places = page.getByRole("navigation", { name: "Places" });
+  await expect(places.getByRole("link", { name: "Club" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(places.getByRole("link", { name: "Atlas" })).toHaveAttribute(
+    "href",
+    "/timeguessr-tracker/atlas.html",
+  );
   const daily = page.getByRole("link", { name: "Play daily" });
   await expect(daily).toBeVisible();
   await expect(daily).toHaveAttribute(
@@ -205,10 +209,8 @@ test("the top bar shows the helpers and keeps account controls in a menu", async
     "https://timeguessr.com/play?mode=daily",
   );
   await expect(daily).toHaveAttribute("target", "_blank");
-  await expect(
-    page.getByRole("link", { name: /Play Timeguessr/ }),
-  ).toBeHidden();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeHidden();
+  for (const name of ["Browser extension", "Read the rules", "Sign in"])
+    await expect(page.getByRole("button", { name })).toBeHidden();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -216,12 +218,204 @@ test("the top bar shows the helpers and keeps account controls in a menu", async
   ).toBe(true);
   const menu = page.getByLabel("Account and settings");
   await menu.click();
-  await expect(
-    page.getByRole("link", { name: /Play Timeguessr/ }),
-  ).toBeVisible();
+  for (const name of ["Browser extension", "Read the rules"])
+    await expect(page.getByRole("button", { name })).toBeVisible();
   await page.getByRole("switch", { name: "Dark mode" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await menu.click();
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
+});
+
+const answers = [
+  [1904, "Denmark", "Crowds at the Craftsmen's Festival."],
+  [1986, "USA", "A naval officer beside a cardboard Statue of Liberty."],
+  [1986, "USA", null],
+  [1989, "France", null],
+  [2003, "UK", null],
+].map(([year, country, description], i) => ({
+  actual_year: year,
+  actual_location: { lat: 40 + i, lng: -70 + i * 20 },
+  country,
+  description,
+}));
+
+async function serveAtlas(page: Page) {
+  const game = { ...games[0], correct_answers: answers };
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    await route.fulfill({
+      json: url.includes("/profiles")
+        ? profiles
+        : url.includes("/games")
+          ? [game]
+          : url.includes("/results")
+            ? ["alice", "bob"].map((player_id, p) => ({
+                game_id: game.id,
+                player_id,
+                points: 30000,
+                rounds: rounds(p ? 2 : 0, p ? 900 : 100, p ? 2000 : 6000),
+              }))
+            : [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+}
+
+test("atlas tabs count each picture once per game, remember the tab and follow the period", async ({
+  page,
+}) => {
+  await serveAtlas(page);
+  await page.goto("./atlas.html");
+  const tabs = page.getByRole("navigation", { name: "Atlas sections" });
+  await expect(tabs.getByRole("button")).toHaveText([
+    "Map",
+    "Trivia",
+    "Countries",
+    "Years",
+  ]);
+  await expect(
+    page.getByRole("img", { name: "Heat map of 5 pictures in 3° areas" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Pictures per circle" }),
+  ).toBeVisible();
+
+  await tabs.getByRole("button", { name: "Countries" }).click();
+  await expect(page).toHaveURL(/#countries$/);
+  await expect(page.getByText("4 countries · 3 seen only once.")).toBeVisible();
+  const countries = page.getByRole("list", { name: "Pictures per country" });
+  await expect(countries.getByRole("listitem")).toHaveCount(4);
+  await expect(countries.getByRole("listitem").first()).toContainText("USA2");
+  await expect(
+    page.getByRole("list", { name: "Pictures per continent" }),
+  ).toContainText("Europe3");
+
+  await tabs.getByRole("button", { name: "Years" }).click();
+  await expect(
+    page.getByText("Favourite decade: the 1980s, 3 of 5 pictures.", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("listitem", { name: "1980s: 3 pictures" }),
+  ).toContainText("±1");
+  await expect(
+    page.getByRole("img", { name: "Pictures per year from 1904 to 2003" }),
+  ).toBeVisible();
+
+  await tabs.getByRole("button", { name: "Trivia" }).click();
+  const oldest = page.locator(".trivia-fact", { hasText: "Oldest picture" });
+  await expect(oldest).toContainText("1904");
+  await oldest.getByRole("button", { name: "What the picture showed" }).focus();
+  await expect(oldest.getByRole("tooltip")).toBeVisible();
+  await expect(oldest.getByRole("tooltip")).toHaveText(
+    "Crowds at the Craftsmen's Festival.",
+  );
+  await expect(
+    page.locator(".trivia-fact", { hasText: "Biggest score gap" }),
+  ).toContainText("4,000 pts apart");
+  await expect(page.locator(".trivia-fact")).not.toContainText(["alice"]);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+
+  await page.reload();
+  await expect(tabs.getByRole("button", { name: "Trivia" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await page.getByLabel("Standings period").selectOption("last7");
+  await expect(
+    page.getByText("No pictures captured in this period yet."),
+  ).toBeVisible();
+});
+
+test("correct answers appear in history without overflowing a mobile page", async ({
+  page,
+}) => {
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const answers = rounds(0, 0).map((r) => ({
+      ...r,
+      actual_year: 1990,
+      actual_location: { lat: 48.8, lng: 2.3 },
+    }));
+    await route.fulfill({
+      json: url.includes("/profiles")
+        ? profiles
+        : url.includes("/games")
+          ? games.slice(0, 1)
+          : url.includes("/results")
+            ? [
+                {
+                  game_id: games[0].id,
+                  player_id: "alice",
+                  points: 30000,
+                  rounds: answers,
+                },
+              ]
+            : [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./#history");
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await page.getByText("Alice’s picture breakdown", { exact: true }).click();
+  const table = page.getByRole("table", { name: "Picture breakdown" });
+  await expect(table).toContainText("Correct year");
+  await expect(table).toContainText("1990");
+  await expect(table).toContainText("48.8°, 2.3°");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("backfilled answers show their country in history for games with only total scores", async ({
+  page,
+}) => {
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    const game = {
+      ...games[0],
+      correct_answers: answers,
+      answers_source_url:
+        "https://timeguessr.com/play?mode=daily&archive=1227-c4325922368acb2a08bd",
+    };
+    await route.fulfill({
+      json: url.includes("/profiles")
+        ? profiles
+        : url.includes("/games")
+          ? [game]
+          : url.includes("/results")
+            ? ["alice", "bob"].map((player_id) => ({
+                game_id: game.id,
+                player_id,
+                points: 30000,
+              }))
+            : [],
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./#history");
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await page.getByText("Timeguessr’s correct answers", { exact: true }).click();
+  const table = page.getByRole("table", {
+    name: "Original photograph answers",
+  });
+  await expect(table).toContainText("1904");
+  await expect(table).toContainText("Denmark");
+  await expect(table).toContainText("40°, -70°");
+  await expect(
+    page.getByRole("link", { name: "Original Timeguessr game" }),
+  ).toHaveAttribute("href", /timeguessr.com\/play/);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

@@ -26,6 +26,7 @@ import {
   ChartColumn,
   UserRound,
   Skull,
+  Globe,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
 import {
@@ -56,6 +57,8 @@ import {
   minimumAveragePictures,
   type FameMetric,
 } from "./fame";
+import { CorrectAnswerBreakdown } from "./CorrectAnswerBreakdown";
+import { Atlas } from "./Atlas";
 import { PictureBreakdown } from "./PictureBreakdown";
 import { playerStats } from "./playerStats";
 import {
@@ -681,7 +684,9 @@ function PlayerStats({
                 <dt>Average distance</dt>
                 <dd>{format(row.avgDistance, 1, " km")}</dd>
                 <dt>Closest guess</dt>
-                <dd>{row.closest === null ? "—" : `${meters(row.closest)} m`}</dd>
+                <dd>
+                  {row.closest === null ? "—" : `${meters(row.closest)} m`}
+                </dd>
                 <dt>Exact years</dt>
                 <dd>{row.exactYears}</dd>
                 <dt>Perfect pictures</dt>
@@ -810,7 +815,7 @@ const tabFromHash = (): LabTab =>
   location.hash.slice(1) in labTabs
     ? (location.hash.slice(1) as LabTab)
     : "standings";
-export default function App() {
+export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
   const [tab, setTab] = useState<LabTab>(tabFromHash);
   const [profiles, setProfiles] = useState<Profile[]>([]),
     [games, setGames] = useState<Game[]>([]),
@@ -1236,16 +1241,6 @@ export default function App() {
       <span>Add score</span>
     </button>
   );
-  const playLink = (
-    <a
-      className="external"
-      href="https://timeguessr.com"
-      target="_blank"
-      rel="noreferrer"
-    >
-      Play Timeguessr <ArrowUpRight size={16} />
-    </a>
-  );
   const menuAccount = session ? (
     <>
       <button
@@ -1291,10 +1286,30 @@ export default function App() {
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, []);
+  const placeSwitch = (
+    <nav className="place-switch" aria-label="Places">
+      <a
+        href={import.meta.env.BASE_URL}
+        aria-current={page === "club" ? "page" : undefined}
+        aria-label="Club"
+      >
+        <Trophy size={15} />
+        <span>Club</span>
+      </a>
+      <a
+        href={`${import.meta.env.BASE_URL}atlas.html`}
+        aria-current={page === "atlas" ? "page" : undefined}
+        aria-label="Atlas"
+      >
+        <Globe size={15} />
+        <span>Atlas</span>
+      </a>
+    </nav>
+  );
   const barNav = (
     <nav>
-      {extensionBar}
-      {rulesBar}
+      {placeSwitch}
+      <span className="bar-divider" aria-hidden />
       {randomBar}
       {dailyButton}
       {barAddScore}
@@ -1303,8 +1318,9 @@ export default function App() {
         "Account and settings",
         <>
           {menuAccount}
+          {extensionBar}
+          {rulesBar}
           <ThemeToggle label />
-          {playLink}
         </>,
       )}
     </nav>
@@ -1476,6 +1492,12 @@ export default function App() {
                   </span>
                 </summary>
                 <div className="game-results">
+                  {game.correct_answers && (
+                    <CorrectAnswerBreakdown
+                      answers={game.correct_answers}
+                      source={game.answers_source_url ?? null}
+                    />
+                  )}
                   {entries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,
@@ -1640,8 +1662,20 @@ export default function App() {
       </header>
       <main>
         {alerts}
-        {tabNav}
-        <div className="section-panel">{panels[tab]}</div>
+        {page === "atlas" ? (
+          <div className="section-panel atlas-panel">
+            <Atlas
+              games={games}
+              results={resultsForPeriod(games, results, standingsPeriod)}
+              controls={standingsControls}
+            />
+          </div>
+        ) : (
+          <>
+            {tabNav}
+            <div className="section-panel">{panels[tab]}</div>
+          </>
+        )}
         {footer}
       </main>
       {modal && (

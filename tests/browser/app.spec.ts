@@ -679,6 +679,7 @@ test("extension install button explains desktop installation and links to ZIP", 
     }),
   );
   await page.goto("./");
+  await page.getByLabel("Account and settings").click();
   await page.getByRole("button", { name: "Browser extension" }).click();
   const dialog = page.getByRole("dialog");
   const storeInstall = dialog.getByRole("link", {
@@ -703,10 +704,10 @@ test("extension install button explains desktop installation and links to ZIP", 
   );
   await expect(dialog).toBeFocused();
   await expect(dialog).toContainText("Manual installation — Chrome / Edge");
-  await expect(dialog).toContainText("Version 1.1.3");
+  await expect(dialog).toContainText("Version 1.2.0");
   await expect(
     dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
-  ).toHaveAttribute("download", "timeguessr-chrome-extension-1.1.3.zip");
+  ).toHaveAttribute("download", "timeguessr-chrome-extension-1.2.0.zip");
   await expect(dialog).toContainText("Load unpacked");
   await expect(dialog).toContainText(
     "Mobile browsers cannot install this version",
@@ -715,7 +716,7 @@ test("extension install button explains desktop installation and links to ZIP", 
     dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
   ).toHaveAttribute(
     "href",
-    "/timeguessr-tracker/downloads/timeguessr-chrome-extension-1.1.3.zip",
+    "/timeguessr-tracker/downloads/timeguessr-chrome-extension-1.2.0.zip",
   );
   await expect(dialog).toContainText("chrome://extensions");
   await expect(dialog).toContainText("edge://extensions");
@@ -764,6 +765,7 @@ test("Firefox gets its own manual package and temporary installation instruction
     }),
   );
   await page.goto("./");
+  await page.getByLabel("Account and settings").click();
   await page
     .getByRole("button", { name: "Browser extension", exact: true })
     .click();
@@ -794,7 +796,7 @@ test("Firefox gets its own manual package and temporary installation instruction
     dialog.getByRole("link", { name: "Download Firefox extension ZIP" }),
   ).toHaveAttribute(
     "href",
-    "/timeguessr-tracker/downloads/timeguessr-firefox-extension-1.1.3.zip",
+    "/timeguessr-tracker/downloads/timeguessr-firefox-extension-1.2.0.zip",
   );
   await expect(
     dialog.getByRole("link", { name: "Download Chrome / Edge extension ZIP" }),
@@ -814,6 +816,7 @@ test("Read the rules opens the rules popup with the Guillem clause", async ({
     }),
   );
   await page.goto("./");
+  await page.getByLabel("Account and settings").click();
   await page.getByRole("button", { name: "Read the rules" }).click();
   const rules = page.getByRole("dialog", { name: "The rules" });
   await expect(rules.locator("li")).toHaveCount(5);

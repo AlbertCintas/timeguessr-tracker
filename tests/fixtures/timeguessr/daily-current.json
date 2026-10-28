@@ -1,0 +1,145 @@
+{
+  "type": "data",
+  "nodes": [
+    {
+      "type": "data",
+      "data": [
+        {
+          "mode": 1,
+          "archive": 2,
+          "playArray": 3
+        },
+        "daily",
+        null,
+        [
+          4,
+          18,
+          28,
+          39,
+          50,
+          61
+        ],
+        {
+          "No": 5,
+          "Year": 9,
+          "Location": 10,
+          "Country": 69,
+          "Description": 74
+        },
+        "1245",
+        null,
+        null,
+        null,
+        "2006",
+        {
+          "lat": 11,
+          "lng": 12
+        },
+        33.34028555638205,
+        44.388100426205924,
+        null,
+        null,
+        null,
+        null,
+        null,
+        {
+          "No": 5,
+          "Year": 21,
+          "Location": 22,
+          "Country": 70,
+          "Description": 75
+        },
+        null,
+        null,
+        "1945",
+        {
+          "lat": 23,
+          "lng": 24
+        },
+        42.31554698850503,
+        -83.03638813962422,
+        null,
+        null,
+        null,
+        {
+          "No": 5,
+          "Year": 31,
+          "Location": 32,
+          "Country": 71,
+          "Description": 76
+        },
+        null,
+        null,
+        "1932",
+        {
+          "lat": 33,
+          "lng": 34
+        },
+        59.9179820795309,
+        10.739950912169515,
+        null,
+        null,
+        null,
+        null,
+        {
+          "No": 5,
+          "Year": 42,
+          "Location": 43,
+          "Country": 72,
+          "Description": 77
+        },
+        null,
+        null,
+        "1975",
+        {
+          "lat": 44,
+          "lng": 45
+        },
+        48.39834906031778,
+        9.98828989417295,
+        null,
+        null,
+        null,
+        null,
+        {
+          "No": 5,
+          "Year": 53,
+          "Location": 54,
+          "Country": 73,
+          "Description": 78
+        },
+        null,
+        null,
+        "1963",
+        {
+          "lat": 55,
+          "lng": 56
+        },
+        39.28321074758375,
+        -76.6266908322639,
+        null,
+        null,
+        null,
+        null,
+        0,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Iraq",
+        "Canada",
+        "Norway",
+        "Germany",
+        "USA",
+        "Iraqis gather inside a coffeehouse in Baghdad to follow the televised trial of Saddam Hussein in April 2006 over his approval of death sentences against Shiites accused of involvement in a 1982 assassination attempt against him. He was sentenced to death later that November for crimes against humanity in connection with the Dujail killings that followed the attempt.",
+        "American motorists lining up to enter Windsor, Ontario, across the Detroit River, to buy Canadian gasoline amid a fuel shortage caused by striking oil workers in Detroit.",
+        "Unemployed men gathered outside an employment office at St. Olavs plass in Oslo during the Great Depression. The original 19th-century buildings around the square were demolished in the 1960s for urban redevelopment.",
+        "A mid-70s street scene in Ulm, Germany, looking towards the Gothic spire of Ulm Minster. Standing 161.5 metres tall, it held the record for the world’s tallest church spire from its completion in 1890 until October 2025, when Barcelona’s Sagrada Família surpassed it during the construction of its central tower.",
+        "A street scene in Baltimore, Maryland, during the early-60s."
+      ]
+    }
+  ]
+}
