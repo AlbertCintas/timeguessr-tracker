@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import type { Game, Result } from "./types";
 import {
+  cellOf,
   featuredPictures,
   locationDensity,
   yearDistribution,
@@ -33,10 +34,12 @@ import {
   decades,
   located,
   pictureScores,
+  type Located,
   stepLabel,
   stepOf,
 } from "./atlasStats";
-import { continentOf, flag } from "./countries";
+import { continentOf, countryCode, flag } from "./countries";
+import { loadPlaces, placeName, type Places } from "./places";
 import { europeanDate } from "./scoring";
 
 const atlasTabs = {
@@ -124,6 +127,8 @@ function useMapZoom() {
   const [view, setView] = useState(fullView);
   const svg = useRef<SVGSVGElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const start = useRef({ x: 0, y: 0 });
+  const dragged = useRef(false);
   const toMap = (clientX: number, clientY: number, from: View) => {
     const box = svg.current!.getBoundingClientRect();
     return {
@@ -151,16 +156,26 @@ function useMapZoom() {
     pointers.current.delete(event.pointerId);
   const handlers = {
     onPointerDown(event: PointerEvent<SVGSVGElement>) {
-      event.currentTarget.setPointerCapture(event.pointerId);
-      pointers.current.set(event.pointerId, {
-        x: event.clientX,
-        y: event.clientY,
-      });
+      const at = { x: event.clientX, y: event.clientY };
+      if (!pointers.current.size) {
+        start.current = at;
+        dragged.current = false;
+      }
+      pointers.current.set(event.pointerId, at);
     },
     onPointerMove(event: PointerEvent<SVGSVGElement>) {
       const before = pointers.current.get(event.pointerId);
       if (!before) return;
       const after = { x: event.clientX, y: event.clientY };
+      if (!dragged.current) {
+        if (
+          pointers.current.size < 2 &&
+          Math.hypot(after.x - start.current.x, after.y - start.current.y) < 5
+        )
+          return;
+        dragged.current = true;
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }
       const others = [...pointers.current.entries()].filter(
         ([id]) => id !== event.pointerId,
       );
@@ -192,44 +207,147 @@ function useMapZoom() {
   };
   const zoomBy = (factor: number) =>
     setView((v) => zoomAt(v, factor, v.x + 360 / v.zoom, v.y + 180 / v.zoom));
-  return { view, svg, handlers, zoomBy, reset: () => setView(fullView) };
+  return {
+    view,
+    svg,
+    handlers,
+    dragged,
+    zoomBy,
+    reset: () => setView(fullView),
+  };
+}
+
+function PlaceTip({
+  pictures,
+  left,
+  top,
+}: {
+  pictures: Located[];
+  left: number;
+  top: number;
+}) {
+  const [places, setPlaces] = useState<Places | "failed" | null>(null);
+  useEffect(() => {
+    loadPlaces().then(setPlaces, () => setPlaces("failed"));
+  }, []);
+  const groups = new Map<string, { label: string; count: number }>();
+  for (const { location, country } of pictures) {
+    const code = country && countryCode(country);
+    const name =
+      places && places !== "failed"
+        ? placeName(places, location.lat, location.lng, code)
+        : null;
+    const label = [flag(country ?? ""), name ?? country ?? "Unknown country"]
+      .filter(Boolean)
+      .join(" ");
+    const group = groups.get(label) ?? { label, count: 0 };
+    group.count++;
+    groups.set(label, group);
+  }
+  return (
+    <div
+      className="map-tip"
+      role="dialog"
+      aria-label="Places in this circle"
+      style={{
+        left: `${left}%`,
+        top: `${top}%`,
+        transform: `translate(-${left}%, ${top > 45 ? "calc(-100% - 12px)" : "12px"})`,
+      }}
+    >
+      <strong>{plural(pictures.length, "picture")}</strong>
+      {places === null && <p>Finding places…</p>}
+      <ul>
+        {[...groups.values()]
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+          .map(({ label, count }) => (
+            <li key={label}>
+              <span>{label}</span>
+              {count > 1 && <small>×{count}</small>}
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
 }
 
 function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
-  const { view, svg, handlers, zoomBy, reset } = useMapZoom();
+  const { view, svg, handlers, dragged, zoomBy, reset } = useMapZoom();
+  const [selected, setSelected] = useState<string | null>(null);
   const size = cellSize(view.zoom);
   const points = located(pictures);
   const cells = locationDensity(points, size);
   const steps = colorSteps(Math.max(1, ...cells.map((c) => c.count)));
   const shrink = Math.min(1, (size * 2 * view.zoom) / 6) / view.zoom;
+  const keyOf = (cell: { lat: number; lng: number }) =>
+    `${size}:${cell.lat}:${cell.lng}`;
+  const open = cells.find((cell) => keyOf(cell) === selected);
+  const toggle = (key: string) => {
+    if (!dragged.current)
+      setSelected((current) => (current === key ? null : key));
+  };
+  const tipLeft = open && ((x(open.lng + size / 2) - view.x) * view.zoom) / 7.2;
+  const tipTop = open && ((y(open.lat + size / 2) - view.y) * view.zoom) / 3.6;
   return (
     <section className="atlas-hero">
-      <div className="atlas-map-frame">
+      <div
+        className="atlas-map-frame"
+        onKeyDown={(event) => event.key === "Escape" && setSelected(null)}
+      >
         <svg
           ref={svg}
           className="atlas-map"
           data-zoomed={view.zoom > 1 || undefined}
           viewBox={`${view.x} ${view.y} ${720 / view.zoom} ${360 / view.zoom}`}
-          role="img"
+          role="group"
           aria-label={`Heat map of ${plural(points.length, "picture")} in ${size}° areas`}
+          onClick={(event) => {
+            if (!dragged.current && !(event.target instanceof SVGCircleElement))
+              setSelected(null);
+          }}
           {...handlers}
         >
           {land}
           {cells.map((cell) => {
             const step = stepOf(cell.count, steps);
+            const key = keyOf(cell);
             return (
               <circle
-                key={`${cell.lat}:${cell.lng}`}
+                key={key}
                 cx={x(cell.lng + size / 2)}
                 cy={y(cell.lat + size / 2)}
                 r={(3 + stepIndex(step, steps) * 0.6) * shrink}
                 style={{ fill: stepFill(step, steps) }}
-              >
-                <title>{plural(cell.count, "picture")}</title>
-              </circle>
+                role="button"
+                tabIndex={0}
+                aria-label={`${plural(cell.count, "picture")}: show places`}
+                aria-expanded={key === selected}
+                onClick={() => toggle(key)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  dragged.current = false;
+                  toggle(key);
+                }}
+              />
             );
           })}
         </svg>
+        {open &&
+          tipLeft! >= 0 &&
+          tipLeft! <= 100 &&
+          tipTop! >= 0 &&
+          tipTop! <= 100 && (
+            <PlaceTip
+              key={selected}
+              pictures={points.filter((p) => {
+                const cell = cellOf(p.location, size);
+                return cell.lat === open.lat && cell.lng === open.lng;
+              })}
+              left={tipLeft!}
+              top={tipTop!}
+            />
+          )}
         <div className="map-zoom" role="group" aria-label="Map zoom">
           <button
             type="button"
@@ -273,7 +391,8 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
       </ul>
       <p className="map-note">
         {plural(points.length, "picture")} · each circle covers a {size}° area ·
-        scroll, pinch or double-click to zoom, drag to move
+        scroll, pinch or double-click to zoom, drag to move, click a circle for
+        its places
       </p>
     </section>
   );

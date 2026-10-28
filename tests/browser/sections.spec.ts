@@ -266,6 +266,14 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   page,
 }) => {
   await serveAtlas(page);
+  await page.route("**/world-places.json", (route) =>
+    route.fulfill({
+      json: {
+        regions: [["DK", "Capital Region"]],
+        places: [["Copenhagen", 0, 55.68, 12.57, 1153]],
+      },
+    }),
+  );
   await page.goto("./atlas.html");
   const tabs = page.getByRole("navigation", { name: "Atlas sections" });
   await expect(tabs.getByRole("button")).toHaveText([
@@ -275,26 +283,34 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
     "Years",
   ]);
   await expect(
-    page.getByRole("img", { name: "Heat map of 5 pictures in 3° areas" }),
+    page.getByRole("group", { name: "Heat map of 5 pictures in 3° areas" }),
   ).toBeVisible();
   await expect(
     page.getByRole("list", { name: "Pictures per circle" }),
   ).toBeVisible();
+  await page
+    .getByRole("button", { name: "1 picture: show places" })
+    .first()
+    .click();
+  const tip = page.getByRole("dialog", { name: "Places in this circle" });
+  await expect(tip).toContainText("Copenhagen, Capital Region");
+  await page.keyboard.press("Escape");
+  await expect(tip).toBeHidden();
   const zoom = page.getByRole("group", { name: "Map zoom" });
   await zoom.getByRole("button", { name: "Zoom in" }).click();
   await zoom.getByRole("button", { name: "Zoom in" }).click();
   await expect(
-    page.getByRole("img", { name: "Heat map of 5 pictures in 1° areas" }),
+    page.getByRole("group", { name: "Heat map of 5 pictures in 1° areas" }),
   ).toBeVisible();
   await zoom.getByRole("button", { name: "Show the whole world" }).click();
   await expect(
-    page.getByRole("img", { name: "Heat map of 5 pictures in 3° areas" }),
+    page.getByRole("group", { name: "Heat map of 5 pictures in 3° areas" }),
   ).toBeVisible();
   if (!test.info().project.name.includes("mobile")) {
-    await page.getByRole("img", { name: /Heat map/ }).hover();
+    await page.getByRole("group", { name: /Heat map/ }).hover();
     await page.mouse.wheel(0, -1000);
     await expect(
-      page.getByRole("img", { name: "Heat map of 5 pictures in 1° areas" }),
+      page.getByRole("group", { name: "Heat map of 5 pictures in 1° areas" }),
     ).toBeVisible();
   }
 
