@@ -1,6 +1,8 @@
 import type { Game, Result } from "./types.ts";
 import { madridToday } from "./scoring.ts";
 
+export const DAILY_URL = "https://timeguessr.com/play?mode=daily";
+
 export function timeguessrGameId(value: string): string | null {
   let id = value.trim();
   if (/^https?:\/\//i.test(id)) {
@@ -24,9 +26,7 @@ export function timeguessrGameId(value: string): string | null {
 
 export function gameReplayUrl(game: Game): string | null {
   if (game.kind === "daily")
-    return game.daily_date === madridToday()
-      ? "https://timeguessr.com/play?mode=daily"
-      : null;
+    return game.daily_date === madridToday() ? DAILY_URL : null;
   const id = timeguessrGameId(game.replay_id || game.name || "");
   return id
     ? `https://timeguessr.com/game-settings?RA=${encodeURIComponent(id)}${game.timer_seconds ? `&timer=${game.timer_seconds}` : ""}`

@@ -198,6 +198,13 @@ test("the top bar shows the helpers and keeps account controls in a menu", async
     "Add your score",
   ])
     await expect(page.getByRole("button", { name })).toBeVisible();
+  const daily = page.getByRole("link", { name: "Play daily" });
+  await expect(daily).toBeVisible();
+  await expect(daily).toHaveAttribute(
+    "href",
+    "https://timeguessr.com/play?mode=daily",
+  );
+  await expect(daily).toHaveAttribute("target", "_blank");
   await expect(
     page.getByRole("link", { name: /Play Timeguessr/ }),
   ).toBeHidden();

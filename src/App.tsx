@@ -59,6 +59,7 @@ import {
 import { PictureBreakdown } from "./PictureBreakdown";
 import { playerStats } from "./playerStats";
 import {
+  DAILY_URL,
   gameReplayUrl,
   timeguessrGameId,
   unplayedReplayGames,
@@ -1191,6 +1192,18 @@ export default function App() {
       <span>Random game</span>
     </button>
   );
+  const dailyButton = (
+    <a
+      className="bar-add bar-daily"
+      href={DAILY_URL}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Play daily"
+    >
+      <CalendarDays size={18} />
+      <span>Play daily</span>
+    </a>
+  );
   const extensionBar = (
     <button
       className="bar-action"
@@ -1283,6 +1296,7 @@ export default function App() {
       {extensionBar}
       {rulesBar}
       {randomBar}
+      {dailyButton}
       {barAddScore}
       {menu(
         session ? <Avatar profile={me} /> : <UserRound size={20} />,

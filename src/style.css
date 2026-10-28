@@ -1482,3 +1482,12 @@ textarea:focus-visible {
     display: inline;
   }
 }
+.bar-daily {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 600;
+}
+.bar-daily:hover {
+  background: var(--raised);
+}
