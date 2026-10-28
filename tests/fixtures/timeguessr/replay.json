@@ -1,0 +1,134 @@
+{
+  "type": "data",
+  "nodes": [
+    {
+      "type": "data",
+      "data": [
+        {
+          "playArray": 3
+        },
+        null,
+        null,
+        [
+          4,
+          16,
+          26,
+          36,
+          45,
+          55,
+          56,
+          57,
+          11
+        ],
+        {
+          "Year": 7,
+          "Location": 8,
+          "Country": 62,
+          "Description": 67
+        },
+        null,
+        null,
+        "1918",
+        {
+          "lat": 9,
+          "lng": 10
+        },
+        40.75897701971236,
+        -73.98507447883244,
+        "",
+        null,
+        null,
+        null,
+        null,
+        {
+          "Year": 19,
+          "Location": 20,
+          "Country": 63,
+          "Description": 68
+        },
+        null,
+        null,
+        "1989",
+        {
+          "lat": 21,
+          "lng": 22
+        },
+        48.861224217176336,
+        2.335733448495944,
+        null,
+        null,
+        null,
+        {
+          "Year": 29,
+          "Location": 30,
+          "Country": 64,
+          "Description": 69
+        },
+        null,
+        null,
+        "1976",
+        {
+          "lat": 31,
+          "lng": 32
+        },
+        54.99585895929285,
+        -7.326661553812632,
+        null,
+        null,
+        null,
+        {
+          "Year": 39,
+          "Location": 40,
+          "Country": 65,
+          "Description": 70
+        },
+        null,
+        null,
+        "1948",
+        {
+          "lat": 41,
+          "lng": 42
+        },
+        48.84614021951989,
+        2.344929060454217,
+        null,
+        null,
+        {
+          "Year": 48,
+          "Location": 49,
+          "Country": 66,
+          "Description": 71
+        },
+        null,
+        null,
+        "2018",
+        {
+          "lat": 50,
+          "lng": 51
+        },
+        20.38109414106781,
+        99.86811186435278,
+        null,
+        null,
+        null,
+        "486e1bb323cdb6b03defc37a822b41b2b109f5beecca4bee14be81b86a4c1d2e",
+        "1aafa2c966819cb349e57d3db9b435a7",
+        "custom",
+        null,
+        null,
+        null,
+        null,
+        "USA",
+        "France",
+        "UK",
+        "France",
+        "Thailand",
+        "People in Times Square raising newspapers headlining Germany's surrender at the end of WWI.",
+        "A fisheye selfie at the Louvre.",
+        "Free Derry Corner during The Troubles.",
+        "A student at the University of Paris, who works part-time as a taxi driver, reading a newspaper whilst filling up his car.",
+        "Cave rescue divers preparing dive equipment during the 2018 Tham Luang cave rescue. Twelve members of a junior football team and their 25-year-old assistant coach were trapped inside the flooded cave."
+      ]
+    }
+  ]
+}

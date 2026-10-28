@@ -18,6 +18,10 @@
   --error-bg: #402923;
   --overlay: #0009;
   --shadow: #0003;
+  --heat-0: #3475c4;
+  --heat-1: #00b8a9;
+  --heat-2: #92dc65;
+  --heat-3: #fff054;
 }
 :root[data-theme="light"] {
   color-scheme: light;
@@ -38,6 +42,10 @@
   --error-bg: #faeae3;
   --overlay: #18382f55;
   --shadow: #24492b09;
+  --heat-0: #7ab22c;
+  --heat-1: #00978a;
+  --heat-2: #065da0;
+  --heat-3: #47176d;
 }
 :root {
   font-family: "DM Sans", sans-serif;
@@ -129,15 +137,6 @@ select:focus-visible {
   display: flex;
   gap: 23px;
   align-items: center;
-}
-.external {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--muted);
-  border-left: 1px solid var(--border);
-  padding-left: 22px;
 }
 .subtle-button,
 .icon-button,
@@ -826,9 +825,6 @@ footer > span:first-child {
   .header nav {
     gap: 8px;
   }
-  .external {
-    display: none;
-  }
   .profile-button > span:last-child {
     display: none;
   }
@@ -1448,13 +1444,7 @@ textarea:focus-visible {
   height: 26px;
   font-size: 9px;
 }
-.more-menu-list .external {
-  border-left: 0;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text);
-}
-@media (max-width: 1150px) {
+@media (max-width: 900px) {
   .bar-actions nav > .bar-action span {
     display: none;
   }
@@ -1475,9 +1465,6 @@ textarea:focus-visible {
   .bar-actions nav {
     gap: 10px;
   }
-  .more-menu-list .external {
-    display: flex;
-  }
   .more-menu-list .profile-button > span:last-child {
     display: inline;
   }
@@ -1490,4 +1477,408 @@ textarea:focus-visible {
 }
 .bar-daily:hover {
   background: var(--raised);
+}
+
+.featured-card {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.featured-card h3 {
+  margin: 0;
+  font:
+    800 23px "Manrope",
+    sans-serif;
+}
+
+.featured-card p {
+  color: var(--muted);
+}
+
+.featured-empty {
+  padding: 65px 16px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .featured-card {
+    padding: 16px;
+  }
+}
+
+.picture-breakdown-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.picture-breakdown {
+  min-width: 440px;
+}
+
+.bar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.header .place-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.place-switch a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.place-switch a:hover {
+  color: var(--text);
+}
+
+.place-switch a[aria-current="page"] {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.place-switch a[aria-current="page"] svg {
+  color: var(--gold);
+}
+
+.decade-strip {
+  display: flex;
+  gap: 6px;
+  margin-top: 16px;
+  overflow-x: auto;
+}
+
+.decade {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.decade-count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.decade-track {
+  height: 90px;
+  width: 60%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.decade-track i {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent);
+}
+
+.decade strong {
+  font-size: 12px;
+}
+
+.atlas-panel {
+  --step-0: var(--heat-0);
+  --step-1: var(--heat-1);
+  --step-2: var(--heat-2);
+  --step-3: var(--heat-3);
+}
+.atlas-hero {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.atlas-map,
+.mini-map {
+  width: 100%;
+  display: block;
+  border-radius: 10px;
+  background: var(--bg);
+}
+.atlas-map circle {
+  stroke: var(--bg);
+  stroke-width: 1;
+}
+.atlas-map circle:hover {
+  stroke: var(--text);
+}
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+  margin: 12px 4px 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.map-legend i {
+  border-radius: 50%;
+}
+.map-note {
+  margin: 10px 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.country-list {
+  columns: 2;
+  column-gap: 40px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.country-list li {
+  break-inside: avoid;
+  display: grid;
+  grid-template-columns: 22px 22px minmax(0, 1fr) minmax(40px, 25%) 28px 58px;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.country-rank {
+  color: var(--muted);
+  font-size: 12px;
+}
+.country-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.country-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--raised);
+}
+.country-bar i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.country-list strong {
+  text-align: right;
+}
+.trivia-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+@media (max-width: 1200px) {
+  .trivia-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.trivia-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.trivia-fact h3 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.trivia-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.caption-tip {
+  position: relative;
+  display: inline-flex;
+}
+.caption-button {
+  padding: 2px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+}
+.caption-button:hover,
+.caption-button:focus-visible {
+  color: var(--gold);
+}
+.caption-tip [role="tooltip"] {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: min(280px, 75vw);
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--raised);
+  box-shadow: 0 8px 20px var(--shadow);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.caption-tip:hover [role="tooltip"],
+.caption-button:focus + [role="tooltip"] {
+  visibility: visible;
+  opacity: 1;
+}
+.trivia-fact .trivia-phrase {
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 600;
+}
+.trivia-fact strong {
+  font:
+    800 28px "Manrope",
+    sans-serif;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+.trivia-fact p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.mini-map {
+  padding-top: 10px;
+  background: none;
+}
+.mini-map circle {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 4;
+}
+@media (max-width: 900px) {
+  .trivia-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 680px) {
+  .place-switch a {
+    padding: 6px 9px;
+  }
+  .place-switch span {
+    display: none;
+  }
+  .trivia-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .country-list {
+    columns: 1;
+  }
+  .country-list li {
+    grid-template-columns: 22px 22px minmax(0, 1fr) 28px 58px;
+  }
+  .country-bar {
+    display: none;
+  }
+  .trivia-fact {
+    padding: 14px;
+  }
+  .trivia-fact strong {
+    font-size: 22px;
+  }
+}
+.continent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+.continent-row li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--raised);
+}
+.continent-row small,
+.country-seen {
+  color: var(--muted);
+  font-size: 12px;
+}
+.country-seen {
+  text-align: right;
+}
+.decade-error {
+  min-height: 16px;
+  color: var(--gold);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.years-panel {
+  display: grid;
+  gap: 24px;
+}
+.years-panel h3 {
+  margin: 0 0 12px;
+}
+.year-chart-scroll {
+  overflow-x: auto;
+}
+.year-chart {
+  display: block;
+  width: 100%;
+  min-width: 640px;
+}
+.year-chart rect {
+  fill: var(--accent);
+}
+.year-chart rect:hover {
+  fill: var(--gold);
+}
+.year-chart line {
+  stroke: var(--border);
+}
+.year-chart text {
+  fill: var(--muted);
+  font-size: 11px;
+  text-anchor: middle;
 }

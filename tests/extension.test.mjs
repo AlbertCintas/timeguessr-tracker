@@ -30,6 +30,7 @@ test("modern finished games preserve genuine zero scores and unknown errors", as
   const parsed = captureModern(data, href, "2026-10-09");
   assert.equal(parsed.points, 20000);
   assert.deepEqual(parsed.rounds[0], {
+    actual_year: 1990,
     points: 4000,
     years_off: 10,
     distance_km: 1.3,
@@ -43,6 +44,7 @@ test("modern finished games preserve genuine zero scores and unknown errors", as
   };
   data.score = 16000;
   assert.deepEqual(captureModern(data, href).rounds[0], {
+    actual_year: 1990,
     points: 0,
     years_off: null,
     distance_km: null,
@@ -157,7 +159,10 @@ test("non-daily capture saves replay IDs from random games and shared challenges
   const spread = data.playArray.map((e) =>
     e.scoringVersion ? e : { ...e, scoringVersion: 2 },
   );
-  assert.equal(captureModern({ ...data, playArray: spread }, url).replay_id, id);
+  assert.equal(
+    captureModern({ ...data, playArray: spread }, url).replay_id,
+    id,
+  );
   assert.equal(
     captureModern(
       { ...data, playArray: [...data.playArray.slice(0, 5), "bad", "id"] },
@@ -181,4 +186,49 @@ test("non-daily capture saves replay IDs from random games and shared challenges
       .replay_id,
     id,
   );
+});
+
+test("correct answers come from completed metadata, including skipped guesses and legacy images", () => {
+  const data = snapshot();
+  data.roundResults[0].actualCoords = { lat: 0, lng: 0 };
+  assert.deepEqual(captureModern(data, href).rounds[0].actual_location, {
+    lat: 0,
+    lng: 0,
+  });
+  delete data.roundResults[0].actualYear;
+  data.playArray[0].Year = "1899";
+  data.playArray[0].Location = { lat: 48.8, lng: 2.3 };
+  delete data.roundResults[0].actualCoords;
+  assert.equal(captureModern(data, href).rounds[0].actual_year, 1899);
+  assert.deepEqual(captureModern(data, href).rounds[0].actual_location, {
+    lat: 48.8,
+    lng: 2.3,
+  });
+  const values = {
+    dailyNumber: "1227",
+    dailyArray: JSON.stringify(data.playArray),
+  };
+  for (const prefix of ["one", "two", "three", "four", "five"])
+    values[prefix + "Total"] = "4000";
+  assert.equal(
+    captureLegacy(values, "https://timeguessr.com/finalscoredaily", "20000")
+      .rounds[0].actual_year,
+    1899,
+  );
+  for (const actual_location of [
+    { lat: 91, lng: 0 },
+    { lat: 0, lng: 181 },
+    { lat: null, lng: 0 },
+    { lat: 0 },
+  ]) {
+    const capture = captureModern(data, href);
+    capture.rounds[0].actual_location = actual_location;
+    assert.throws(() => validateCapture(capture));
+  }
+});
+
+test("custom pictures without a year retain scores and omit the unknown zero year", () => {
+  const data = snapshot();
+  data.roundResults[0].actualYear = 0;
+  assert.equal(captureModern(data, href).rounds[0].actual_year, undefined);
 });

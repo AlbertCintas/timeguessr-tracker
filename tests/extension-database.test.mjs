@@ -23,6 +23,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       "202610090003_extension_import.sql",
       "202610090004_game_links.sql",
       "202610090005_import_replays.sql",
+      "20261027125144_featured_answers.sql",
     ])
       await db.exec(
         await readFile(
@@ -244,6 +245,69 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       await db.query("select get_or_create_game(null,'My random game') as id")
     ).rows[0].id;
     assert.notEqual(manual, customSaved.game_id);
+    await db.exec("reset role");
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/20261027125144_featured_answers.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await as(alice);
+    const answers = rounds.map((r) => ({
+      ...r,
+      actual_year: 1990,
+      actual_location: { lat: 0, lng: 0 },
+    }));
+    assert.equal(
+      (await importGame({ rounds: JSON.stringify(answers) })).status,
+      "enriched",
+    );
+    assert.equal(
+      (await importGame({ rounds: JSON.stringify(answers) })).status,
+      "already_saved",
+    );
+    assert.equal((await importGame()).status, "already_saved");
+    assert.deepEqual(
+      (
+        await db.query(
+          "select rounds from results where game_id=$1 and player_id=$2",
+          [saved.game_id, alice],
+        )
+      ).rows[0].rounds,
+      answers,
+    );
+    assert.equal(
+      (
+        await importGame({
+          rounds: JSON.stringify(
+            answers.map((r) => ({ ...r, actual_year: 1991 })),
+          ),
+        })
+      ).status,
+      "conflict",
+    );
+    for (const actual_year of [0, 10000, 1990.5, "1990"])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(answers.map((r) => ({ ...r, actual_year }))),
+        }),
+      );
+    for (const actual_location of [
+      { lat: 91, lng: 0 },
+      { lat: 0, lng: 181 },
+      { lat: null, lng: 0 },
+      {},
+    ])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(
+            answers.map((r) => ({ ...r, actual_location })),
+          ),
+        }),
+      );
     await as(bob);
     assert.equal((await importGame()).status, "saved");
     assert.equal((await importGame()).game_id, saved.game_id);
@@ -271,6 +335,169 @@ test("transactional imports preserve old data, enforce ownership, enrich details
     assert.equal(
       (await db.query("select * from games where id=$1", [manual])).rows.length,
       1,
+    );
+
+    // Backfill enriches shared metadata even for total-only submissions, never scores.
+    await as(alice);
+    const originalResults = (
+      await db.query("select * from results order by game_id,player_id")
+    ).rows;
+    const source =
+      "https://timeguessr.com/play?mode=daily&archive=1227-c4325922368acb2a08bd";
+    const originalAnswers = Array.from({ length: 5 }, () => ({
+      actual_year: 1986,
+      actual_location: { lat: 0, lng: 0 },
+      country: "USA",
+      description: "A street scene.",
+    }));
+    async function backfill(
+      answers,
+      source_url = source,
+      target = saved.game_id,
+    ) {
+      return (
+        await db.query(
+          "select backfill_timeguessr_answers($1,$2,$3) as result",
+          [
+            target,
+            answers === null ? null : JSON.stringify(answers),
+            source_url,
+          ],
+        )
+      ).rows[0].result;
+    }
+    const candidates = (
+      await db.query("select * from timeguessr_backfill_candidates()")
+    ).rows;
+    assert(candidates.length <= 3 && candidates.length > 0);
+    assert.equal(
+      (
+        await backfill(
+          originalAnswers.map(({ country, description, ...a }) => ({
+            ...a,
+            actual_location: null,
+          })),
+        )
+      ).status,
+      "enriched",
+    );
+    assert.equal(
+      (
+        await backfill(
+          originalAnswers.map(({ country, description, ...a }) => a),
+        )
+      ).status,
+      "enriched",
+    );
+    assert.equal((await backfill(originalAnswers)).status, "enriched");
+    assert.equal((await backfill(originalAnswers)).status, "already_saved");
+    // A reworded caption keeps the stored one instead of blocking the game.
+    assert.equal(
+      (
+        await backfill(
+          originalAnswers.map((a) => ({ ...a, description: "Reworded." })),
+        )
+      ).status,
+      "already_saved",
+    );
+    assert.equal(
+      (
+        await backfill(
+          originalAnswers.map((a) => ({ ...a, country: "France" })),
+        )
+      ).status,
+      "conflict",
+    );
+    assert.equal(
+      (
+        await backfill(
+          originalAnswers.map((a) => ({ ...a, actual_year: 1987 })),
+        )
+      ).status,
+      "conflict",
+    );
+    assert.deepEqual(
+      (
+        await db.query("select correct_answers from games where id=$1", [
+          saved.game_id,
+        ])
+      ).rows[0].correct_answers,
+      originalAnswers,
+    );
+    assert.deepEqual(
+      (await db.query("select * from results order by game_id,player_id")).rows,
+      originalResults,
+    );
+    assert(
+      !(
+        await db.query("select * from timeguessr_backfill_candidates()")
+      ).rows.some((g) => g.id === saved.game_id),
+    );
+    await assert.rejects(
+      backfill(originalAnswers, "https://evil.example/answers"),
+    );
+    await assert.rejects(
+      backfill(originalAnswers.map((a) => ({ ...a, actual_year: 0 }))),
+    );
+    await assert.rejects(
+      backfill(originalAnswers.map((a) => ({ ...a, points: 0 }))),
+    );
+    for (const country of [7, "", "x".repeat(65)])
+      await assert.rejects(
+        backfill(originalAnswers.map((a) => ({ ...a, country }))),
+      );
+    for (const description of [7, " ", "x".repeat(1001)])
+      await assert.rejects(
+        backfill(originalAnswers.map((a) => ({ ...a, description }))),
+      );
+    await assert.rejects(backfill(originalAnswers, source, manual));
+    await as(bob);
+    assert.equal((await backfill(originalAnswers)).status, "already_saved");
+    await as("", "anon");
+    await assert.rejects(backfill(originalAnswers));
+    await assert.rejects(
+      db.query("select * from timeguessr_backfill_candidates()"),
+    );
+    await as("33333333-3333-4333-8333-333333333333");
+    await assert.rejects(backfill(originalAnswers));
+    assert.equal(
+      (await db.query("select * from timeguessr_backfill_candidates()")).rows
+        .length,
+      0,
+    );
+    await as(alice);
+    assert.equal((await backfill(null, null)).status, "unavailable");
+    // Unavailable sources are retried the next day rather than every minute.
+    assert.equal(
+      (await backfill(null, null, customSaved.game_id)).status,
+      "unavailable",
+    );
+    assert(
+      !(
+        await db.query("select * from timeguessr_backfill_candidates()")
+      ).rows.some((g) => g.id === customSaved.game_id),
+    );
+    await db.exec("reset role");
+    await db.query(
+      "update games set answers_backfill_checked_at=now() where id<>$1",
+      [customSaved.game_id],
+    );
+    await db.query(
+      "update games set answers_backfill_checked_at=now()-interval '2 days' where id=$1",
+      [customSaved.game_id],
+    );
+    await as(alice);
+    assert(
+      (
+        await db.query("select * from timeguessr_backfill_candidates()")
+      ).rows.some((g) => g.id === customSaved.game_id),
+    );
+    // Direct game edits are still forbidden to members.
+    await assert.rejects(
+      db.query("update games set correct_answers=$1 where id=$2", [
+        JSON.stringify(originalAnswers),
+        saved.game_id,
+      ]),
     );
   } finally {
     await db.close();
