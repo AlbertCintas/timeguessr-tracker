@@ -1635,13 +1635,13 @@ textarea:focus-visible {
 .atlas-map[data-zoomed]:active {
   cursor: grabbing;
 }
-.atlas-map circle {
+.atlas-map .map-bin {
   stroke: var(--bg);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
-.atlas-map circle[aria-expanded="true"],
-.atlas-map circle:focus-visible {
+.atlas-map .map-bin[aria-expanded="true"],
+.atlas-map .map-bin:focus-visible {
   stroke: var(--text);
   stroke-width: 2;
   outline: none;
@@ -1710,15 +1710,65 @@ textarea:focus-visible {
   color: var(--muted);
   opacity: 0.45;
 }
-.atlas-map circle:hover {
+.atlas-map .map-bin:hover {
   stroke: var(--text);
+}
+.atlas-map[data-style="squares"] .map-bin {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+.atlas-map[data-style="squares"] .map-bin:hover,
+.atlas-map[data-style="squares"] .map-bin[aria-expanded="true"],
+.atlas-map[data-style="squares"] .map-bin:focus-visible {
+  stroke: var(--text);
+}
+.map-graticule line {
+  stroke: var(--border);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+.map-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+.map-mode {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.map-mode button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.map-mode button:hover {
+  color: var(--text);
+}
+.map-mode button[aria-pressed="true"] {
+  background: var(--raised);
+  color: var(--gold);
 }
 .map-legend {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 6px 14px;
-  margin: 12px 4px 0;
+  margin: 0 4px 0 auto;
   padding: 0;
   list-style: none;
   color: var(--muted);
@@ -1732,6 +1782,14 @@ textarea:focus-visible {
 }
 .map-legend i {
   border-radius: 50%;
+}
+.map-legend[data-shape="hexagon"] i {
+  border-radius: 0;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.map-legend[data-shape="square"] i {
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .map-note {
   margin: 10px 4px 0;

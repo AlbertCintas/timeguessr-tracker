@@ -3,12 +3,17 @@ import {
   useId,
   useRef,
   useState,
+  type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
 import {
+  CircleDot,
   Flag,
+  Flame,
+  Grid3x3,
+  Hexagon,
   Hourglass,
   Info,
   Lightbulb,
@@ -21,7 +26,6 @@ import type { Game, Result } from "./types";
 import {
   cellOf,
   featuredPictures,
-  locationDensity,
   yearDistribution,
   type FeaturedPicture,
 } from "./featuredPictures";
@@ -32,6 +36,7 @@ import {
   dated,
   decadeAccuracy,
   decades,
+  hexBins,
   located,
   pictureScores,
   type Located,
@@ -248,7 +253,7 @@ function PlaceTip({
     <div
       className="map-tip"
       role="dialog"
-      aria-label="Places in this circle"
+      aria-label="Places in this area"
       style={{
         left: `${left}%`,
         top: `${top}%`,
@@ -271,23 +276,149 @@ function PlaceTip({
   );
 }
 
+type MapMode = "dots" | "heat";
+type HeatStyle = "hexagons" | "squares";
+function stored<T extends string>(key: string, values: readonly T[]): T {
+  try {
+    const value = localStorage.getItem(key);
+    return values.includes(value as T) ? (value as T) : values[0]!;
+  } catch {
+    return values[0]!;
+  }
+}
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
+type Bin = { key: string; x: number; y: number; pictures: Located[] };
+
+function cellBins(points: Located[], size: number) {
+  const bins = new Map<string, Bin>();
+  for (const p of points) {
+    const cell = cellOf(p.location, size);
+    const key = `${size}:${cell.lat}:${cell.lng}`;
+    const bin = bins.get(key) ?? {
+      key,
+      x: x(cell.lng + size / 2),
+      y: y(cell.lat + size / 2),
+      pictures: [],
+    };
+    bin.pictures.push(p);
+    bins.set(key, bin);
+  }
+  return [...bins.values()];
+}
+
+const hexPath = (cx: number, cy: number, r: number) =>
+  Array.from({ length: 6 }, (_, i) => {
+    const angle = (Math.PI / 3) * i - Math.PI / 2;
+    return `${i ? "L" : "M"}${cx + r * Math.cos(angle)} ${cy + r * Math.sin(angle)}`;
+  }).join("") + "Z";
+
+const graticule = (
+  <g className="map-graticule">
+    {[60, 120, 180, 240, 300].map((at) => (
+      <line key={`y${at}`} x1="0" x2="720" y1={at} y2={at} />
+    ))}
+    {[120, 240, 360, 480, 600].map((at) => (
+      <line key={`x${at}`} y1="0" y2="360" x1={at} x2={at} />
+    ))}
+  </g>
+);
+
+function Choice<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string; icon: ReactNode }[];
+  onChange: (next: T) => void;
+}) {
+  return (
+    <div className="map-mode" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          aria-pressed={value === option.value}
+          onClick={() => onChange(option.value)}
+        >
+          {option.icon}
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
   const { view, svg, handlers, dragged, zoomBy, reset } = useMapZoom();
+  const [mode, setMode] = useState(() =>
+    stored<MapMode>("atlasMap", ["dots", "heat"]),
+  );
+  const [heatStyle, setHeatStyle] = useState(() =>
+    stored<HeatStyle>("atlasHeat", ["hexagons", "squares"]),
+  );
   const [selected, setSelected] = useState<string | null>(null);
-  const size = cellSize(view.zoom);
+  const style = mode === "dots" ? "dots" : heatStyle;
+  const size =
+    style === "hexagons"
+      ? cellSize(view.zoom) * 2
+      : style === "squares" && view.zoom < 3
+        ? 5
+        : cellSize(view.zoom);
   const points = located(pictures);
-  const cells = locationDensity(points, size);
-  const steps = colorSteps(Math.max(1, ...cells.map((c) => c.count)));
+  const hexRadius = (size * 2) / Math.sqrt(3);
+  const bins: Bin[] =
+    style === "hexagons"
+      ? hexBins(
+          points,
+          (p) => ({ x: x(p.location.lng), y: y(p.location.lat) }),
+          hexRadius,
+        ).map((bin) => ({
+          key: `${size}:hex:${bin.key}`,
+          x: bin.x,
+          y: bin.y,
+          pictures: bin.items,
+        }))
+      : cellBins(points, size);
+  bins.sort((a, b) => b.pictures.length - a.pictures.length);
+  const busiest = Math.max(1, ...bins.map((b) => b.pictures.length));
+  const steps = colorSteps(busiest);
+  const fill = (count: number) => stepFill(stepOf(count, steps), steps);
+  const shade = (i: number) => [0.15, 0.45, 0.75, 1][stepIndex(i, steps)];
   const shrink = Math.min(1, (size * 2 * view.zoom) / 6) / view.zoom;
-  const keyOf = (cell: { lat: number; lng: number }) =>
-    `${size}:${cell.lat}:${cell.lng}`;
-  const open = cells.find((cell) => keyOf(cell) === selected);
+  const open = bins.find((bin) => bin.key === selected);
   const toggle = (key: string) => {
     if (!dragged.current)
       setSelected((current) => (current === key ? null : key));
   };
-  const tipLeft = open && ((x(open.lng + size / 2) - view.x) * view.zoom) / 7.2;
-  const tipTop = open && ((y(open.lat + size / 2) - view.y) * view.zoom) / 3.6;
+  const shape = {
+    dots: "circle",
+    hexagons: "hexagon",
+    squares: "square",
+  }[style];
+  const binProps = (bin: Bin) => ({
+    className: "map-bin",
+    role: "button",
+    tabIndex: 0,
+    "aria-label": `${plural(bin.pictures.length, "picture")}: show places`,
+    "aria-expanded": bin.key === selected,
+    onClick: () => toggle(bin.key),
+    onKeyDown: (event: KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      dragged.current = false;
+      toggle(bin.key);
+    },
+  });
+  const tipLeft = open && ((open.x - view.x) * view.zoom) / 7.2;
+  const tipTop = open && ((open.y - view.y) * view.zoom) / 3.6;
   return (
     <section className="atlas-hero">
       <div
@@ -297,41 +428,56 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
         <svg
           ref={svg}
           className="atlas-map"
+          data-style={style}
           data-zoomed={view.zoom > 1 || undefined}
           viewBox={`${view.x} ${view.y} ${720 / view.zoom} ${360 / view.zoom}`}
           role="group"
-          aria-label={`Heat map of ${plural(points.length, "picture")} in ${size}° areas`}
+          aria-label={`${style === "dots" ? "Map" : "Heat map"} of ${plural(points.length, "picture")} in ${size}° areas`}
           onClick={(event) => {
-            if (!dragged.current && !(event.target instanceof SVGCircleElement))
+            if (
+              !dragged.current &&
+              !(event.target as Element).closest(".map-bin")
+            )
               setSelected(null);
           }}
           {...handlers}
         >
           {land}
-          {cells.map((cell) => {
-            const step = stepOf(cell.count, steps);
-            const key = keyOf(cell);
-            return (
-              <circle
-                key={key}
-                cx={x(cell.lng + size / 2)}
-                cy={y(cell.lat + size / 2)}
-                r={(3 + stepIndex(step, steps) * 0.6) * shrink}
-                style={{ fill: stepFill(step, steps) }}
-                role="button"
-                tabIndex={0}
-                aria-label={`${plural(cell.count, "picture")}: show places`}
-                aria-expanded={key === selected}
-                onClick={() => toggle(key)}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter" && event.key !== " ") return;
-                  event.preventDefault();
-                  dragged.current = false;
-                  toggle(key);
-                }}
+          {style === "squares" && graticule}
+          {bins.map((bin) =>
+            style === "hexagons" ? (
+              <path
+                key={bin.key}
+                d={hexPath(bin.x, bin.y, hexRadius)}
+                style={{ fill: fill(bin.pictures.length) }}
+                {...binProps(bin)}
               />
-            );
-          })}
+            ) : style === "squares" ? (
+              <rect
+                key={bin.key}
+                x={bin.x - size}
+                y={bin.y - size}
+                width={size * 2}
+                height={size * 2}
+                fillOpacity={shade(stepOf(bin.pictures.length, steps))}
+                {...binProps(bin)}
+              />
+            ) : (
+              <circle
+                key={bin.key}
+                cx={bin.x}
+                cy={bin.y}
+                r={
+                  (3 +
+                    stepIndex(stepOf(bin.pictures.length, steps), steps) *
+                      0.6) *
+                  shrink
+                }
+                style={{ fill: fill(bin.pictures.length) }}
+                {...binProps(bin)}
+              />
+            ),
+          )}
         </svg>
         {open &&
           tipLeft! >= 0 &&
@@ -340,10 +486,7 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
           tipTop! <= 100 && (
             <PlaceTip
               key={selected}
-              pictures={points.filter((p) => {
-                const cell = cellOf(p.location, size);
-                return cell.lat === open.lat && cell.lng === open.lng;
-              })}
+              pictures={open.pictures}
               left={tipLeft!}
               top={tipTop!}
             />
@@ -375,24 +518,72 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
           </button>
         </div>
       </div>
-      <ul className="map-legend" aria-label="Pictures per circle">
-        {steps.map((_, i) => (
-          <li key={i}>
-            <i
-              style={{
-                background: stepFill(i, steps),
-                width: 9 + stepIndex(i, steps) * 2,
-                height: 9 + stepIndex(i, steps) * 2,
-              }}
-            />
-            {stepLabel(steps, i)}
-          </li>
-        ))}
-      </ul>
+      <div className="map-footer">
+        <Choice
+          label="Map style"
+          value={mode}
+          options={[
+            { value: "dots", label: "Dots", icon: <CircleDot size={15} /> },
+            { value: "heat", label: "Heat", icon: <Flame size={15} /> },
+          ]}
+          onChange={(next) => {
+            setMode(next);
+            setSelected(null);
+            store("atlasMap", next);
+          }}
+        />
+        {mode === "heat" && (
+          <Choice
+            label="Heat style"
+            value={heatStyle}
+            options={[
+              {
+                value: "hexagons",
+                label: "Hexagons",
+                icon: <Hexagon size={15} />,
+              },
+              {
+                value: "squares",
+                label: "Squares",
+                icon: <Grid3x3 size={15} />,
+              },
+            ]}
+            onChange={(next) => {
+              setHeatStyle(next);
+              setSelected(null);
+              store("atlasHeat", next);
+            }}
+          />
+        )}
+        <ul
+          className="map-legend"
+          data-shape={shape}
+          aria-label={`Pictures per ${shape}`}
+        >
+          {steps.map((_, i) => (
+            <li key={i}>
+              <i
+                style={{
+                  background:
+                    style === "squares"
+                      ? `color-mix(in srgb, var(--accent) ${shade(i)! * 100}%, transparent)`
+                      : stepFill(i, steps),
+                  width: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
+                  height: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
+                }}
+              />
+              {stepLabel(steps, i)}
+            </li>
+          ))}
+        </ul>
+      </div>
       <p className="map-note">
-        {plural(points.length, "picture")} · each circle covers a {size}° area ·
-        scroll, pinch or double-click to zoom, drag to move, click a circle for
-        its places
+        {plural(points.length, "picture")} ·{" "}
+        {style === "hexagons"
+          ? `each hexagon is about ${size}° wide`
+          : `each ${shape} covers a ${size}° area`}{" "}
+        · scroll, pinch or double-click to zoom, drag to move, click a {shape}{" "}
+        for its places
       </p>
     </section>
   );
