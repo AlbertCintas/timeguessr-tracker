@@ -7,12 +7,12 @@ import {
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import {
   CircleDot,
   Flag,
   Flame,
-  Grid3x3,
   Hexagon,
   Hourglass,
   Info,
@@ -21,6 +21,7 @@ import {
   Maximize,
   Minus,
   Plus,
+  Thermometer,
 } from "lucide-react";
 import type { Game, Result } from "./types";
 import {
@@ -218,6 +219,7 @@ function useMapZoom() {
     handlers,
     dragged,
     zoomBy,
+    toMap,
     reset: () => setView(fullView),
   };
 }
@@ -277,7 +279,7 @@ function PlaceTip({
 }
 
 type MapMode = "dots" | "heat";
-type HeatStyle = "hexagons" | "squares";
+type HeatStyle = "hexagons" | "thermal";
 function stored<T extends string>(key: string, values: readonly T[]): T {
   try {
     const value = localStorage.getItem(key);
@@ -291,8 +293,8 @@ function store(key: string, value: string) {
     localStorage.setItem(key, value);
   } catch {}
 }
-
 type Bin = { key: string; x: number; y: number; pictures: Located[] };
+const at = (p: Located) => ({ x: x(p.location.lng), y: y(p.location.lat) });
 
 function cellBins(points: Located[], size: number) {
   const bins = new Map<string, Bin>();
@@ -317,16 +319,147 @@ const hexPath = (cx: number, cy: number, r: number) =>
     return `${i ? "L" : "M"}${cx + r * Math.cos(angle)} ${cy + r * Math.sin(angle)}`;
   }).join("") + "Z";
 
-const graticule = (
-  <g className="map-graticule">
-    {[60, 120, 180, 240, 300].map((at) => (
-      <line key={`y${at}`} x1="0" x2="720" y1={at} y2={at} />
-    ))}
-    {[120, 240, 360, 480, 600].map((at) => (
-      <line key={`x${at}`} y1="0" y2="360" x1={at} x2={at} />
-    ))}
-  </g>
-);
+function useWidth(ref: RefObject<Element | null>) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(entry!.contentRect.width),
+    );
+    observer.observe(ref.current!);
+    return () => observer.disconnect();
+  }, []);
+  return width;
+}
+
+const thermalStops: [number, string][] = [
+  [0, "#2b4fd8"],
+  [0.2, "#1fa9e8"],
+  [0.4, "#2fd08a"],
+  [0.6, "#e6e23a"],
+  [0.8, "#f7931e"],
+  [1, "#e0311d"],
+];
+const thermalCss = `linear-gradient(90deg, ${thermalStops.map(([at, c]) => `${c} ${at * 100}%`).join(", ")})`;
+/** Spread of each picture's warmth, in map units (2 per degree). */
+const spread = 14;
+
+let landMask: Promise<HTMLImageElement> | null = null;
+const loadLandMask = () =>
+  (landMask ??= fetch(`${import.meta.env.BASE_URL}world-land.svg`)
+    .then((response) => response.text())
+    .then(
+      (svg) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.replace(/fill-opacity="[^"]*"/g, ""))}`;
+        }),
+    ));
+
+const reach = spread * 3;
+const edge = Math.exp(-4.5);
+/** A Gaussian lowered to reach exactly zero at `reach`, so no seam shows. */
+const warmth = (dx: number, dy: number) =>
+  Math.max(
+    0,
+    (Math.exp(-(dx * dx + dy * dy) / (2 * spread * spread)) - edge) /
+      (1 - edge),
+  );
+
+/**
+ * Sums a Gaussian of warmth per picture on a coarse grid, scales it so the
+ * warmest picture is red at any zoom, and clips the smoothed result to land.
+ */
+function ThermalLayer({
+  points,
+  view,
+  width,
+}: {
+  points: Located[];
+  view: View;
+  width: number;
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [mask, setMask] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    loadLandMask().then(setMask, () => {});
+  }, []);
+  useEffect(() => {
+    const node = canvas.current!;
+    const ratio = Math.min(2, devicePixelRatio);
+    const w = Math.round(width * ratio);
+    const h = Math.round((width / 2) * ratio);
+    if (!w) return;
+    node.width = w;
+    node.height = h;
+    const coords = points.map(at);
+    const peak = Math.max(
+      1,
+      ...coords.map((p) =>
+        coords.reduce((sum, q) => sum + warmth(p.x - q.x, p.y - q.y), 0),
+      ),
+    );
+    const columns = Math.ceil(width / 5);
+    const rows = Math.ceil(columns / 2);
+    const cell = 720 / view.zoom / columns;
+    const field = new Float32Array(columns * rows);
+    for (const p of coords) {
+      const left = Math.max(0, Math.floor((p.x - reach - view.x) / cell));
+      const right = Math.min(
+        columns - 1,
+        Math.ceil((p.x + reach - view.x) / cell),
+      );
+      const top = Math.max(0, Math.floor((p.y - reach - view.y) / cell));
+      const bottom = Math.min(
+        rows - 1,
+        Math.ceil((p.y + reach - view.y) / cell),
+      );
+      for (let row = top; row <= bottom; row++)
+        for (let column = left; column <= right; column++)
+          field[row * columns + column]! += warmth(
+            view.x + (column + 0.5) * cell - p.x,
+            view.y + (row + 0.5) * cell - p.y,
+          );
+    }
+    const ramp = document.createElement("canvas");
+    ramp.width = 256;
+    ramp.height = 1;
+    const rampContext = ramp.getContext("2d")!;
+    const gradient = rampContext.createLinearGradient(0, 0, 256, 0);
+    for (const [offset, stop] of thermalStops)
+      gradient.addColorStop(offset, stop);
+    rampContext.fillStyle = gradient;
+    rampContext.fillRect(0, 0, 256, 1);
+    const palette = rampContext.getImageData(0, 0, 256, 1).data;
+    const grid = document.createElement("canvas");
+    grid.width = columns;
+    grid.height = rows;
+    const gridContext = grid.getContext("2d")!;
+    const image = gridContext.createImageData(columns, rows);
+    field.forEach((value, i) => {
+      const level = Math.round(Math.min(1, value / peak) ** 0.45 * 255);
+      image.data.set(palette.subarray(level * 4, level * 4 + 3), i * 4);
+      image.data[i * 4 + 3] = 255;
+    });
+    gridContext.putImageData(image, 0, 0);
+    const context = node.getContext("2d")!;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(grid, 0, 0, w, h);
+    if (!mask) return;
+    const scale = w / (720 / view.zoom);
+    context.globalCompositeOperation = "destination-in";
+    context.filter = `blur(${ratio}px)`;
+    context.drawImage(
+      mask,
+      -view.x * scale,
+      -view.y * scale,
+      720 * scale,
+      360 * scale,
+    );
+  });
+  return <canvas ref={canvas} className="map-thermal" aria-hidden />;
+}
 
 function Choice<T extends string>({
   label,
@@ -336,7 +469,7 @@ function Choice<T extends string>({
 }: {
   label: string;
   value: T;
-  options: readonly { value: T; label: string; icon: ReactNode }[];
+  options: readonly { value: T; label: string; icon?: ReactNode }[];
   onChange: (next: T) => void;
 }) {
   return (
@@ -357,54 +490,59 @@ function Choice<T extends string>({
 }
 
 function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
-  const { view, svg, handlers, dragged, zoomBy, reset } = useMapZoom();
+  const { view, svg, handlers, dragged, zoomBy, reset, toMap } = useMapZoom();
   const [mode, setMode] = useState(() =>
     stored<MapMode>("atlasMap", ["dots", "heat"]),
   );
   const [heatStyle, setHeatStyle] = useState(() =>
-    stored<HeatStyle>("atlasHeat", ["hexagons", "squares"]),
+    stored<HeatStyle>("atlasHeat", ["hexagons", "thermal"]),
   );
   const [selected, setSelected] = useState<string | null>(null);
+  const [probe, setProbe] = useState<{ x: number; y: number } | null>(null);
+  const width = useWidth(svg);
   const style = mode === "dots" ? "dots" : heatStyle;
-  const size =
-    style === "hexagons"
-      ? cellSize(view.zoom) * 2
-      : style === "squares" && view.zoom < 3
-        ? 5
-        : cellSize(view.zoom);
+  const thermal = style === "thermal";
+  const size = cellSize(view.zoom) * (style === "hexagons" ? 2 : 1);
   const points = located(pictures);
   const hexRadius = (size * 2) / Math.sqrt(3);
   const bins: Bin[] =
     style === "hexagons"
-      ? hexBins(
-          points,
-          (p) => ({ x: x(p.location.lng), y: y(p.location.lat) }),
-          hexRadius,
-        ).map((bin) => ({
+      ? hexBins(points, at, hexRadius).map((bin) => ({
           key: `${size}:hex:${bin.key}`,
           x: bin.x,
           y: bin.y,
           pictures: bin.items,
         }))
-      : cellBins(points, size);
+      : thermal
+        ? []
+        : cellBins(points, size);
   bins.sort((a, b) => b.pictures.length - a.pictures.length);
-  const busiest = Math.max(1, ...bins.map((b) => b.pictures.length));
-  const steps = colorSteps(busiest);
+  const steps = colorSteps(Math.max(1, ...bins.map((b) => b.pictures.length)));
   const fill = (count: number) => stepFill(stepOf(count, steps), steps);
-  const shade = (i: number) => [0.15, 0.45, 0.75, 1][stepIndex(i, steps)];
   const shrink = Math.min(1, (size * 2 * view.zoom) / 6) / view.zoom;
-  const open = bins.find((bin) => bin.key === selected);
+  const reach = spread * 1.5;
+  const nearby =
+    probe &&
+    points.filter(
+      (p) => Math.hypot(at(p).x - probe.x, at(p).y - probe.y) <= reach,
+    );
+  const open: Bin | undefined = thermal
+    ? nearby?.length
+      ? { key: `${probe!.x}:${probe!.y}`, ...probe!, pictures: nearby }
+      : undefined
+    : bins.find((bin) => bin.key === selected);
   const toggle = (key: string) => {
     if (!dragged.current)
       setSelected((current) => (current === key ? null : key));
   };
-  const shape = {
-    dots: "circle",
-    hexagons: "hexagon",
-    squares: "square",
-  }[style];
+  const close = () => {
+    setSelected(null);
+    setProbe(null);
+  };
+  const shape = style === "hexagons" ? "hexagon" : "circle";
   const binProps = (bin: Bin) => ({
     className: "map-bin",
+    style: { fill: fill(bin.pictures.length) },
     role: "button",
     tabIndex: 0,
     "aria-label": `${plural(bin.pictures.length, "picture")}: show places`,
@@ -423,43 +561,38 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
     <section className="atlas-hero">
       <div
         className="atlas-map-frame"
-        onKeyDown={(event) => event.key === "Escape" && setSelected(null)}
+        onKeyDown={(event) => event.key === "Escape" && close()}
       >
         <svg
           ref={svg}
           className="atlas-map"
-          data-style={style}
           data-zoomed={view.zoom > 1 || undefined}
           viewBox={`${view.x} ${view.y} ${720 / view.zoom} ${360 / view.zoom}`}
           role="group"
-          aria-label={`${style === "dots" ? "Map" : "Heat map"} of ${plural(points.length, "picture")} in ${size}° areas`}
+          aria-label={
+            thermal
+              ? `Thermal map of ${plural(points.length, "picture")}`
+              : `${style === "dots" ? "Map" : "Heat map"} of ${plural(points.length, "picture")} in ${size}° areas`
+          }
           onClick={(event) => {
             if (
-              !dragged.current &&
-              !(event.target as Element).closest(".map-bin")
+              dragged.current ||
+              (event.target as Element).closest(".map-bin")
             )
-              setSelected(null);
+              return;
+            setSelected(null);
+            setProbe(
+              thermal ? toMap(event.clientX, event.clientY, view) : null,
+            );
           }}
           {...handlers}
         >
           {land}
-          {style === "squares" && graticule}
           {bins.map((bin) =>
             style === "hexagons" ? (
               <path
                 key={bin.key}
                 d={hexPath(bin.x, bin.y, hexRadius)}
-                style={{ fill: fill(bin.pictures.length) }}
-                {...binProps(bin)}
-              />
-            ) : style === "squares" ? (
-              <rect
-                key={bin.key}
-                x={bin.x - size}
-                y={bin.y - size}
-                width={size * 2}
-                height={size * 2}
-                fillOpacity={shade(stepOf(bin.pictures.length, steps))}
                 {...binProps(bin)}
               />
             ) : (
@@ -473,19 +606,28 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
                       0.6) *
                   shrink
                 }
-                style={{ fill: fill(bin.pictures.length) }}
                 {...binProps(bin)}
               />
             ),
           )}
         </svg>
+        {thermal && <ThermalLayer points={points} view={view} width={width} />}
+        {thermal && open && (
+          <svg
+            className="map-probe"
+            viewBox={`${view.x} ${view.y} ${720 / view.zoom} ${360 / view.zoom}`}
+            aria-hidden
+          >
+            <circle cx={open.x} cy={open.y} r={reach} />
+          </svg>
+        )}
         {open &&
           tipLeft! >= 0 &&
           tipLeft! <= 100 &&
           tipTop! >= 0 &&
           tipTop! <= 100 && (
             <PlaceTip
-              key={selected}
+              key={open.key}
               pictures={open.pictures}
               left={tipLeft!}
               top={tipTop!}
@@ -528,7 +670,7 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
           ]}
           onChange={(next) => {
             setMode(next);
-            setSelected(null);
+            close();
             store("atlasMap", next);
           }}
         />
@@ -543,47 +685,58 @@ function HeatMap({ pictures }: { pictures: FeaturedPicture[] }) {
                 icon: <Hexagon size={15} />,
               },
               {
-                value: "squares",
-                label: "Squares",
-                icon: <Grid3x3 size={15} />,
+                value: "thermal",
+                label: "Thermal",
+                icon: <Thermometer size={15} />,
               },
             ]}
             onChange={(next) => {
               setHeatStyle(next);
-              setSelected(null);
+              close();
               store("atlasHeat", next);
             }}
           />
         )}
-        <ul
-          className="map-legend"
-          data-shape={shape}
-          aria-label={`Pictures per ${shape}`}
-        >
-          {steps.map((_, i) => (
-            <li key={i}>
-              <i
-                style={{
-                  background:
-                    style === "squares"
-                      ? `color-mix(in srgb, var(--accent) ${shade(i)! * 100}%, transparent)`
-                      : stepFill(i, steps),
-                  width: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
-                  height: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
-                }}
-              />
-              {stepLabel(steps, i)}
-            </li>
-          ))}
-        </ul>
+        {thermal ? (
+          <div
+            className="thermal-legend"
+            role="group"
+            aria-label="Picture density"
+          >
+            <span>Fewer</span>
+            <i style={{ background: thermalCss }} />
+            <span>More pictures</span>
+          </div>
+        ) : (
+          <ul
+            className="map-legend"
+            data-shape={shape}
+            aria-label={`Pictures per ${shape}`}
+          >
+            {steps.map((_, i) => (
+              <li key={i}>
+                <i
+                  style={{
+                    background: stepFill(i, steps),
+                    width: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
+                    height: style === "dots" ? 9 + stepIndex(i, steps) * 2 : 12,
+                  }}
+                />
+                {stepLabel(steps, i)}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <p className="map-note">
         {plural(points.length, "picture")} ·{" "}
-        {style === "hexagons"
-          ? `each hexagon is about ${size}° wide`
-          : `each ${shape} covers a ${size}° area`}{" "}
-        · scroll, pinch or double-click to zoom, drag to move, click a {shape}{" "}
-        for its places
+        {thermal
+          ? "warmer colours mean more pictures nearby"
+          : style === "hexagons"
+            ? `each hexagon is about ${size}° wide`
+            : `each circle covers a ${size}° area`}{" "}
+        · scroll, pinch or double-click to zoom, drag to move, click{" "}
+        {thermal ? "a hot spot" : `a ${shape}`} for its places
       </p>
     </section>
   );

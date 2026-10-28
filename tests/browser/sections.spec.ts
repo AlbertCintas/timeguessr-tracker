@@ -325,18 +325,22 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   ).toBeVisible();
   await page
     .getByRole("group", { name: "Heat style" })
-    .getByRole("button", { name: "Squares" })
+    .getByRole("button", { name: "Thermal" })
     .click();
+  const thermal = page.getByRole("group", {
+    name: "Thermal map of 5 pictures",
+  });
+  await expect(thermal).toBeVisible();
   await expect(
-    page.getByRole("group", { name: "Heat map of 5 pictures in 5° areas" }),
+    page.getByRole("group", { name: "Picture density" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("list", { name: "Pictures per square" }),
-  ).toBeVisible();
+  const box = (await thermal.boundingBox())!;
+  await thermal.click({
+    position: { x: (box.width * 110) / 360, y: (box.height * 50) / 180 },
+  });
+  await expect(tip).toContainText("1 picture");
   await page.reload();
-  await expect(
-    page.getByRole("group", { name: "Heat map of 5 pictures in 5° areas" }),
-  ).toBeVisible();
+  await expect(thermal).toBeVisible();
   await style.getByRole("button", { name: "Dots" }).click();
   await expect(
     page.getByRole("list", { name: "Pictures per circle" }),
