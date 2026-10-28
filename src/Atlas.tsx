@@ -341,7 +341,7 @@ const thermalStops: [number, string][] = [
 ];
 const thermalCss = `linear-gradient(90deg, ${thermalStops.map(([at, c]) => `${c} ${at * 100}%`).join(", ")})`;
 /** Spread of each picture's warmth, in map units (2 per degree). */
-const spread = 14;
+const spread = 6;
 
 let landMask: Promise<HTMLImageElement> | null = null;
 const loadLandMask = () =>
@@ -438,7 +438,7 @@ function ThermalLayer({
     const gridContext = grid.getContext("2d")!;
     const image = gridContext.createImageData(columns, rows);
     field.forEach((value, i) => {
-      const level = Math.round(Math.min(1, value / peak) ** 0.45 * 255);
+      const level = Math.round(Math.min(1, value / peak) ** 0.6 * 255);
       image.data.set(palette.subarray(level * 4, level * 4 + 3), i * 4);
       image.data[i * 4 + 3] = 255;
     });
