@@ -6,6 +6,7 @@ import {
   countryLastSeen,
   decadeAccuracy,
   decades,
+  hexBins,
   pictureScores,
   stepLabel,
   stepOf,
@@ -176,4 +177,23 @@ test("continents cover Timeguessr's own names", () => {
   assert.equal(continentOf("Palestinian territories or Israel"), "Asia");
   assert.equal(continentOf("Uruguay"), "South America");
   assert.equal(continentOf("Atlantis"), null);
+});
+
+test("hexBins puts each point in the hexagon whose centre is nearest", () => {
+  const r = 10;
+  const points = [
+    { x: 0, y: 0 },
+    { x: 3, y: 2 },
+    { x: 17.3, y: 0 },
+    { x: 8.7, y: 15 },
+    { x: 100, y: 100 },
+  ];
+  const bins = hexBins(points, (p) => p, r);
+  assert.deepEqual(
+    bins.map((b) => b.items.length),
+    [2, 1, 1, 1],
+  );
+  for (const bin of bins)
+    for (const p of bin.items)
+      assert.ok(Math.hypot(p.x - bin.x, p.y - bin.y) <= r);
 });

@@ -283,7 +283,7 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
     "Years",
   ]);
   await expect(
-    page.getByRole("group", { name: "Heat map of 5 pictures in 3° areas" }),
+    page.getByRole("group", { name: "Map of 5 pictures in 3° areas" }),
   ).toBeVisible();
   await expect(
     page.getByRole("list", { name: "Pictures per circle" }),
@@ -292,7 +292,7 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
     .getByRole("button", { name: "1 picture: show places" })
     .first()
     .click();
-  const tip = page.getByRole("dialog", { name: "Places in this circle" });
+  const tip = page.getByRole("dialog", { name: "Places in this area" });
   await expect(tip).toContainText("Copenhagen, Capital Region");
   await page.keyboard.press("Escape");
   await expect(tip).toBeHidden();
@@ -300,19 +300,48 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   await zoom.getByRole("button", { name: "Zoom in" }).click();
   await zoom.getByRole("button", { name: "Zoom in" }).click();
   await expect(
-    page.getByRole("group", { name: "Heat map of 5 pictures in 1° areas" }),
+    page.getByRole("group", { name: "Map of 5 pictures in 1° areas" }),
   ).toBeVisible();
   await zoom.getByRole("button", { name: "Show the whole world" }).click();
   await expect(
-    page.getByRole("group", { name: "Heat map of 5 pictures in 3° areas" }),
+    page.getByRole("group", { name: "Map of 5 pictures in 3° areas" }),
   ).toBeVisible();
   if (!test.info().project.name.includes("mobile")) {
-    await page.getByRole("group", { name: /Heat map/ }).hover();
+    await page.getByRole("group", { name: /^Map of/ }).hover();
     await page.mouse.wheel(0, -1000);
     await expect(
-      page.getByRole("group", { name: "Heat map of 5 pictures in 1° areas" }),
+      page.getByRole("group", { name: "Map of 5 pictures in 1° areas" }),
     ).toBeVisible();
+    await zoom.getByRole("button", { name: "Show the whole world" }).click();
   }
+
+  const style = page.getByRole("group", { name: "Map style" });
+  await style.getByRole("button", { name: "Heat" }).click();
+  await expect(
+    page.getByRole("group", { name: "Heat map of 5 pictures in 6° areas" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Pictures per hexagon" }),
+  ).toBeVisible();
+  await page
+    .getByRole("group", { name: "Heat style" })
+    .getByRole("button", { name: "Squares" })
+    .click();
+  await expect(
+    page.getByRole("group", { name: "Heat map of 5 pictures in 5° areas" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Pictures per square" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("group", { name: "Heat map of 5 pictures in 5° areas" }),
+  ).toBeVisible();
+  await style.getByRole("button", { name: "Dots" }).click();
+  await expect(
+    page.getByRole("list", { name: "Pictures per circle" }),
+  ).toBeVisible();
+  await expect(page.getByRole("group", { name: "Heat style" })).toBeHidden();
 
   await tabs.getByRole("button", { name: "Countries" }).click();
   await expect(page).toHaveURL(/#countries$/);

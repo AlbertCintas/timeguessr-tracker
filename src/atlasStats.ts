@@ -70,6 +70,37 @@ export const stepLabel = (steps: readonly number[], i: number) => {
   return low === steps[i] ? String(low) : `${low}–${steps[i]}`;
 };
 
+/** Groups points into pointy-top hexagons of circumradius `r`, by nearest centre. */
+export function hexBins<T>(
+  items: readonly T[],
+  at: (item: T) => { x: number; y: number },
+  r: number,
+) {
+  const dx = r * Math.sqrt(3);
+  const dy = r * 1.5;
+  const bins = new Map<string, { x: number; y: number; items: T[] }>();
+  for (const item of items) {
+    const p = at(item);
+    const row = Math.round(p.y / dy);
+    let best = { col: 0, row: 0, d: Infinity };
+    for (let j = row - 1; j <= row + 1; j++) {
+      const shift = (Math.abs(j) % 2) / 2;
+      const col = Math.round(p.x / dx - shift);
+      const d = Math.hypot(p.x - (col + shift) * dx, p.y - j * dy);
+      if (d < best.d) best = { col, row: j, d };
+    }
+    const key = `${best.col}:${best.row}`;
+    const bin = bins.get(key) ?? {
+      x: (best.col + (Math.abs(best.row) % 2) / 2) * dx,
+      y: best.row * dy,
+      items: [],
+    };
+    bin.items.push(item);
+    bins.set(key, bin);
+  }
+  return [...bins].map(([key, bin]) => ({ key, ...bin }));
+}
+
 const mean = (values: readonly number[]) =>
   values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
 
