@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  answersRevealed,
   madridToday,
   ranked,
   standings,
@@ -241,4 +242,38 @@ test("delayed custom imports use played dates for standings periods", () => {
   const now = new Date("2026-10-09T12:00:00Z");
   assert.equal(resultsForPeriod(games, results, "today", now).length, 0);
   assert.equal(resultsForPeriod(games, results, "week", now).length, 1);
+});
+
+test("daily answers open the next Madrid day", () => {
+  const game: Game = {
+    id: "daily",
+    kind: "daily",
+    daily_date: "2026-10-08",
+    name: null,
+    created_at: "2026-10-08T09:00:00Z",
+  };
+  assert.equal(answersRevealed(game, new Date("2026-10-08T21:59:00Z")), false);
+  assert.equal(answersRevealed(game, new Date("2026-10-08T22:00:00Z")), true);
+});
+
+test("non-daily answers open a week after the first play", () => {
+  const game: Game = {
+    id: "replay",
+    kind: "custom",
+    daily_date: null,
+    name: "Timeguessr",
+    played_on: "2026-10-08",
+    created_at: "2026-10-09T12:00:00Z",
+  };
+  assert.equal(answersRevealed(game, new Date("2026-10-14T12:00:00Z")), false);
+  assert.equal(answersRevealed(game, new Date("2026-10-15T12:00:00Z")), true);
+  const noPlayedDate = { ...game, played_on: null };
+  assert.equal(
+    answersRevealed(noPlayedDate, new Date("2026-10-15T12:00:00Z")),
+    false,
+  );
+  assert.equal(
+    answersRevealed(noPlayedDate, new Date("2026-10-16T12:00:00Z")),
+    true,
+  );
 });

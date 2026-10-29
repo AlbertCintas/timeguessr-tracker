@@ -265,6 +265,7 @@ async function serveAtlas(page: Page) {
 test("atlas tabs count each picture once per game, remember the tab and follow the period", async ({
   page,
 }) => {
+  await page.clock.install({ time: new Date("2026-10-20T12:00:00Z") });
   await serveAtlas(page);
   await page.route("**/world-places.json", (route) =>
     route.fulfill({
@@ -406,11 +407,13 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   );
   await page.getByLabel("Standings period").selectOption("last7");
   await expect(
-    page.getByText("No pictures captured in this period yet."),
+    page.getByText("No pictures revealed in this period yet.", {
+      exact: false,
+    }),
   ).toBeVisible();
 });
 
-test("correct answers appear in history without overflowing a mobile page", async ({
+test("history picture breakdowns hide the answers and fit a mobile page", async ({
   page,
 }) => {
   await page.route("https://club-test.supabase.co/**", async (route) => {
@@ -442,9 +445,10 @@ test("correct answers appear in history without overflowing a mobile page", asyn
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
   await page.getByText("Alice’s picture breakdown", { exact: true }).click();
   const table = page.getByRole("table", { name: "Picture breakdown" });
-  await expect(table).toContainText("Correct year");
-  await expect(table).toContainText("1990");
-  await expect(table).toContainText("48.8°, 2.3°");
+  await expect(table).toContainText("Km off");
+  await expect(table).not.toContainText("Correct year");
+  await expect(table).not.toContainText("1990");
+  await expect(table).not.toContainText("48.8");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -452,47 +456,50 @@ test("correct answers appear in history without overflowing a mobile page", asyn
   ).toBe(true);
 });
 
-test("backfilled answers show their country in history for games with only total scores", async ({
+test("atlas waits a day for daily answers and a week for other games", async ({
   page,
 }) => {
+  await page.clock.install({ time: new Date("2026-10-09T12:00:00Z") });
+  const only = (country: string) =>
+    answers.map((answer) => ({ ...answer, country }));
+  const shown = [
+    { ...games[0], correct_answers: answers },
+    { ...games[1], correct_answers: only("Japan") },
+    {
+      id: "replay",
+      kind: "custom",
+      daily_date: null,
+      name: "Timeguessr",
+      played_on: "2026-10-06",
+      created_at: "2026-10-06T12:00:00Z",
+      correct_answers: only("Brazil"),
+    },
+  ];
   await page.route("https://club-test.supabase.co/**", async (route) => {
     const url = route.request().url();
-    const game = {
-      ...games[0],
-      correct_answers: answers,
-      answers_source_url:
-        "https://timeguessr.com/play?mode=daily&archive=1227-c4325922368acb2a08bd",
-    };
     await route.fulfill({
       json: url.includes("/profiles")
         ? profiles
         : url.includes("/games")
-          ? [game]
+          ? shown
           : url.includes("/results")
-            ? ["alice", "bob"].map((player_id) => ({
+            ? shown.map((game) => ({
                 game_id: game.id,
-                player_id,
+                player_id: "alice",
                 points: 30000,
               }))
             : [],
       headers: { "Access-Control-Allow-Origin": "*" },
     });
   });
+  await page.goto("./atlas.html#countries");
+  const countries = page.getByRole("list", { name: "Pictures per country" });
+  await expect(countries.getByRole("listitem")).toHaveCount(4);
+  await expect(countries).toContainText("Denmark");
+  await expect(countries).not.toContainText("Japan");
+  await expect(countries).not.toContainText("Brazil");
+
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
-  await page.getByText("Timeguessr’s correct answers", { exact: true }).click();
-  const table = page.getByRole("table", {
-    name: "Original photograph answers",
-  });
-  await expect(table).toContainText("1904");
-  await expect(table).toContainText("Denmark");
-  await expect(table).toContainText("40°, -70°");
-  await expect(
-    page.getByRole("link", { name: "Original Timeguessr game" }),
-  ).toHaveAttribute("href", /timeguessr.com\/play/);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
+  await expect(page.getByText("Timeguessr’s correct answers")).toHaveCount(0);
 });

@@ -57,7 +57,6 @@ import {
   minimumAveragePictures,
   type FameMetric,
 } from "./fame";
-import { CorrectAnswerBreakdown } from "./CorrectAnswerBreakdown";
 import { Atlas } from "./Atlas";
 import { PictureBreakdown } from "./PictureBreakdown";
 import { playerStats } from "./playerStats";
@@ -1492,12 +1491,6 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                   </span>
                 </summary>
                 <div className="game-results">
-                  {game.correct_answers && (
-                    <CorrectAnswerBreakdown
-                      answers={game.correct_answers}
-                      source={game.answers_source_url ?? null}
-                    />
-                  )}
                   {entries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,

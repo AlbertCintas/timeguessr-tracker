@@ -1,6 +1,6 @@
 import type { PictureResult } from "./types";
 const number = new Intl.NumberFormat("en", { maximumFractionDigits: 3 });
-/** Display scores, guess errors and captured correct answers for every round. */
+/** Display scores and guess errors for every round, without the answers. */
 export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
   return (
     <div className="picture-breakdown-scroll">
@@ -12,8 +12,6 @@ export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
             <th scope="col">Points</th>
             <th scope="col">Years off</th>
             <th scope="col">Km off</th>
-            <th scope="col">Correct year</th>
-            <th scope="col">Correct location</th>
           </tr>
         </thead>
         <tbody>
@@ -30,12 +28,6 @@ export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
                 {round.distance_km === null
                   ? "—"
                   : number.format(round.distance_km)}
-              </td>
-              <td>{round.actual_year ?? "—"}</td>
-              <td>
-                {round.actual_location
-                  ? `${number.format(round.actual_location.lat)}°, ${number.format(round.actual_location.lng)}°`
-                  : "—"}
               </td>
             </tr>
           ))}
