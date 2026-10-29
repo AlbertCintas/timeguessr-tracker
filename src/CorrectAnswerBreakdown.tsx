@@ -22,15 +22,13 @@ export function CorrectAnswerBreakdown({
               <th scope="col">Correct year</th>
               <th scope="col">Correct location</th>
               <th scope="col">Country</th>
+              <th scope="col" className="caption-column" aria-label="Caption" />
             </tr>
           </thead>
           <tbody>
             {answers.map((answer, i) => (
               <tr key={i}>
-                <th scope="row">
-                  {i + 1}
-                  {answer.description && <Caption text={answer.description} />}
-                </th>
+                <th scope="row">{i + 1}</th>
                 <td>{answer.actual_year ?? "—"}</td>
                 <td>
                   {answer.actual_location
@@ -38,6 +36,9 @@ export function CorrectAnswerBreakdown({
                     : "—"}
                 </td>
                 <td>{answer.country ?? "—"}</td>
+                <td className="caption-column">
+                  {answer.description && <Caption text={answer.description} />}
+                </td>
               </tr>
             ))}
           </tbody>

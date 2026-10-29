@@ -1141,6 +1141,12 @@ textarea:focus-visible {
 .picture-breakdown th:first-child {
   text-align: left;
 }
+.picture-breakdown .caption-column {
+  width: 1%;
+  padding-left: 2px;
+  padding-right: 0;
+  vertical-align: middle;
+}
 .picture-breakdown thead th {
   font-size: 10px;
   font-weight: 500;
@@ -1902,7 +1908,8 @@ textarea:focus-visible {
   top: calc(100% + 6px);
   right: 0;
   z-index: 20;
-  width: min(280px, 75vw);
+  width: max-content;
+  max-width: min(280px, 75vw);
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1911,6 +1918,7 @@ textarea:focus-visible {
   color: var(--text);
   font-size: 12px;
   line-height: 1.5;
+  text-align: left;
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.15s;

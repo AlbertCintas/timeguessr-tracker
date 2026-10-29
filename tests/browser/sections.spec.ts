@@ -580,8 +580,11 @@ test("correct answers with captions appear only to signed-in players of that gam
     page.getByRole("link", { name: "Original Timeguessr game" }),
   ).toHaveAttribute("href", /timeguessr.com\/play/);
   const caption = table
-    .getByRole("button", { name: "What the picture showed" })
-    .first();
+    .locator("tbody tr")
+    .first()
+    .locator("td")
+    .last()
+    .getByRole("button", { name: "What the picture showed" });
   await caption.focus();
   const tip = table.getByRole("tooltip").first();
   await expect(tip).toBeVisible();

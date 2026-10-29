@@ -12,12 +12,10 @@ export function Caption({ text }: { text: string }) {
   const [place, setPlace] = useState<CSSProperties>();
   function anchor(event: SyntheticEvent<HTMLElement>) {
     const box = event.currentTarget.getBoundingClientRect();
-    const width = Math.min(280, innerWidth * 0.75);
     setPlace({
       position: "fixed",
       top: box.bottom + 6,
-      left: Math.max(8, Math.min(box.right, innerWidth - 8) - width),
-      right: "auto",
+      right: Math.max(8, innerWidth - box.right),
     });
   }
   return (
