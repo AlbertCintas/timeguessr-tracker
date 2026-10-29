@@ -4,7 +4,7 @@ A shared tracker for a group of friends, with cumulative wins and points, win pe
 
 The highest submitted score wins; ties award one win to each leader. Scores count immediately, including games with a single submission. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
-New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture details appear in game history and feed the hall of shame, the hall of fame and player stats. The club page has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. The top bar's **Club | Atlas** switch opens the Atlas, a separate page about the pictures themselves. Average records need 20 detailed pictures.
+New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture scores and errors appear in game history, without the answers, and feed the hall of shame, the hall of fame and player stats. The club page has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. The top bar's **Club | Atlas** switch opens the Atlas, a separate page about the pictures themselves. Average records need 20 detailed pictures.
 
 ## Run locally
 
@@ -72,7 +72,7 @@ Run `npm run lint:firefox`, `npm run test:extension`, and `npm run test:firefox`
 
 ## Atlas
 
-`atlas.html` has four tabs, all following the period picker:
+`atlas.html` has four tabs, all following the period picker. To avoid spoilers, a daily game's pictures appear from the next day (Madrid time) and other games' a week after the club first played them:
 
 - **Map**: pictures binned into 3° areas, one circle per area. Colors have four classes: 1 picture, two round log-spaced steps (1-2-3-5 series) and the busiest area, so one crowded city cannot wash out the rest.
 - **Trivia**: cards about single pictures: the oldest, and the lowest and highest club average score, biggest score gap, biggest average year error, most exact-year guesses, and smallest and largest average distance. Club averages need at least two players with picture details and never name players. Each card shows Timeguessr's caption in a tooltip.
@@ -94,7 +94,7 @@ While signed in with auto-import enabled, the extension automatically fills miss
 - Process up to three games per batch on login, browser startup, extension startup and the existing one-minute alarm. Completed backfills are idempotent. Network/server failures retry after five minutes; unavailable or conflicting sources are checked again after 24 hours. Pause auto-import or sign out to pause backfill. The popup shows the latest status.
 - Games without a saved replay ID, or no longer available on the site, remain missing. The existing result capture can still enrich them if a completed results page retains their data.
 
-Shared answers and their source link appear in History even when players submitted only total scores. The tracker refreshes automatically, so recovered answers flow into the Atlas without another score submission.
+Shared answers count in the Atlas even when players submitted only total scores. The tracker refreshes automatically, so recovered answers flow into the Atlas without another score submission.
 
 `20261027125144_featured_answers.sql` must be applied before extension v1.2.0 is released. It adds shared answer metadata and narrowly scoped backfill functions. Only authenticated club members can backfill an existing game with at least one submitted result; the extension receives no privileged database key, and direct game updates and score permissions remain unchanged.
 

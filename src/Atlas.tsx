@@ -46,7 +46,7 @@ import {
 } from "./atlasStats";
 import { continentOf, countryCode, flag } from "./countries";
 import { loadPlaces, placeName, type Places } from "./places";
-import { europeanDate } from "./scoring";
+import { answersRevealed, europeanDate } from "./scoring";
 
 const atlasTabs = {
   map: { label: "Map", icon: MapIcon },
@@ -1090,8 +1090,8 @@ function Trivia({
 }
 
 export function Atlas({
-  games,
-  results,
+  games: allGames,
+  results: allResults,
   controls,
 }: {
   games: Game[];
@@ -1108,6 +1108,9 @@ export function Atlas({
     setTab(next);
     history.replaceState(null, "", `${location.search}#${next}`);
   }
+  const games = allGames.filter((game) => answersRevealed(game));
+  const shown = new Set(games.map((game) => game.id));
+  const results = allResults.filter((result) => shown.has(result.game_id));
   const pictures = featuredPictures(results, games).filter(
     (p) => p.year !== null || p.location !== null || p.country !== null,
   );
@@ -1117,7 +1120,10 @@ export function Atlas({
   const withYear = dated(pictures).length;
   const scored = pictureScores(pictures, results).length;
   const empty = (
-    <p className="featured-empty">No pictures captured in this period yet.</p>
+    <p className="featured-empty">
+      No pictures revealed in this period yet. Daily games appear the next day;
+      other games a week after the first play.
+    </p>
   );
   const panels: Record<AtlasTab, ReactNode> = {
     map: (

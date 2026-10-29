@@ -45,6 +45,19 @@ export function madridToday(now = new Date()) {
   }).format(now);
 }
 
+/** Madrid date of a daily game, or the day a non-daily game was first played. */
+export const gameDay = (game: Game) =>
+  game.kind === "daily"
+    ? game.daily_date!
+    : game.played_on || madridToday(new Date(game.created_at));
+
+/** Daily answers open the next day; other games a week after the first play. */
+export function answersRevealed(game: Game, now = new Date()) {
+  const opens = new Date(`${gameDay(game)}T12:00:00Z`);
+  opens.setUTCDate(opens.getUTCDate() + (game.kind === "daily" ? 1 : 7));
+  return opens.toISOString().slice(0, 10) <= madridToday(now);
+}
+
 export function europeanDate(iso: string): string {
   const [year, month, day] = iso.split("-");
   return `${day}/${month}/${year.slice(-2)}`;
@@ -90,13 +103,7 @@ export function resultsForPeriod(
   const from = start.toISOString().slice(0, 10);
   const gameIds = new Set(
     games
-      .filter((game) => {
-        const date =
-          game.kind === "daily"
-            ? game.daily_date!
-            : game.played_on || madridToday(new Date(game.created_at));
-        return date >= from && date <= today;
-      })
+      .filter((game) => gameDay(game) >= from && gameDay(game) <= today)
       .map((game) => game.id),
   );
   return results.filter((result) => gameIds.has(result.game_id));
