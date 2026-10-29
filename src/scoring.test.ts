@@ -256,7 +256,7 @@ test("daily answers open the next Madrid day", () => {
   assert.equal(answersRevealed(game, new Date("2026-10-08T22:00:00Z")), true);
 });
 
-test("non-daily answers open a week after the first play", () => {
+test("non-daily answers open three days after the first play", () => {
   const game: Game = {
     id: "replay",
     kind: "custom",
@@ -265,15 +265,15 @@ test("non-daily answers open a week after the first play", () => {
     played_on: "2026-10-08",
     created_at: "2026-10-09T12:00:00Z",
   };
-  assert.equal(answersRevealed(game, new Date("2026-10-14T12:00:00Z")), false);
-  assert.equal(answersRevealed(game, new Date("2026-10-15T12:00:00Z")), true);
+  assert.equal(answersRevealed(game, new Date("2026-10-10T12:00:00Z")), false);
+  assert.equal(answersRevealed(game, new Date("2026-10-11T12:00:00Z")), true);
   const noPlayedDate = { ...game, played_on: null };
   assert.equal(
-    answersRevealed(noPlayedDate, new Date("2026-10-15T12:00:00Z")),
+    answersRevealed(noPlayedDate, new Date("2026-10-11T12:00:00Z")),
     false,
   );
   assert.equal(
-    answersRevealed(noPlayedDate, new Date("2026-10-16T12:00:00Z")),
+    answersRevealed(noPlayedDate, new Date("2026-10-12T12:00:00Z")),
     true,
   );
 });

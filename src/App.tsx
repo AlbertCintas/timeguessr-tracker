@@ -58,6 +58,7 @@ import {
   type FameMetric,
 } from "./fame";
 import { Atlas } from "./Atlas";
+import { CorrectAnswerBreakdown } from "./CorrectAnswerBreakdown";
 import { PictureBreakdown } from "./PictureBreakdown";
 import { playerStats } from "./playerStats";
 import {
@@ -1491,6 +1492,16 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                   </span>
                 </summary>
                 <div className="game-results">
+                  {session &&
+                    game.correct_answers &&
+                    entries.some(
+                      (entry) => entry.player_id === session.user.id,
+                    ) && (
+                      <CorrectAnswerBreakdown
+                        answers={game.correct_answers}
+                        source={game.answers_source_url ?? null}
+                      />
+                    )}
                   {entries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,

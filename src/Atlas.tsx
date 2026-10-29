@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useId,
   useRef,
   useState,
   type KeyboardEvent,
@@ -15,7 +14,6 @@ import {
   Flame,
   Hexagon,
   Hourglass,
-  Info,
   Lightbulb,
   Map as MapIcon,
   Maximize,
@@ -47,6 +45,7 @@ import {
 import { continentOf, countryCode, flag } from "./countries";
 import { loadPlaces, placeName, type Places } from "./places";
 import { answersRevealed, europeanDate } from "./scoring";
+import { Caption } from "./Caption";
 
 const atlasTabs = {
   map: { label: "Map", icon: MapIcon },
@@ -912,25 +911,6 @@ function YearChart({ pictures }: { pictures: FeaturedPicture[] }) {
   );
 }
 
-function Caption({ text }: { text: string }) {
-  const id = useId();
-  return (
-    <span className="caption-tip">
-      <button
-        type="button"
-        className="caption-button"
-        aria-label="What the picture showed"
-        aria-describedby={id}
-      >
-        <Info size={16} />
-      </button>
-      <span role="tooltip" id={id}>
-        {text}
-      </span>
-    </span>
-  );
-}
-
 function Fact({
   label,
   phrase,
@@ -1122,7 +1102,7 @@ export function Atlas({
   const empty = (
     <p className="featured-empty">
       No pictures revealed in this period yet. Daily games appear the next day;
-      other games a week after the first play.
+      other games three days after the first play.
     </p>
   );
   const panels: Record<AtlasTab, ReactNode> = {

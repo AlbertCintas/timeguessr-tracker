@@ -51,10 +51,10 @@ export const gameDay = (game: Game) =>
     ? game.daily_date!
     : game.played_on || madridToday(new Date(game.created_at));
 
-/** Daily answers open the next day; other games a week after the first play. */
+/** Daily answers open the next day; other games three days after the first play. */
 export function answersRevealed(game: Game, now = new Date()) {
   const opens = new Date(`${gameDay(game)}T12:00:00Z`);
-  opens.setUTCDate(opens.getUTCDate() + (game.kind === "daily" ? 1 : 7));
+  opens.setUTCDate(opens.getUTCDate() + (game.kind === "daily" ? 1 : 3));
   return opens.toISOString().slice(0, 10) <= madridToday(now);
 }
 
