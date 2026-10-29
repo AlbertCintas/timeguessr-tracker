@@ -456,7 +456,7 @@ test("history picture breakdowns hide the answers and fit a mobile page", async 
   ).toBe(true);
 });
 
-test("atlas waits a day for daily answers and a week for other games", async ({
+test("atlas waits a day for daily answers and three days for other games", async ({
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-10-09T12:00:00Z") });
@@ -465,15 +465,18 @@ test("atlas waits a day for daily answers and a week for other games", async ({
   const shown = [
     { ...games[0], correct_answers: answers },
     { ...games[1], correct_answers: only("Japan") },
-    {
-      id: "replay",
+    ...[
+      ["2026-10-06", "Peru"],
+      ["2026-10-07", "Brazil"],
+    ].map(([played_on, country]) => ({
+      id: `replay-${played_on}`,
       kind: "custom",
       daily_date: null,
       name: "Timeguessr",
-      played_on: "2026-10-06",
-      created_at: "2026-10-06T12:00:00Z",
-      correct_answers: only("Brazil"),
-    },
+      played_on,
+      created_at: `${played_on}T12:00:00Z`,
+      correct_answers: only(country),
+    })),
   ];
   await page.route("https://club-test.supabase.co/**", async (route) => {
     const url = route.request().url();
@@ -494,12 +497,101 @@ test("atlas waits a day for daily answers and a week for other games", async ({
   });
   await page.goto("./atlas.html#countries");
   const countries = page.getByRole("list", { name: "Pictures per country" });
-  await expect(countries.getByRole("listitem")).toHaveCount(4);
+  await expect(countries.getByRole("listitem")).toHaveCount(5);
   await expect(countries).toContainText("Denmark");
+  await expect(countries).toContainText("Peru");
   await expect(countries).not.toContainText("Japan");
   await expect(countries).not.toContainText("Brazil");
 
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
   await expect(page.getByText("Timeguessr’s correct answers")).toHaveCount(0);
+});
+
+test("correct answers with captions appear only to signed-in players of that game", async ({
+  page,
+}) => {
+  const played = {
+    ...games[0],
+    correct_answers: answers,
+    answers_source_url:
+      "https://timeguessr.com/play?mode=daily&archive=1227-c4325922368acb2a08bd",
+  };
+  const unplayed = { ...games[1], correct_answers: answers };
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    let data: unknown = [];
+    if (url.includes("/auth/v1/token"))
+      data = {
+        access_token: "test-access-token",
+        refresh_token: "test-refresh-token",
+        expires_in: 3600,
+        token_type: "bearer",
+        user: {
+          id: "alice",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "alice@players.timeguessr.invalid",
+        },
+      };
+    else if (url.includes("/profiles")) data = profiles;
+    else if (url.includes("/games")) data = [played, unplayed];
+    else if (url.includes("/results"))
+      data = [
+        { game_id: played.id, player_id: "alice", points: 30000 },
+        { game_id: unplayed.id, player_id: "bob", points: 30000 },
+      ];
+    else if (url.includes("/administrators")) data = null;
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./#history");
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await expect(page.getByText("Timeguessr’s correct answers")).toHaveCount(0);
+
+  await page.goto("./");
+  await page.getByLabel("Account and settings").click();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Username", { exact: true }).fill("alice");
+  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goto("./#history");
+  const unplayedGame = page.locator("details.game", {
+    hasText: "Daily · 09/10/26",
+  });
+  await unplayedGame.getByText("Daily · 09/10/26", { exact: true }).click();
+  await expect(
+    unplayedGame.getByText("Timeguessr’s correct answers"),
+  ).toHaveCount(0);
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await page.getByText("Timeguessr’s correct answers", { exact: true }).click();
+  const table = page.getByRole("table", {
+    name: "Original photograph answers",
+  });
+  await expect(table).toContainText("1904");
+  await expect(table).toContainText("Denmark");
+  await expect(
+    page.getByRole("link", { name: "Original Timeguessr game" }),
+  ).toHaveAttribute("href", /timeguessr.com\/play/);
+  const caption = table
+    .getByRole("button", { name: "What the picture showed" })
+    .first();
+  await caption.focus();
+  const tip = table.getByRole("tooltip").first();
+  await expect(tip).toBeVisible();
+  await expect(tip).toHaveText("Crowds at the Craftsmen's Festival.");
+  const box = (await tip.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
