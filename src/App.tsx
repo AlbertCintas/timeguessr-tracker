@@ -470,6 +470,28 @@ function ShameBoard({
                 </tr>
               );
             })}
+            <tr data-metric="cheater">
+              <th scope="row">
+                Biggest cheater
+                <small className="record-quip">
+                  Opens a second tab and calls it intuition.
+                </small>
+              </th>
+              <td>
+                <div className="shame-holder">
+                  <Avatar
+                    profile={profiles.find(
+                      (profile) => profile.display_name === "gunnargl",
+                    )}
+                  />
+                  <div className="shame-player">
+                    <strong>gunnargl</strong>
+                    <small>Repeat offender</small>
+                  </div>
+                </div>
+              </td>
+              <td className="shame-value">guilty</td>
+            </tr>
           </tbody>
         </table>
         <div className="board-foot">
