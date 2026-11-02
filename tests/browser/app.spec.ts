@@ -494,7 +494,7 @@ https://timeguessr.com`;
   expect(stored[1].rounds).toHaveLength(5);
   await openSection(page, "Hall of shame");
   const shame = page.getByRole("table", { name: "Hall of shame records" });
-  await expect(shame.locator("tbody tr")).toHaveCount(6);
+  await expect(shame.locator("tbody tr")).toHaveCount(7);
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
   await expect(shame.locator('[data-metric="distance"]')).toContainText(
     "Alice",
@@ -570,7 +570,7 @@ test("zero-picture shame record appears only while a zero-point picture exists",
   });
   await page.goto("./#shame");
   const shame = page.getByRole("table", { name: "Hall of shame records" });
-  await expect(shame.locator("tbody tr")).toHaveCount(6);
+  await expect(shame.locator("tbody tr")).toHaveCount(7);
   await expect(shame.locator('[data-metric="zeros"]')).toHaveCount(0);
   hasZero = true;
   await page.getByRole("button", { name: "Refresh standings" }).click();
