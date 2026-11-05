@@ -1,7 +1,7 @@
+import { perfectLocationKm } from "./scoring.ts";
 import type { Game, Profile, Result } from "./types.ts";
 
 export const minimumAveragePictures = 20;
-const perfectLocationKm = 0.05;
 
 export const fameMetrics = {
   avgYears: {
