@@ -75,6 +75,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   await expect(fame.locator('[data-metric="exactYears"]')).toContainText(
     "5 exact",
   );
+  await expect(fame.locator('[data-metric="perfectLocations"]')).toHaveCount(0);
   await expect(fame.locator('[data-metric="perfect"]')).toContainText(
     "5 perfect",
   );
