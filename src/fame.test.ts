@@ -103,6 +103,29 @@ test("exact years and perfect pictures are counted, ties share rank", () => {
   assert.deepEqual(top("perfect", results)[2], ["c", 0, 3]);
 });
 
+test("perfect locations count guesses within 50 m", () => {
+  const picture = (distance_km: number | null) => ({
+    points: 1,
+    years_off: 3,
+    distance_km,
+  });
+  const results: Result[] = [
+    {
+      game_id: "g1",
+      player_id: "a",
+      points: 1,
+      rounds: [0.0136, 0.05, 0.0749, null].map(picture),
+    },
+    { game_id: "g1", player_id: "b", points: 1, rounds: [picture(0.05)] },
+    { game_id: "g1", player_id: "c", points: 1, rounds: [picture(12.5)] },
+  ];
+  assert.deepEqual(top("perfectLocations", results), [
+    ["a", 2, 1],
+    ["b", 1, 2],
+    ["c", 0, 3],
+  ]);
+});
+
 test("daily win streaks break on a loss or a missed day", () => {
   const games = [1, 2, 3, 4, 6, 7].map(daily);
   const result = (day: number, player: string, points: number): Result => ({

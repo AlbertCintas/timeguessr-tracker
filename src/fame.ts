@@ -1,6 +1,7 @@
 import type { Game, Profile, Result } from "./types.ts";
 
 export const minimumAveragePictures = 20;
+const perfectLocationKm = 0.05;
 
 export const fameMetrics = {
   avgYears: {
@@ -19,6 +20,12 @@ export const fameMetrics = {
     label: "Most exact years",
     quip: "Perfect timing. Except in life.",
     unit: "exact",
+    ascending: false,
+  },
+  perfectLocations: {
+    label: "Most perfect locations",
+    quip: "Spot on. Still can’t find their keys.",
+    unit: "within 50 m",
     ascending: false,
   },
   closest: {
@@ -48,7 +55,11 @@ export const fameMetrics = {
 } as const;
 export type FameMetric = keyof typeof fameMetrics;
 
-const optionalMetrics: FameMetric[] = ["exactYears", "perfect"];
+const optionalMetrics: FameMetric[] = [
+  "exactYears",
+  "perfectLocations",
+  "perfect",
+];
 export const hiddenWhenZero = (metric: FameMetric) =>
   optionalMetrics.includes(metric);
 
@@ -159,25 +170,31 @@ export function recordRankings(
             ? average(distances)
             : metric === "exactYears"
               ? total(years.length, years.filter((s) => s.value === 0).length)
-              : metric === "closest"
-                ? extreme(distances)
-                : metric === "bestGame"
-                  ? extreme(
-                      entries.map((entry) => ({
-                        value: entry.points,
-                        gameId: entry.game_id,
-                        picture: null,
-                      })),
-                    )
-                  : metric === "perfect"
-                    ? total(
-                        scores.length,
-                        scores.filter((s) => s.value === 10000).length,
+              : metric === "perfectLocations"
+                ? total(
+                    distances.length,
+                    distances.filter((s) => s.value <= perfectLocationKm)
+                      .length,
+                  )
+                : metric === "closest"
+                  ? extreme(distances)
+                  : metric === "bestGame"
+                    ? extreme(
+                        entries.map((entry) => ({
+                          value: entry.points,
+                          gameId: entry.game_id,
+                          picture: null,
+                        })),
                       )
-                    : total(
-                        entries.length,
-                        longestDailyStreak(entries, results, games),
-                      );
+                    : metric === "perfect"
+                      ? total(
+                          scores.length,
+                          scores.filter((s) => s.value === 10000).length,
+                        )
+                      : total(
+                          entries.length,
+                          longestDailyStreak(entries, results, games),
+                        );
       return record ? [{ ...profile, ...record }] : [];
     })
     .sort(
