@@ -1,4 +1,4 @@
-import { standings } from "./scoring.ts";
+import { perfectLocationKm, standings } from "./scoring.ts";
 import type { Profile, Result } from "./types.ts";
 
 const mean = (values: number[]) =>
@@ -30,6 +30,8 @@ export function playerStats(
         avgYears: mean(years),
         avgDistance: mean(distances),
         exactYears: years.filter((y) => y === 0).length,
+        perfectLocations: distances.filter((d) => d <= perfectLocationKm)
+          .length,
         perfect: pictures.filter((p) => p.points === 10000).length,
         zeros: pictures.filter((p) => p.points === 0).length,
         closest: distances.length ? Math.min(...distances) : null,

@@ -1,4 +1,5 @@
 import type { Game, Profile, Result, Standing } from "./types.ts";
+export const perfectLocationKm = 0.05;
 export function standings(profiles: Profile[], results: Result[]): Standing[] {
   const best = new Map<string, number>();
   for (const r of results)

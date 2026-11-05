@@ -146,6 +146,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   const alice = page.getByRole("article", { name: "Alice stats" });
   await expect(alice).toContainText("Games4");
   await expect(alice).toContainText("Exact years5");
+  await expect(alice).toContainText("Perfect locations0");
   await expect(alice).toContainText("Average distance12.5 km");
   await expect(alice).toContainText("Closest guess12,500 m");
   await expect(page.getByRole("article", { name: "Bob stats" })).toContainText(

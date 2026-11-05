@@ -711,6 +711,8 @@ function PlayerStats({
                 </dd>
                 <dt>Exact years</dt>
                 <dd>{row.exactYears}</dd>
+                <dt>Perfect locations</dt>
+                <dd>{row.perfectLocations}</dd>
                 <dt>Perfect pictures</dt>
                 <dd>{row.perfect}</dd>
                 <dt>Zero-point pictures</dt>

@@ -15,7 +15,7 @@ test("player stats combine game totals with picture details", () => {
       player_id: "a",
       points: 20000,
       rounds: [
-        { points: 10000, years_off: 0, distance_km: 0.5 },
+        { points: 10000, years_off: 0, distance_km: 0.05 },
         { points: 0, years_off: 30, distance_km: null },
       ],
     },
@@ -29,9 +29,12 @@ test("player stats combine game totals with picture details", () => {
   );
   assert.deepEqual(
     [a.avgPicture, a.avgYears, a.avgDistance, a.closest],
-    [5000, 15, 0.5, 0.5],
+    [5000, 15, 0.05, 0.05],
   );
-  assert.deepEqual([a.exactYears, a.perfect, a.zeros], [1, 1, 1]);
+  assert.deepEqual(
+    [a.exactYears, a.perfectLocations, a.perfect, a.zeros],
+    [1, 1, 1, 1],
+  );
   assert.deepEqual(
     [b.id, b.pictures, b.avgYears, b.closest],
     ["b", 0, null, null],
