@@ -32,8 +32,8 @@ const top = (metric: FameMetric, results: Result[], games: Game[] = []) =>
     row.rank,
   ]);
 
-test("averages need 20 non-null pictures", () => {
-  const results: Result[] = [1, 2, 3, 4].flatMap((game) => [
+test("averages need 5 detailed games", () => {
+  const results: Result[] = [1, 2, 3, 4, 5].flatMap((game) => [
     {
       game_id: `g${game}`,
       player_id: "a",
@@ -44,11 +44,11 @@ test("averages need 20 non-null pictures", () => {
       game_id: `g${game}`,
       player_id: "b",
       points: 1,
-      rounds: game === 4 ? rounds(null, null) : rounds(1, 1),
+      rounds: game === 5 ? rounds(null, null) : rounds(1, 1),
     },
   ]);
   results.push({
-    game_id: "g5",
+    game_id: "g6",
     player_id: "c",
     points: 1,
     rounds: rounds(0, 0),
@@ -79,51 +79,71 @@ test("closest guess and best game point at the game and picture", () => {
   assert.deepEqual([best.id, best.value, best.gameId], ["b", 42000, "g2"]);
 });
 
-test("exact years and perfect pictures are counted, ties share rank", () => {
-  const results: Result[] = [
-    {
-      game_id: "g1",
-      player_id: "a",
-      points: 1,
-      rounds: rounds(0, 1, 10000),
-    },
-    {
-      game_id: "g1",
-      player_id: "b",
-      points: 1,
-      rounds: rounds(0, 1, 10000),
-    },
-    { game_id: "g1", player_id: "c", points: 1, rounds: rounds(2, 1) },
+const playerGames = (
+  player: string,
+  games: number,
+  hits: number,
+  hit: PictureResult,
+  miss: PictureResult,
+): Result[] =>
+  Array.from({ length: games }, (_, game) => ({
+    game_id: `g${game}`,
+    player_id: player,
+    points: 1,
+    rounds: Array.from({ length: 5 }, (_, picture) =>
+      game * 5 + picture < hits ? hit : miss,
+    ),
+  }));
+
+test("rates beat volume and need 5 detailed games", () => {
+  const exact = { points: 10000, years_off: 0, distance_km: 1 };
+  const off = { points: 5000, years_off: 2, distance_km: 1 };
+  const results = [
+    ...playerGames("a", 10, 6, exact, off),
+    ...playerGames("b", 5, 5, exact, off),
+    ...playerGames("c", 1, 5, exact, off),
   ];
   assert.deepEqual(top("exactYears", results), [
-    ["a", 5, 1],
-    ["b", 5, 1],
-    ["c", 0, 3],
+    ["b", 0.2, 1],
+    ["a", 0.12, 2],
   ]);
-  assert.deepEqual(top("perfect", results)[2], ["c", 0, 3]);
+  assert.deepEqual(top("perfect", results), [
+    ["b", 0.2, 1],
+    ["a", 0.12, 2],
+  ]);
+  const winner = fameRankings(profiles, results, [], "exactYears")[0];
+  assert.deepEqual([winner.count, winner.samples], [5, 25]);
+});
+
+test("equal rates share a rank", () => {
+  const exact = { points: 1, years_off: 0, distance_km: 1 };
+  const off = { points: 1, years_off: 2, distance_km: 1 };
+  const results = [
+    ...playerGames("a", 5, 1, exact, off),
+    ...playerGames("b", 10, 2, exact, off),
+  ];
+  assert.deepEqual(top("exactYears", results), [
+    ["a", 0.04, 1],
+    ["b", 0.04, 1],
+  ]);
 });
 
 test("perfect locations count guesses within 50 m", () => {
-  const picture = (distance_km: number | null) => ({
-    points: 1,
-    years_off: 3,
-    distance_km,
-  });
-  const results: Result[] = [
-    {
-      game_id: "g1",
+  const results = [0.0136, 0.05, 0.0749, null, 12.5].map(
+    (distance_km, game): Result => ({
+      game_id: `g${game}`,
       player_id: "a",
       points: 1,
-      rounds: [0.0136, 0.05, 0.0749, null].map(picture),
-    },
-    { game_id: "g1", player_id: "b", points: 1, rounds: [picture(0.05)] },
-    { game_id: "g1", player_id: "c", points: 1, rounds: [picture(12.5)] },
-  ];
-  assert.deepEqual(top("perfectLocations", results), [
-    ["a", 2, 1],
-    ["b", 1, 2],
-    ["c", 0, 3],
-  ]);
+      rounds: [{ points: 1, years_off: 3, distance_km }],
+    }),
+  );
+  results.push({
+    game_id: "g5",
+    player_id: "a",
+    points: 1,
+    rounds: [{ points: 1, years_off: 3, distance_km: 40 }],
+  });
+  assert.deepEqual(top("perfectLocations", results), [["a", 0.4, 1]]);
 });
 
 test("daily win streaks break on a loss or a missed day", () => {

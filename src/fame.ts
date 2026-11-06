@@ -1,7 +1,7 @@
 import { perfectLocationKm } from "./scoring.ts";
 import type { Game, Profile, Result } from "./types.ts";
 
-export const minimumAveragePictures = 20;
+export const minimumDetailedGames = 5;
 
 export const fameMetrics = {
   avgYears: {
@@ -17,13 +17,13 @@ export const fameMetrics = {
     ascending: true,
   },
   exactYears: {
-    label: "Most exact years",
+    label: "Best exact-year rate",
     quip: "Perfect timing. Except in life.",
     unit: "exact",
     ascending: false,
   },
   perfectLocations: {
-    label: "Most perfect locations",
+    label: "Best perfect-location rate",
     quip: "Spot on. Still can’t find their keys.",
     unit: "within 50 m",
     ascending: false,
@@ -41,7 +41,7 @@ export const fameMetrics = {
     ascending: false,
   },
   perfect: {
-    label: "Most perfect pictures",
+    label: "Best perfect-picture rate",
     quip: "Even a broken clock.",
     unit: "perfect",
     ascending: false,
@@ -55,15 +55,17 @@ export const fameMetrics = {
 } as const;
 export type FameMetric = keyof typeof fameMetrics;
 
-const optionalMetrics: FameMetric[] = [
+export const rateMetrics: FameMetric[] = [
   "exactYears",
   "perfectLocations",
   "perfect",
 ];
-export const hiddenWhenZero = (metric: FameMetric) =>
-  optionalMetrics.includes(metric);
 
 type Sample = { value: number; gameId: string | null; picture: number | null };
+type FameRecord = Sample & { samples: number; count?: number };
+
+const enoughGames = (samples: Sample[]) =>
+  new Set(samples.map((sample) => sample.gameId)).size >= minimumDetailedGames;
 
 function longestDailyStreak(
   entries: Result[],
@@ -141,16 +143,27 @@ export function recordRankings(
         picture: null,
       });
       const average = (samples: Sample[]) =>
-        samples.length < minimumAveragePictures
-          ? null
-          : {
+        enoughGames(samples)
+          ? {
               value:
                 samples.reduce((sum, sample) => sum + sample.value, 0) /
                 samples.length,
               samples: samples.length,
               gameId: null,
               picture: null,
-            };
+            }
+          : null;
+      const rate = (samples: Sample[], hit: (value: number) => boolean) => {
+        if (!enoughGames(samples)) return null;
+        const count = samples.filter((sample) => hit(sample.value)).length;
+        return {
+          value: count / samples.length,
+          count,
+          samples: samples.length,
+          gameId: null,
+          picture: null,
+        };
+      };
       const extreme = (samples: Sample[]) =>
         samples.length
           ? {
@@ -163,19 +176,15 @@ export function recordRankings(
       const years = field("years_off"),
         distances = field("distance_km"),
         scores = field("points");
-      const record =
+      const record: FameRecord | null =
         metric === "avgYears"
           ? average(years)
           : metric === "avgDistance"
             ? average(distances)
             : metric === "exactYears"
-              ? total(years.length, years.filter((s) => s.value === 0).length)
+              ? rate(years, (value) => value === 0)
               : metric === "perfectLocations"
-                ? total(
-                    distances.length,
-                    distances.filter((s) => s.value <= perfectLocationKm)
-                      .length,
-                  )
+                ? rate(distances, (value) => value <= perfectLocationKm)
                 : metric === "closest"
                   ? extreme(distances)
                   : metric === "bestGame"
@@ -187,10 +196,7 @@ export function recordRankings(
                         })),
                       )
                     : metric === "perfect"
-                      ? total(
-                          scores.length,
-                          scores.filter((s) => s.value === 10000).length,
-                        )
+                      ? rate(scores, (value) => value === 10000)
                       : total(
                           entries.length,
                           longestDailyStreak(entries, results, games),
