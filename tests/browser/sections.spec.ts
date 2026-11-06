@@ -3,7 +3,7 @@ const profiles = [
   { id: "alice", username: "alice", display_name: "Alice", avatar_path: null },
   { id: "bob", username: "bob", display_name: "Bob", avatar_path: null },
 ];
-const games = [8, 9, 10, 11].map((day) => ({
+const games = [8, 9, 10, 11, 12].map((day) => ({
   id: `daily${day}`,
   kind: "daily",
   daily_date: `2026-10-${String(day).padStart(2, "0")}`,
@@ -50,7 +50,7 @@ async function serve(page: Page, aliceGames: number) {
 test("tabs show one section at a time and remember it in the URL", async ({
   page,
 }) => {
-  await serve(page, 4);
+  await serve(page, 5);
   await page.goto("./");
   const sections = page.getByRole("navigation", { name: "Sections" });
   await expect(
@@ -67,24 +67,24 @@ test("tabs show one section at a time and remember it in the URL", async ({
   const fame = page.getByRole("table", { name: "Hall of fame records" });
   await expect(fame.locator('[data-metric="avgYears"]')).toContainText("Alice");
   await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
-    "3 years avg",
+    "3.2 years avg",
   );
   await expect(fame.locator('[data-metric="avgDistance"]')).toContainText(
     "12.5 km avg",
   );
   await expect(fame.locator('[data-metric="exactYears"]')).toContainText(
-    "5 exact",
+    "5 of 25 pictures20% exact",
   );
   await expect(fame.locator('[data-metric="perfectLocations"]')).toHaveCount(0);
   await expect(fame.locator('[data-metric="perfect"]')).toContainText(
-    "5 perfect",
+    "20% perfect",
   );
-  await expect(fame.locator('[data-metric="streak"]')).toContainText("4 days");
+  await expect(fame.locator('[data-metric="streak"]')).toContainText("5 days");
   await expect(fame.locator('[data-metric="complaints"]')).toContainText(
     "albertthegreatestLifetime achievementconstantly",
   );
   await expect(fame.locator('[data-metric="bestGame"]')).toContainText(
-    "Daily · 11/10/26",
+    "Daily · 12/10/26",
   );
   await expect(page.getByText("All time records")).toBeVisible();
   await page.getByLabel("Standings period").selectOption("last7");
@@ -110,7 +110,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   const shame = page.getByRole("table", { name: "Hall of shame records" });
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText("Bob");
   await expect(shame.locator('[data-metric="avgYears"]')).toContainText(
-    "3 years avg",
+    "3.2 years avg",
   );
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(
     "A five-picture cry for help.",
@@ -144,7 +144,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
   await page.getByLabel("Standings period").selectOption("all");
   await sections.getByRole("button", { name: "Player stats" }).click();
   const alice = page.getByRole("article", { name: "Alice stats" });
-  await expect(alice).toContainText("Games4");
+  await expect(alice).toContainText("Games5");
   await expect(alice).toContainText("Exact years5");
   await expect(alice).toContainText("Perfect locations0");
   await expect(alice).toContainText("Average distance12.5 km");
@@ -168,15 +168,16 @@ test("tabs show one section at a time and remember it in the URL", async ({
   ).toBe(true);
 });
 
-test("average records stay empty below 20 detailed pictures", async ({
+test("average and rate records stay empty below 5 detailed games", async ({
   page,
 }) => {
-  await serve(page, 3);
+  await serve(page, 4);
   await page.goto("./#fame");
   const fame = page.getByRole("table", { name: "Hall of fame records" });
   await expect(fame.locator('[data-metric="avgYears"]')).toContainText(
-    "Nobody has 20 detailed pictures yet",
+    "Nobody has 5 detailed games yet",
   );
+  await expect(fame.locator('[data-metric="exactYears"]')).toHaveCount(0);
   await expect(fame.locator('[data-metric="closest"]')).toContainText("Alice");
   await expect(fame.locator('[data-metric="closest"]')).toContainText(
     "12,500 m",
@@ -187,7 +188,7 @@ test("average records stay empty below 20 detailed pictures", async ({
     .click();
   const shame = page.getByRole("table", { name: "Hall of shame records" });
   await expect(shame.locator('[data-metric="avgDistance"]')).toContainText(
-    "Nobody has 20 detailed pictures yet",
+    "Nobody has 5 detailed games yet",
   );
   await expect(page.getByRole("button", { name: /Sidebar/ })).toHaveCount(0);
 });

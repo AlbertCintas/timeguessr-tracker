@@ -53,8 +53,8 @@ import {
   fameMetrics,
   fameRankings,
   recordRankings,
-  hiddenWhenZero,
-  minimumAveragePictures,
+  minimumDetailedGames,
+  rateMetrics,
   type FameMetric,
 } from "./fame";
 import { Atlas } from "./Atlas";
@@ -450,7 +450,7 @@ function ShameBoard({
                         {metric === "worstGame"
                           ? "No scores yet"
                           : average
-                            ? `Nobody has ${minimumAveragePictures} detailed pictures yet`
+                            ? `Nobody has ${minimumDetailedGames} detailed games yet`
                             : "No picture details yet"}
                       </span>
                     )}
@@ -517,6 +517,10 @@ function FameBoard({
   controls: ReactNode;
 }) {
   const decimals = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
+  const percent = new Intl.NumberFormat("en", {
+    style: "percent",
+    maximumFractionDigits: 1,
+  });
   return (
     <section
       className="shame-section fame-section"
@@ -542,8 +546,8 @@ function FameBoard({
             {(Object.keys(fameMetrics) as FameMetric[]).map((metric) => {
               const definition = fameMetrics[metric];
               const rows = fameRankings(profiles, results, games, metric);
-              if (hiddenWhenZero(metric) && !rows.some((row) => row.value > 0))
-                return null;
+              const rate = rateMetrics.includes(metric);
+              if (rate && !rows.some((row) => row.value > 0)) return null;
               const winners = rows.filter((row) => row.rank === 1);
               const average = metric === "avgYears" || metric === "avgDistance";
               return (
@@ -568,7 +572,9 @@ function FameBoard({
                                   ? `${gameTitle(game)}${row.picture ? ` · picture ${row.picture}` : ""}`
                                   : metric === "streak"
                                     ? `${row.samples} games played`
-                                    : `${row.samples} pictures recorded`}
+                                    : rate
+                                      ? `${row.count} of ${row.samples} pictures`
+                                      : `${row.samples} pictures recorded`}
                               </small>
                             </div>
                           </div>
@@ -577,7 +583,7 @@ function FameBoard({
                     ) : (
                       <span className="shame-missing">
                         {average
-                          ? `Nobody has ${minimumAveragePictures} detailed pictures yet`
+                          ? `Nobody has ${minimumDetailedGames} detailed games yet`
                           : metric === "closest"
                             ? "No picture details yet"
                             : "No scores yet"}
@@ -589,12 +595,9 @@ function FameBoard({
                       <>
                         {metric === "closest"
                           ? meters(winners[0].value)
-                          : (average
-                              ? decimals
-                              : new Intl.NumberFormat("en", {
-                                  maximumFractionDigits: 3,
-                                })
-                            ).format(winners[0].value)}{" "}
+                          : (rate ? percent : decimals).format(
+                              winners[0].value,
+                            )}{" "}
                         <small>{definition.unit}</small>
                       </>
                     ) : (
@@ -629,8 +632,8 @@ function FameBoard({
           </tbody>
         </table>
         <div className="board-foot">
-          {periodLabels[period]} records · Ties share a record · Averages need{" "}
-          {minimumAveragePictures} detailed pictures
+          {periodLabels[period]} records · Ties share a record · Averages and
+          rates need {minimumDetailedGames} detailed games
         </div>
       </div>
     </section>

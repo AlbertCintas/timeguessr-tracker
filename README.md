@@ -4,7 +4,7 @@ A shared tracker for a group of friends, with cumulative wins and points, win pe
 
 The highest submitted score wins; ties award one win to each leader. Scores count immediately, including games with a single submission. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
-New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture scores and errors appear in game history and feed the hall of shame, the hall of fame and player stats. The club page has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. The top bar's **Club | Atlas** switch opens the Atlas, a separate page about the pictures themselves. Average records need 20 detailed pictures.
+New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture scores and errors appear in game history and feed the hall of shame, the hall of fame and player stats. The club page has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. The top bar's **Club | Atlas** switch opens the Atlas, a separate page about the pictures themselves. Average and rate records need 5 detailed games.
 
 ## Run locally
 
