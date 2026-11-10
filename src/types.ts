@@ -31,6 +31,8 @@ export interface CorrectAnswer {
 export interface PictureResult {
   actual_year?: number | null;
   actual_location?: { lat: number; lng: number } | null;
+  guess_year?: number | null;
+  guess_location?: { lat: number; lng: number } | null;
   points: number;
   years_off: number | null;
   distance_km: number | null;

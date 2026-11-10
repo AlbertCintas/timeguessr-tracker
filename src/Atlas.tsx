@@ -46,6 +46,7 @@ import { continentOf, countryCode, flag } from "./countries";
 import { loadPlaces, placeName, type Places } from "./places";
 import { answersRevealed, europeanDate } from "./scoring";
 import { Caption } from "./Caption";
+import { land, x, y } from "./worldMap";
 
 const atlasTabs = {
   map: { label: "Map", icon: MapIcon },
@@ -59,8 +60,6 @@ const tabFromHash = (): AtlasTab =>
     ? (location.hash.slice(1) as AtlasTab)
     : "map";
 
-const x = (lng: number) => (lng + 180) * 2;
-const y = (lat: number) => (90 - lat) * 2;
 const whole = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
 const plural = (n: number, word: string) =>
   `${whole.format(n)} ${n === 1 ? word : word === "country" ? "countries" : `${word}s`}`;
@@ -74,13 +73,6 @@ const stepIndex = (i: number, steps: readonly number[]) =>
   steps.length === 1 ? 3 : Math.round((i * 3) / (steps.length - 1));
 const stepFill = (i: number, steps: readonly number[]) =>
   `var(--step-${stepIndex(i, steps)})`;
-const land = (
-  <image
-    href={`${import.meta.env.BASE_URL}world-land.svg`}
-    width="720"
-    height="360"
-  />
-);
 
 function Heading({
   title,

@@ -285,6 +285,8 @@ async function handle(message, sender) {
             "distance_km",
             "actual_year",
             "actual_location",
+            "guess_year",
+            "guess_location",
           ].every(
             (key) =>
               JSON.stringify(round[key] ?? null) ===
@@ -314,7 +316,12 @@ async function handle(message, sender) {
       const queued = data.queue.find((entry) => entry.id === id);
       // A page can finish loading answer metadata while its upload is pending.
       for (let i = 0; i < 5; i++) {
-        for (const key of ["actual_year", "actual_location"]) {
+        for (const key of [
+          "actual_year",
+          "actual_location",
+          "guess_year",
+          "guess_location",
+        ]) {
           if (
             queued.capture.rounds[i][key] == null &&
             capture.rounds[i][key] != null

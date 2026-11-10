@@ -519,6 +519,115 @@ test("atlas waits a day for daily answers and three days for other games", async
   await expect(page.getByText("Timeguessr’s correct answers")).toHaveCount(0);
 });
 
+test("guess maps appear only to signed-in players of that game", async ({
+  page,
+}) => {
+  const guessed = answers.map((answer, i) =>
+    i === 4
+      ? { points: 0, years_off: null, distance_km: null }
+      : {
+          points: 6000,
+          years_off: 3,
+          distance_km: 120.5,
+          guess_year: answer.actual_year + 3,
+          guess_location: {
+            lat: answer.actual_location.lat + 1,
+            lng: answer.actual_location.lng,
+          },
+        },
+  );
+  const played = { ...games[0], correct_answers: answers };
+  const unplayed = { ...games[1], correct_answers: answers };
+  await page.route("https://club-test.supabase.co/**", async (route) => {
+    const url = route.request().url();
+    let data: unknown = [];
+    if (url.includes("/auth/v1/token"))
+      data = {
+        access_token: "test-access-token",
+        refresh_token: "test-refresh-token",
+        expires_in: 3600,
+        token_type: "bearer",
+        user: {
+          id: "alice",
+          aud: "authenticated",
+          role: "authenticated",
+          email: "alice@players.timeguessr.invalid",
+        },
+      };
+    else if (url.includes("/profiles")) data = profiles;
+    else if (url.includes("/games")) data = [played, unplayed];
+    else if (url.includes("/results"))
+      data = [
+        {
+          game_id: played.id,
+          player_id: "alice",
+          points: 24000,
+          rounds: guessed,
+        },
+        {
+          game_id: unplayed.id,
+          player_id: "bob",
+          points: 24000,
+          rounds: guessed,
+        },
+      ];
+    else if (url.includes("/administrators")) data = null;
+    await route.fulfill({
+      json: data,
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
+  });
+  await page.goto("./#history");
+  await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await page.getByText("Alice’s picture breakdown").click();
+  await expect(page.getByRole("button", { name: /^Guess for/ })).toHaveCount(0);
+
+  await page.goto("./");
+  await page.getByLabel("Account and settings").click();
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Username", { exact: true }).fill("alice");
+  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.goto("./#history");
+  const unplayedGame = page.locator("details.game", {
+    hasText: "Daily · 09/10/26",
+  });
+  await unplayedGame.getByText("Daily · 09/10/26", { exact: true }).click();
+  await unplayedGame.getByText("Bob’s picture breakdown").click();
+  await expect(
+    unplayedGame.getByRole("button", { name: /^Guess for/ }),
+  ).toHaveCount(0);
+
+  const playedGame = page.locator("details.game", {
+    hasText: "Daily · 08/10/26",
+  });
+  await playedGame.getByText("Daily · 08/10/26", { exact: true }).click();
+  await playedGame.getByText("Alice’s picture breakdown").click();
+  const table = playedGame.getByRole("table", { name: "Picture breakdown" });
+  await expect(table.getByRole("button", { name: /^Guess for/ })).toHaveCount(
+    4,
+  );
+  await expect(
+    table.locator("tbody tr").last().locator("td").last(),
+  ).toHaveText("—");
+  await table.getByRole("button", { name: "Guess for picture 1" }).focus();
+  const tip = table.getByRole("tooltip").first();
+  await expect(tip).toBeVisible();
+  await expect(tip).toContainText("Guess 1907");
+  await expect(tip).toContainText("Answer 1904");
+  await expect(tip).toContainText("121 km off");
+  await expect(
+    tip.getByRole("img", { name: "Map of the guess and the answer" }),
+  ).toBeVisible();
+  const box = (await tip.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+});
+
 test("correct answers with captions appear only to signed-in players of that game", async ({
   page,
 }) => {

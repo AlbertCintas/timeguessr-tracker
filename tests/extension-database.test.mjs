@@ -24,6 +24,7 @@ test("transactional imports preserve old data, enforce ownership, enrich details
       "202610090004_game_links.sql",
       "202610090005_import_replays.sql",
       "20261027125144_featured_answers.sql",
+      "20261110120000_picture_guesses.sql",
     ])
       await db.exec(
         await readFile(
@@ -246,15 +247,16 @@ test("transactional imports preserve old data, enforce ownership, enrich details
     ).rows[0].id;
     assert.notEqual(manual, customSaved.game_id);
     await db.exec("reset role");
-    await db.exec(
-      await readFile(
-        new URL(
-          "../supabase/migrations/20261027125144_featured_answers.sql",
-          import.meta.url,
+    for (const file of [
+      "20261027125144_featured_answers.sql",
+      "20261110120000_picture_guesses.sql",
+    ])
+      await db.exec(
+        await readFile(
+          new URL("../supabase/migrations/" + file, import.meta.url),
+          "utf8",
         ),
-        "utf8",
-      ),
-    );
+      );
     await as(alice);
     const answers = rounds.map((r) => ({
       ...r,
@@ -305,6 +307,53 @@ test("transactional imports preserve old data, enforce ownership, enrich details
         importGame({
           rounds: JSON.stringify(
             answers.map((r) => ({ ...r, actual_location })),
+          ),
+        }),
+      );
+    const guesses = answers.map((r) => ({
+      ...r,
+      guess_year: 1987,
+      guess_location: { lat: 45.76, lng: 4.84 },
+    }));
+    assert.equal(
+      (await importGame({ rounds: JSON.stringify(guesses) })).status,
+      "enriched",
+    );
+    assert.equal((await importGame()).status, "already_saved");
+    assert.deepEqual(
+      (
+        await db.query(
+          "select rounds from results where game_id=$1 and player_id=$2",
+          [saved.game_id, alice],
+        )
+      ).rows[0].rounds,
+      guesses,
+    );
+    assert.equal(
+      (
+        await importGame({
+          rounds: JSON.stringify(
+            guesses.map((r) => ({ ...r, guess_year: 1988 })),
+          ),
+        })
+      ).status,
+      "conflict",
+    );
+    for (const guess_year of [0, 10000, 1987.5, "1987"])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(guesses.map((r) => ({ ...r, guess_year }))),
+        }),
+      );
+    for (const guess_location of [
+      { lat: 91, lng: 0 },
+      { lat: 0, lng: 181 },
+      {},
+    ])
+      await assert.rejects(
+        importGame({
+          rounds: JSON.stringify(
+            guesses.map((r) => ({ ...r, guess_location })),
           ),
         }),
       );

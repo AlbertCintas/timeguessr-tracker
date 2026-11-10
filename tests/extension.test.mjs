@@ -31,6 +31,7 @@ test("modern finished games preserve genuine zero scores and unknown errors", as
   assert.equal(parsed.points, 20000);
   assert.deepEqual(parsed.rounds[0], {
     actual_year: 1990,
+    guess_year: 2000,
     points: 4000,
     years_off: 10,
     distance_km: 1.3,
@@ -225,6 +226,34 @@ test("correct answers come from completed metadata, including skipped guesses an
     capture.rounds[0].actual_location = actual_location;
     assert.throws(() => validateCapture(capture));
   }
+});
+
+test("guessed year and location come from completed rounds, never from skipped ones", () => {
+  const data = snapshot();
+  data.roundResults[0].guessCoords = { lat: 45.76, lng: 4.84 };
+  data.roundResults[1] = {
+    ...data.roundResults[1],
+    noGuess: true,
+    guessCoords: { lat: 0, lng: 0 },
+  };
+  const [guessed, skipped] = captureModern(data, href).rounds;
+  assert.equal(guessed.guess_year, 2000);
+  assert.deepEqual(guessed.guess_location, { lat: 45.76, lng: 4.84 });
+  assert.equal("guess_year" in skipped, false);
+  assert.equal("guess_location" in skipped, false);
+  const valid = captureModern(data, href);
+  for (const round of [
+    { guess_year: 0 },
+    { guess_year: 1987.5 },
+    { guess_location: { lat: 91, lng: 0 } },
+    { guess_location: { lat: 0, lng: "4.84" } },
+  ])
+    assert.throws(() =>
+      validateCapture({
+        ...valid,
+        rounds: valid.rounds.map((r, i) => (i ? r : { ...r, ...round })),
+      }),
+    );
 });
 
 test("custom pictures without a year retain scores and omit the unknown zero year", () => {

@@ -2,7 +2,7 @@
 
 Single purpose: import the signed-in player’s completed Timeguessr results into the Timeguessr Club scoreboard.
 
-Data categories: authentication information, pseudonymous account identifiers and website content (completed game results). Game distances are guess errors; correct answer years, coordinates, countries and descriptions describe featured photographs, not the player’s physical location. Answers are publicly displayed in picture breakdowns and aggregated into location, country and year charts. No advertising, analytics, sale of data or unrelated browsing collection.
+Data categories: authentication information, pseudonymous account identifiers and website content (completed game results). Game distances are guess errors; guessed years and map coordinates are the player’s answers in the game; correct answer years, coordinates, countries and descriptions describe featured photographs. None of them is the player’s physical location. Guesses are displayed only to signed-in club members who played the same game. Answers are publicly displayed in picture breakdowns and aggregated into location, country and year charts. No advertising, analytics, sale of data or unrelated browsing collection.
 
 Permissions:
 

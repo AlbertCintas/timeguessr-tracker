@@ -1,7 +1,21 @@
-import type { PictureResult } from "./types";
+import { MapPin } from "lucide-react";
+import { Tip } from "./Caption";
+import { GuessMap } from "./GuessMap";
+import type { CorrectAnswer, PictureResult } from "./types";
 const number = new Intl.NumberFormat("en", { maximumFractionDigits: 3 });
-/** Display scores and guess errors for every round, without the answers. */
-export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
+/** Scores and guess errors per round. The guess column also shows the answer, so callers gate it. */
+export function PictureBreakdown({
+  rounds,
+  answers,
+  showGuesses = false,
+}: {
+  rounds: PictureResult[];
+  answers?: readonly CorrectAnswer[] | null;
+  showGuesses?: boolean;
+}) {
+  const guesses =
+    showGuesses &&
+    rounds.some((round) => round.guess_location || round.guess_year);
   return (
     <div className="picture-breakdown-scroll">
       <table className="picture-breakdown">
@@ -12,6 +26,9 @@ export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
             <th scope="col">Points</th>
             <th scope="col">Years off</th>
             <th scope="col">Km off</th>
+            {guesses && (
+              <th scope="col" className="caption-column" aria-label="Guess" />
+            )}
           </tr>
         </thead>
         <tbody>
@@ -29,6 +46,21 @@ export function PictureBreakdown({ rounds }: { rounds: PictureResult[] }) {
                   ? "—"
                   : number.format(round.distance_km)}
               </td>
+              {guesses && (
+                <td className="caption-column">
+                  {round.guess_location || round.guess_year ? (
+                    <Tip
+                      label={`Guess for picture ${index + 1}`}
+                      icon={<MapPin size={16} />}
+                      className="guess-tip"
+                    >
+                      <GuessMap round={round} answer={answers?.[index]} />
+                    </Tip>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
