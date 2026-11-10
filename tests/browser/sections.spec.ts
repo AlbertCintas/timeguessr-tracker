@@ -121,6 +121,9 @@ test("tabs show one section at a time and remember it in the URL", async ({
   await expect(shame.locator('[data-metric="cheater"]')).toContainText(
     "gunnarglRepeat offenderguilty",
   );
+  await expect(shame.locator('[data-metric="meltdown"]')).toContainText(
+    "elchiviPerpetual championday 3",
+  );
   await expect
     .poll(() =>
       shame
@@ -135,6 +138,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
       "worstGame",
       "worstPicture",
       "cheater",
+      "meltdown",
     ]);
   await page.getByLabel("Standings period").selectOption("last7");
   await expect(shame.locator('[data-metric="worstGame"]')).toContainText(

@@ -492,6 +492,28 @@ function ShameBoard({
               </td>
               <td className="shame-value">guilty</td>
             </tr>
+            <tr data-metric="meltdown">
+              <th scope="row">
+                Fastest meltdown
+                <small className="record-quip">
+                  Three days in and already in tears.
+                </small>
+              </th>
+              <td>
+                <div className="shame-holder">
+                  <Avatar
+                    profile={profiles.find(
+                      (profile) => profile.display_name === "elchivi",
+                    )}
+                  />
+                  <div className="shame-player">
+                    <strong>elchivi</strong>
+                    <small>Perpetual champion</small>
+                  </div>
+                </div>
+              </td>
+              <td className="shame-value">day 3</td>
+            </tr>
           </tbody>
         </table>
         <div className="board-foot">
