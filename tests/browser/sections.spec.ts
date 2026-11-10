@@ -122,7 +122,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
     "gunnarglRepeat offenderguilty",
   );
   await expect(shame.locator('[data-metric="tears"]')).toContainText(
-    "elchiviPerpetual championday 3",
+    "elchiviReigning crybabyday 3",
   );
   await expect
     .poll(() =>
