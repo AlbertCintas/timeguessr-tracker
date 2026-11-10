@@ -496,7 +496,7 @@ function ShameBoard({
               <th scope="row">
                 Quickest to tears
                 <small className="record-quip">
-                  Three days in and already in tears.
+                  Tissues out before the scores.
                 </small>
               </th>
               <td>
@@ -508,7 +508,7 @@ function ShameBoard({
                   />
                   <div className="shame-player">
                     <strong>elchivi</strong>
-                    <small>Perpetual champion</small>
+                    <small>Reigning crybaby</small>
                   </div>
                 </div>
               </td>
