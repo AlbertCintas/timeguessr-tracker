@@ -51,15 +51,18 @@
       <li>
         After you sign in and enable automatic imports, the extension reads
         completed Timeguessr games: game type, challenge number, total score,
-        picture scores, year errors, distances, picture or challenge
-        identifiers, timer settings and the date captured. It does not read your
+        picture scores, year errors, distances, your guessed year and map
+        location for each picture, picture or challenge identifiers, timer
+        settings and the date captured. It does not read your
         Timeguessr password or account cookies.
       </li>
       <li>
         Game results and an external game fingerprint are sent to the tracker’s
         Supabase database. Picture identifiers are used locally to generate
         fingerprints for matching non-daily games; the extension does not upload
-        the original photographs, guessed coordinates or your physical location.
+        the original photographs or your physical location. Guessed years and
+        locations appear in the tracker only to signed-in members who played
+        the same game.
       </li>
       <li>
         The extension requests public Timeguessr challenge metadata to verify
@@ -114,7 +117,7 @@
     </p>
     <h2>Purpose and sharing</h2>
     <p>
-      Photograph coordinates and countries describe the game’s featured places, not the player’s physical location. Information is used to authenticate players, match games, upload scores,
+      Photograph coordinates, guessed coordinates and countries describe places in the game, not the player’s physical location. Information is used to authenticate players, match games, upload scores,
       retry pending imports and show rankings. We do not sell information, use
       it for advertising, or share it beyond the public scoreboard and the
       services needed to operate the tracker.

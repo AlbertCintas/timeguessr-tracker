@@ -2059,3 +2059,54 @@ textarea:focus-visible {
   font-size: 11px;
   text-anchor: middle;
 }
+.caption-tip .guess-tip {
+  width: min(260px, 75vw);
+  padding: 8px;
+}
+.guess-map {
+  display: grid;
+  gap: 8px;
+}
+.guess-map .mini-map {
+  padding: 0;
+  border-radius: 6px;
+  background: var(--bg);
+}
+.guess-map circle {
+  stroke: var(--bg);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+.guess-map .guess-pin,
+.guess-dot {
+  fill: var(--gold);
+  background: var(--gold);
+}
+.guess-map .answer-pin,
+.answer-dot {
+  fill: #db5049;
+  background: #db5049;
+}
+.guess-line {
+  stroke: var(--text);
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.7;
+}
+.guess-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--muted);
+}
+.guess-facts strong {
+  color: var(--text);
+}
+.guess-dot,
+.answer-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}

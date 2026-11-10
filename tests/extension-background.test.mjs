@@ -373,13 +373,15 @@ test("worker enriches pending and saved captures with replay IDs", async () => {
   assert.equal(saved.calls.at(-1).args.replay_game_id, replay_id);
 });
 
-test("worker enriches both queued and previously uploaded captures with actual answers", async () => {
+test("worker enriches both queued and previously uploaded captures with actual answers and guesses", async () => {
   const enriched = {
     ...capture,
     rounds: capture.rounds.map((r) => ({
       ...r,
       actual_year: 1990,
       actual_location: { lat: 0, lng: 0 },
+      guess_year: 1987,
+      guess_location: { lat: 45.76, lng: 4.84 },
     })),
   };
   const app = await setup();
@@ -390,6 +392,10 @@ test("worker enriches both queued and previously uploaded captures with actual a
   await app.send("capture", { capture: enriched }, app.page);
   await app.idle();
   assert.equal(app.stored.queue[0].capture.rounds[0].actual_year, 1990);
+  assert.deepEqual(app.stored.queue[0].capture.rounds[0].guess_location, {
+    lat: 45.76,
+    lng: 4.84,
+  });
   app.setOffline(false);
   await app.send("retry");
   await app.idle();
@@ -406,6 +412,7 @@ test("worker enriches both queued and previously uploaded captures with actual a
   await saved.idle();
   assert.equal(saved.calls.length, count + 1);
   assert.equal(saved.calls.at(-1).args.pictures[0].actual_year, 1990);
+  assert.equal(saved.calls.at(-1).args.pictures[0].guess_year, 1987);
   await saved.send("capture", { capture: enriched }, saved.page);
   await saved.idle();
   assert.equal(saved.calls.length, count + 1);

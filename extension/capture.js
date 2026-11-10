@@ -34,6 +34,31 @@ export const playedToday = (now = new Date()) =>
     day: "2-digit",
   }).format(now);
 
+function yearAndPlace(round, prefix) {
+  const year = round[`${prefix}_year`];
+  const location = round[`${prefix}_location`];
+  if (year != null && (!Number.isInteger(year) || year < 1 || year > 9999))
+    throw new Error(`Invalid ${prefix} year.`);
+  if (
+    location != null &&
+    !(
+      typeof location.lat === "number" &&
+      Number.isFinite(location.lat) &&
+      Math.abs(location.lat) <= 90 &&
+      typeof location.lng === "number" &&
+      Number.isFinite(location.lng) &&
+      Math.abs(location.lng) <= 180
+    )
+  )
+    throw new Error(`Invalid ${prefix} location.`);
+  return {
+    ...(year != null ? { [`${prefix}_year`]: year } : {}),
+    ...(location != null
+      ? { [`${prefix}_location`]: { lat: location.lat, lng: location.lng } }
+      : {}),
+  };
+}
+
 export function validateCapture(input) {
   if (!input || !["daily", "play", "custom"].includes(input.mode))
     throw new Error("Unsupported game type.");
@@ -57,30 +82,9 @@ export function validateCapture(input) {
         ))
     )
       throw new Error("Invalid picture details.");
-    const actualYear = r.actual_year;
-    const location = r.actual_location;
-    if (
-      actualYear != null &&
-      (!Number.isInteger(actualYear) || actualYear < 1 || actualYear > 9999)
-    )
-      throw new Error("Invalid actual year.");
-    if (
-      location != null &&
-      !(
-        typeof location.lat === "number" &&
-        Number.isFinite(location.lat) &&
-        Math.abs(location.lat) <= 90 &&
-        typeof location.lng === "number" &&
-        Number.isFinite(location.lng) &&
-        Math.abs(location.lng) <= 180
-      )
-    )
-      throw new Error("Invalid actual location.");
     return {
-      ...(actualYear != null ? { actual_year: actualYear } : {}),
-      ...(location != null
-        ? { actual_location: { lat: location.lat, lng: location.lng } }
-        : {}),
+      ...yearAndPlace(r, "actual"),
+      ...yearAndPlace(r, "guess"),
       points: r.points,
       years_off: r.years_off,
       distance_km: r.distance_km,
@@ -125,14 +129,16 @@ export function validateCapture(input) {
   };
 }
 
-// Only answer metadata is used; guesses and error magnitudes cannot recover it.
-function answerFields(year, location) {
-  const actualYear = number(year);
+// Answers come only from answer metadata; guesses and error magnitudes cannot recover them.
+function yearAndPlaceFields(prefix, year, location) {
+  const value = number(year);
   const lat = number(location?.lat);
   const lng = number(location?.lng);
   return {
-    ...(actualYear !== null && actualYear !== 0 ? { actual_year: actualYear } : {}),
-    ...(lat !== null && lng !== null ? { actual_location: { lat, lng } } : {}),
+    ...(value !== null && value !== 0 ? { [`${prefix}_year`]: value } : {}),
+    ...(lat !== null && lng !== null
+      ? { [`${prefix}_location`]: { lat, lng } }
+      : {}),
   };
 }
 
@@ -160,10 +166,14 @@ export function captureModern(data, href, playedOn = playedToday()) {
   )
     return null;
   const rounds = data.roundResults.map((r, i) => ({
-    ...answerFields(
+    ...yearAndPlaceFields(
+      "actual",
       r.actualYear ?? data.playArray?.[i]?.Year,
       r.actualCoords ?? data.playArray?.[i]?.Location,
     ),
+    ...(r.noGuess
+      ? {}
+      : yearAndPlaceFields("guess", r.guessYear, r.guessCoords)),
     points: number(r.totalScore),
     years_off:
       !r.noGuess &&
@@ -227,7 +237,7 @@ export function captureLegacy(
             (formatted[2].toLowerCase() === "m" ? 1000 : 1)
           : null;
     return {
-      ...answerFields(pictures[i]?.Year, pictures[i]?.Location),
+      ...yearAndPlaceFields("actual", pictures[i]?.Year, pictures[i]?.Location),
       points: number(values[`${prefix}Total`]),
       years_off: number(values[`${prefix}Year`] ?? values[`${prefix}YearsOff`]),
       distance_km: distance,

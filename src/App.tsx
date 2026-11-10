@@ -1590,7 +1590,16 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                                 ? ` · #${entry.daily_number}`
                                 : ""}
                             </summary>
-                            <PictureBreakdown rounds={entry.rounds} />
+                            <PictureBreakdown
+                              rounds={entry.rounds}
+                              answers={game.correct_answers}
+                              showGuesses={
+                                !!session &&
+                                entries.some(
+                                  (r) => r.player_id === session.user.id,
+                                )
+                              }
+                            />
                           </details>
                         )}
                       </div>
