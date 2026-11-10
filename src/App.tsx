@@ -492,9 +492,9 @@ function ShameBoard({
               </td>
               <td className="shame-value">guilty</td>
             </tr>
-            <tr data-metric="meltdown">
+            <tr data-metric="tears">
               <th scope="row">
-                Fastest meltdown
+                Quickest to tears
                 <small className="record-quip">
                   Three days in and already in tears.
                 </small>
