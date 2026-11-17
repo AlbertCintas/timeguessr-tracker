@@ -57,7 +57,7 @@ test("tabs show one section at a time and remember it in the URL", async ({
     sections.getByRole("button", { name: "Standings" }),
   ).toHaveAttribute("aria-current", "page");
   await expect(
-    page.getByRole("heading", { name: "Win percentage" }),
+    page.getByRole("heading", { name: "Opponents beaten" }),
   ).toBeVisible();
   await expect(
     page.getByRole("table", { name: "Hall of shame records" }),

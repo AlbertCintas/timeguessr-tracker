@@ -50,15 +50,23 @@ test("win rate weights each win by the opponents beaten and ignores solo games",
     { game_id: "tie", player_id: "d", points: 7 },
   ]);
   assert.deepEqual(
-    rows.map((r) => [r.id, r.wins, r.contested, Number(r.winRate.toFixed(1))]),
+    rows.map((r) => [
+      r.id,
+      r.wins,
+      r.beaten,
+      r.contested,
+      Number(r.winRate.toFixed(1)),
+    ]),
     [
-      ["a", 2, 3, 66.7],
-      ["b", 1, 3, 33.3],
-      ["c", 1, 3, 33.3],
-      ["d", 2, 1, 100],
+      ["a", 2, 2, 3, 66.7],
+      ["b", 1, 1, 3, 33.3],
+      ["c", 1, 1, 3, 33.3],
+      ["d", 2, 1, 1, 100],
     ],
   );
-  const onlySolo = standings(four, [{ game_id: "s", player_id: "a", points: 1 }]);
+  const onlySolo = standings(four, [
+    { game_id: "s", player_id: "a", points: 1 },
+  ]);
   assert.deepEqual(
     ranked(onlySolo, "winRate").map((r) => [r.id, r.rank]),
     [

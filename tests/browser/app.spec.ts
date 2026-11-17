@@ -176,7 +176,7 @@ test("leaderboards, independent fairness switches, history and login keyboard en
   });
   await page.goto("./");
   await expect(
-    page.getByRole("heading", { name: "Win percentage" }),
+    page.getByRole("heading", { name: "Opponents beaten" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await openSection(page, "History");
@@ -208,7 +208,7 @@ test("leaderboards, independent fairness switches, history and login keyboard en
     "Alice",
   );
   await expect(
-    page.getByRole("heading", { name: "Win percentage" }),
+    page.getByRole("heading", { name: "Opponents beaten" }),
   ).toBeVisible();
   await boards.nth(0).getByRole("switch").uncheck();
   await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
@@ -347,7 +347,7 @@ test("history paginates newest first and clamps the page after games disappear",
   ).toBeDisabled();
   await expect(pagination).toContainText("Page 1 of 3");
   await openSection(page, "Standings");
-  await expect(page.locator(".board").first()).toContainText("23");
+  await expect(page.locator(".boards .board").nth(1)).toContainText("23");
   await openSection(page, "History");
   await pagination.getByRole("button", { name: "Older games" }).click();
   await expect(page.locator(".game")).toHaveCount(10);

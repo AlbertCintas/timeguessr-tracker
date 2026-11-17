@@ -417,6 +417,15 @@ main {
     sans-serif;
   letter-spacing: -0.4px;
 }
+.score-detail {
+  display: block;
+  margin-top: 3px;
+  font:
+    500 9px Manrope,
+    sans-serif;
+  letter-spacing: 0;
+  color: var(--muted);
+}
 .board-foot {
   font-size: 9px;
   color: var(--muted);

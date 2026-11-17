@@ -282,7 +282,7 @@ function Board({
         <h2>
           {kind === "wins"
             ? relative
-              ? "Win percentage"
+              ? "Opponents beaten"
               : "Most wins"
             : relative
               ? "Average points"
@@ -302,7 +302,7 @@ function Board({
       <p className="board-description">
         {kind === "wins"
           ? relative
-            ? "Win rate. For anyone blaming their lack of free time."
+            ? "Win a game and you beat everyone in it. Solo games beat nobody."
             : "The body count. Egos, mostly."
           : relative
             ? "Points per game. Another sample of the same tragedy."
@@ -310,11 +310,11 @@ function Board({
       </p>
       <div className="table-head">
         <span>PLAYER</span>
-        <span>PLAYED</span>
+        <span>{relative && kind === "wins" ? "FACED" : "PLAYED"}</span>
         <span>
           {relative
             ? kind === "wins"
-              ? "WIN %"
+              ? "BEATEN"
               : "AVG. PTS"
             : kind === "wins"
               ? "WINS"
@@ -340,15 +340,24 @@ function Board({
                 <small>@{p.username}</small>
               </span>
             </div>
-            <span className="played">{p.games}</span>
+            <span className="played">
+              {relative && kind === "wins" ? p.contested : p.games}
+            </span>
             <strong className="score">
-              {p.rank === null
-                ? "—"
-                : relative
-                  ? kind === "wins"
-                    ? `${p.winRate.toFixed(1)}%`
-                    : number.format(Math.round(p.average))
-                  : number.format(p[kind])}
+              {p.rank === null ? (
+                "—"
+              ) : relative ? (
+                kind === "wins" ? (
+                  <>
+                    {p.winRate.toFixed(1)}%
+                    <small className="score-detail">{p.beaten} beaten</small>
+                  </>
+                ) : (
+                  number.format(Math.round(p.average))
+                )
+              ) : (
+                number.format(p[kind])
+              )}
             </strong>
           </div>
         ))
@@ -358,7 +367,7 @@ function Board({
         {relative && (
           <span>
             {kind === "wins"
-              ? " · Each win counts once per opponent beaten"
+              ? " · Solo games don’t count"
               : " · No minimum games"}
           </span>
         )}
@@ -719,8 +728,13 @@ function PlayerStats({
                 <dt>Games</dt>
                 <dd>{row.games}</dd>
                 <dt>Wins</dt>
+                <dd>{row.wins}</dd>
+                <dt>Opponents beaten</dt>
                 <dd>
-                  {row.wins} <small>{row.winRate.toFixed(1)}%</small>
+                  {row.beaten} of {row.contested}{" "}
+                  <small>
+                    {row.contested ? `${row.winRate.toFixed(1)}%` : "—"}
+                  </small>
                 </dd>
                 <dt>Average game</dt>
                 <dd>{format(row.average)}</dd>

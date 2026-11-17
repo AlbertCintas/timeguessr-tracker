@@ -13,14 +13,16 @@ export function standings(profiles: Profile[], results: Result[]): Standing[] {
     const opponents = (rows: Result[]) =>
       rows.reduce((sum, r) => sum + players.get(r.game_id)! - 1, 0);
     const contested = opponents(entries);
+    const beaten = opponents(won);
     const points = entries.reduce((sum, r) => sum + r.points, 0);
     return {
       ...p,
       games: entries.length,
       wins: won.length,
       contested,
+      beaten,
       points,
-      winRate: contested ? (opponents(won) / contested) * 100 : 0,
+      winRate: contested ? (beaten / contested) * 100 : 0,
       average: entries.length ? points / entries.length : 0,
     };
   });
