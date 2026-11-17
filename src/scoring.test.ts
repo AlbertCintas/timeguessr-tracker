@@ -31,6 +31,44 @@ test("totals, tied winners, and one-submission games", () => {
     ],
   );
 });
+test("win rate weights each win by the opponents beaten and ignores solo games", () => {
+  const four = ["a", "b", "c", "d"].map((id) => ({
+    id,
+    username: id,
+    display_name: id,
+    avatar_path: null,
+  }));
+  const rows = standings(four, [
+    { game_id: "big", player_id: "a", points: 30 },
+    { game_id: "big", player_id: "b", points: 20 },
+    { game_id: "big", player_id: "c", points: 10 },
+    { game_id: "duel", player_id: "a", points: 5 },
+    { game_id: "duel", player_id: "b", points: 9 },
+    { game_id: "solo", player_id: "a", points: 1 },
+    { game_id: "solo2", player_id: "d", points: 1 },
+    { game_id: "tie", player_id: "c", points: 7 },
+    { game_id: "tie", player_id: "d", points: 7 },
+  ]);
+  assert.deepEqual(
+    rows.map((r) => [r.id, r.wins, r.contested, Number(r.winRate.toFixed(1))]),
+    [
+      ["a", 2, 3, 66.7],
+      ["b", 1, 3, 33.3],
+      ["c", 1, 3, 33.3],
+      ["d", 2, 1, 100],
+    ],
+  );
+  const onlySolo = standings(four, [{ game_id: "s", player_id: "a", points: 1 }]);
+  assert.deepEqual(
+    ranked(onlySolo, "winRate").map((r) => [r.id, r.rank]),
+    [
+      ["a", null],
+      ["b", null],
+      ["c", null],
+      ["d", null],
+    ],
+  );
+});
 test("late submissions, edits, and deletes recalculate wins", () => {
   let results = [{ game_id: "1", player_id: "a", points: 10 }];
   assert.equal(standings(profiles, results)[0].wins, 1);

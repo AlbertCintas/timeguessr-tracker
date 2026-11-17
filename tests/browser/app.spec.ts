@@ -640,7 +640,7 @@ test("standings periods update both boards and their per-game denominators", asy
   );
   await expect(alice(1).locator(".score")).toHaveText("350");
   await boards.nth(0).getByRole("switch").check();
-  await expect(alice(0).locator(".score")).toHaveText("100.0%");
+  await expect(alice(0).locator(".score")).toHaveText("—");
   await picker.selectOption("today");
   await expect(alice(1).locator(".score")).toHaveText("300");
   await expect(bob(0)).toHaveCount(0);

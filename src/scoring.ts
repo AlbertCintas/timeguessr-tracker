@@ -2,18 +2,25 @@ import type { Game, Profile, Result, Standing } from "./types.ts";
 export const perfectLocationKm = 0.05;
 export function standings(profiles: Profile[], results: Result[]): Standing[] {
   const best = new Map<string, number>();
-  for (const r of results)
+  const players = new Map<string, number>();
+  for (const r of results) {
     best.set(r.game_id, Math.max(best.get(r.game_id) ?? -1, r.points));
+    players.set(r.game_id, (players.get(r.game_id) ?? 0) + 1);
+  }
   return profiles.map((p) => {
     const entries = results.filter((r) => r.player_id === p.id);
-    const wins = entries.filter((r) => r.points === best.get(r.game_id)).length;
+    const won = entries.filter((r) => r.points === best.get(r.game_id));
+    const opponents = (rows: Result[]) =>
+      rows.reduce((sum, r) => sum + players.get(r.game_id)! - 1, 0);
+    const contested = opponents(entries);
     const points = entries.reduce((sum, r) => sum + r.points, 0);
     return {
       ...p,
       games: entries.length,
-      wins,
+      wins: won.length,
+      contested,
       points,
-      winRate: entries.length ? (wins / entries.length) * 100 : 0,
+      winRate: contested ? (opponents(won) / contested) * 100 : 0,
       average: entries.length ? points / entries.length : 0,
     };
   });
@@ -22,17 +29,19 @@ export function ranked(
   rows: Standing[],
   metric: "wins" | "points" | "winRate" | "average",
 ) {
+  const counts = (row: Standing) =>
+    metric === "winRate" ? row.contested > 0 : row.games > 0;
   const sorted = [...rows].sort(
     (a, b) =>
-      Number(b.games > 0) - Number(a.games > 0) ||
+      Number(counts(b)) - Number(counts(a)) ||
       b[metric] - a[metric] ||
       (metric === "wins" ? b.points - a.points : 0) ||
       a.display_name.localeCompare(b.display_name),
   );
   return sorted.map((row, index) => ({
     ...row,
-    rank: row.games
-      ? sorted.findIndex((r) => r.games > 0 && r[metric] === row[metric]) + 1
+    rank: counts(row)
+      ? sorted.findIndex((r) => counts(r) && r[metric] === row[metric]) + 1
       : null,
     position: index,
   }));

@@ -342,7 +342,7 @@ function Board({
             </div>
             <span className="played">{p.games}</span>
             <strong className="score">
-              {!p.games
+              {p.rank === null
                 ? "—"
                 : relative
                   ? kind === "wins"
@@ -355,7 +355,13 @@ function Board({
       )}
       <div className="board-foot">
         <span className="dot" /> {periodLabels[period]} standings
-        {relative && <span> · No minimum games</span>}
+        {relative && (
+          <span>
+            {kind === "wins"
+              ? " · Each win counts once per opponent beaten"
+              : " · No minimum games"}
+          </span>
+        )}
       </div>
     </section>
   );
