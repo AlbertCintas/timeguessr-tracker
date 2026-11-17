@@ -72,7 +72,7 @@ Run `npm run lint:firefox`, `npm run test:extension`, and `npm run test:firefox`
 
 ## Atlas
 
-`atlas.html` has four tabs, all following the period picker. To avoid spoilers, a daily game's pictures appear from the next day (Madrid time) and other games' three days after the club first played them:
+`atlas.html` has four tabs, all following the period picker. A game's pictures appear as soon as the club plays it:
 
 - **Map**: pictures binned into 3° areas, one circle per area. Colors have four classes: 1 picture, two round log-spaced steps (1-2-3-5 series) and the busiest area, so one crowded city cannot wash out the rest.
 - **Trivia**: cards about single pictures: the oldest, and the lowest and highest club average score, biggest score gap, biggest average year error, most exact-year guesses, and smallest and largest average distance. Club averages need at least two players with picture details and never name players. Each card shows Timeguessr's caption in a tooltip.
