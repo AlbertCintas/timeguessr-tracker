@@ -418,7 +418,7 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   );
   await page.getByLabel("Standings period").selectOption("last7");
   await expect(
-    page.getByText("No pictures revealed in this period yet.", {
+    page.getByText("No pictures in this period yet.", {
       exact: false,
     }),
   ).toBeVisible();
@@ -467,27 +467,22 @@ test("history picture breakdowns hide the answers and fit a mobile page", async 
   ).toBe(true);
 });
 
-test("atlas waits a day for daily answers and three days for other games", async ({
-  page,
-}) => {
+test("atlas shows games as soon as they are played", async ({ page }) => {
   await page.clock.install({ time: new Date("2026-10-09T12:00:00Z") });
   const only = (country: string) =>
     answers.map((answer) => ({ ...answer, country }));
   const shown = [
     { ...games[0], correct_answers: answers },
     { ...games[1], correct_answers: only("Japan") },
-    ...[
-      ["2026-10-06", "Peru"],
-      ["2026-10-07", "Brazil"],
-    ].map(([played_on, country]) => ({
-      id: `replay-${played_on}`,
+    {
+      id: "replay-today",
       kind: "custom",
       daily_date: null,
       name: "Timeguessr",
-      played_on,
-      created_at: `${played_on}T12:00:00Z`,
-      correct_answers: only(country),
-    })),
+      played_on: "2026-10-09",
+      created_at: "2026-10-09T12:00:00Z",
+      correct_answers: only("Brazil"),
+    },
   ];
   await page.route("https://club-test.supabase.co/**", async (route) => {
     const url = route.request().url();
@@ -508,11 +503,10 @@ test("atlas waits a day for daily answers and three days for other games", async
   });
   await page.goto("./atlas.html#countries");
   const countries = page.getByRole("list", { name: "Pictures per country" });
-  await expect(countries.getByRole("listitem")).toHaveCount(5);
+  await expect(countries.getByRole("listitem")).toHaveCount(6);
   await expect(countries).toContainText("Denmark");
-  await expect(countries).toContainText("Peru");
-  await expect(countries).not.toContainText("Japan");
-  await expect(countries).not.toContainText("Brazil");
+  await expect(countries).toContainText("Japan");
+  await expect(countries).toContainText("Brazil");
 
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
