@@ -46,8 +46,13 @@ export interface Result {
 }
 export interface Standing extends Profile {
   games: number;
+  contested: number;
   wins: number;
   points: number;
   winRate: number;
   average: number;
+  clubPoints: number;
+  clubMax: number;
+  clubRate: number;
+  clubAverage: number;
 }

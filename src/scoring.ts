@@ -2,37 +2,64 @@ import type { Game, Profile, Result, Standing } from "./types.ts";
 export const perfectLocationKm = 0.05;
 export function standings(profiles: Profile[], results: Result[]): Standing[] {
   const best = new Map<string, number>();
-  for (const r of results)
+  const scores = new Map<string, number[]>();
+  for (const r of results) {
     best.set(r.game_id, Math.max(best.get(r.game_id) ?? -1, r.points));
+    scores.set(r.game_id, [...(scores.get(r.game_id) ?? []), r.points]);
+  }
+  const players = new Map([...scores].map(([id, s]) => [id, s.length]));
+  const winnerBonus = (n: number) => (n >= 5 ? 2 : n >= 2 ? 1 : 0);
+  const clubPointsFor = (r: Result) => {
+    const others = scores.get(r.game_id)!;
+    const outscored =
+      others.filter((s) => s < r.points).length +
+      (others.filter((s) => s === r.points).length - 1) / 2;
+    const n = others.length;
+    return outscored + (r.points === best.get(r.game_id) ? winnerBonus(n) : 0);
+  };
   return profiles.map((p) => {
     const entries = results.filter((r) => r.player_id === p.id);
-    const wins = entries.filter((r) => r.points === best.get(r.game_id)).length;
+    const contested = entries.filter((r) => players.get(r.game_id)! > 1);
+    const wins = contested.filter((r) => r.points === best.get(r.game_id));
     const points = entries.reduce((sum, r) => sum + r.points, 0);
+    const clubPoints = contested.reduce((sum, r) => sum + clubPointsFor(r), 0);
+    const clubMax = contested.reduce((sum, r) => {
+      const n = players.get(r.game_id)!;
+      return sum + n - 1 + winnerBonus(n);
+    }, 0);
     return {
       ...p,
       games: entries.length,
-      wins,
+      contested: contested.length,
+      wins: wins.length,
       points,
-      winRate: entries.length ? (wins / entries.length) * 100 : 0,
+      winRate: contested.length ? (wins.length / contested.length) * 100 : 0,
       average: entries.length ? points / entries.length : 0,
+      clubPoints,
+      clubMax,
+      clubRate: clubMax ? (clubPoints / clubMax) * 100 : 0,
+      clubAverage: contested.length ? clubPoints / contested.length : 0,
     };
   });
 }
-export function ranked(
-  rows: Standing[],
-  metric: "wins" | "points" | "winRate" | "average",
-) {
+export type RankMetric =
+  "wins" | "points" | "winRate" | "average" | "clubRate" | "clubAverage";
+export function ranked(rows: Standing[], metric: RankMetric) {
+  const counts = (row: Standing) =>
+    metric !== "points" && metric !== "average"
+      ? row.contested > 0
+      : row.games > 0;
   const sorted = [...rows].sort(
     (a, b) =>
-      Number(b.games > 0) - Number(a.games > 0) ||
+      Number(counts(b)) - Number(counts(a)) ||
       b[metric] - a[metric] ||
       (metric === "wins" ? b.points - a.points : 0) ||
       a.display_name.localeCompare(b.display_name),
   );
   return sorted.map((row, index) => ({
     ...row,
-    rank: row.games
-      ? sorted.findIndex((r) => r.games > 0 && r[metric] === row[metric]) + 1
+    rank: counts(row)
+      ? sorted.findIndex((r) => counts(r) && r[metric] === row[metric]) + 1
       : null,
     position: index,
   }));

@@ -37,6 +37,7 @@ import {
   parseEuropeanDate,
   periodLabels,
   resultsForPeriod,
+  type RankMetric,
   type StandingsPeriod,
 } from "./scoring";
 import type { Game, Profile, Result, Standing, PictureResult } from "./types";
@@ -250,44 +251,132 @@ function Avatar({
     </span>
   );
 }
+type BoardKind = "wins" | "points" | "club";
+interface BoardView {
+  metric: RankMetric;
+  title: string;
+  description: string;
+  middle: [label: string, value: (p: Standing) => number];
+  score: [label: string, value: (p: Standing) => ReactNode];
+  foot: string;
+}
+const scoreCell = (score: ReactNode) =>
+  typeof score === "string" ? (
+    <span className="score-value">{score}</span>
+  ) : (
+    score
+  );
+const withDetail = (value: string, detail: string) => (
+  <>
+    <span className="score-value">{value}</span>
+    <small className="score-detail">{detail}</small>
+  </>
+);
+const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
+  wins: [
+    {
+      metric: "wins",
+      title: "Most wins",
+      description: "The body count. Egos, mostly.",
+      middle: ["PLAYED", (p) => p.contested],
+      score: ["WINS", (p) => number.format(p.wins)],
+      foot: " · Solo games don’t count",
+    },
+    {
+      metric: "winRate",
+      title: "Win percentage",
+      description: "Win rate. For anyone blaming their lack of free time.",
+      middle: ["PLAYED", (p) => p.contested],
+      score: [
+        "WIN %",
+        (p) =>
+          withDetail(`${p.winRate.toFixed(1)}%`, `${p.wins} of ${p.contested}`),
+      ],
+      foot: " · Solo games don’t count",
+    },
+  ],
+  points: [
+    {
+      metric: "points",
+      title: "Most points",
+      description: "All your points. Still not a personality.",
+      middle: ["PLAYED", (p) => p.games],
+      score: ["POINTS", (p) => number.format(p.points)],
+      foot: "",
+    },
+    {
+      metric: "average",
+      title: "Average points",
+      description: "Points per game. Another sample of the same tragedy.",
+      middle: ["PLAYED", (p) => p.games],
+      score: ["AVG. PTS", (p) => number.format(Math.round(p.average))],
+      foot: " · No minimum games",
+    },
+  ],
+  club: [
+    {
+      metric: "clubRate",
+      title: "Club points",
+      description:
+        "A point per player beaten. Winners +1, or +2 with 5+ players.",
+      middle: ["MAX", (p) => p.clubMax],
+      score: [
+        "SHARE",
+        (p) =>
+          withDetail(
+            `${p.clubRate.toFixed(1)}%`,
+            `${p.clubPoints} of ${p.clubMax}`,
+          ),
+      ],
+      foot: " · Share of the most you could have scored",
+    },
+    {
+      metric: "clubAverage",
+      title: "Club points per game",
+      description:
+        "A point per player beaten. Winners +1, or +2 with 5+ players.",
+      middle: ["GAMES", (p) => p.contested],
+      score: [
+        "AVG.",
+        (p) =>
+          withDetail(
+            p.clubAverage.toFixed(2),
+            `${p.clubPoints} ${p.clubPoints === 1 ? "pt" : "pts"}`,
+          ),
+      ],
+      foot: " · Solo games don’t count",
+    },
+  ],
+};
+const boardIcons: Record<BoardKind, ReactNode> = {
+  wins: <Trophy size={22} />,
+  points: <Flag size={22} />,
+  club: <Medal size={22} />,
+};
+const boardEyebrows: Record<BoardKind, string> = {
+  wins: "SURVIVORS’ GUILT",
+  points: "NUMBERS FOR YOUR OBITUARY",
+  club: "PECKING ORDER",
+};
 function Board({
   rows,
   kind,
   period,
 }: {
   rows: Standing[];
-  kind: "wins" | "points";
+  kind: BoardKind;
   period: StandingsPeriod;
 }) {
   const [relative, setRelative] = useState(true);
-  const metric =
-    kind === "wins"
-      ? relative
-        ? "winRate"
-        : "wins"
-      : relative
-        ? "average"
-        : "points";
+  const view = boardViews[kind][Number(relative)];
   return (
-    <section className="board">
+    <section className="board compact">
       <div className="board-top">
-        <span className={`icon-box ${kind}`}>
-          {kind === "wins" ? <Trophy size={22} /> : <Flag size={22} />}
-        </span>
-        <span className="eyebrow">
-          {kind === "wins" ? "SURVIVORS’ GUILT" : "NUMBERS FOR YOUR OBITUARY"}
-        </span>
+        <span className={`icon-box ${kind}`}>{boardIcons[kind]}</span>
+        <span className="eyebrow">{boardEyebrows[kind]}</span>
       </div>
       <div className="board-heading">
-        <h2>
-          {kind === "wins"
-            ? relative
-              ? "Win percentage"
-              : "Most wins"
-            : relative
-              ? "Average points"
-              : "Most points"}
-        </h2>
+        <h2>{view.title}</h2>
         <label className="switch-label">
           <span>Per game</span>
           <input
@@ -299,27 +388,11 @@ function Board({
           <span className="switch" />
         </label>
       </div>
-      <p className="board-description">
-        {kind === "wins"
-          ? relative
-            ? "Win rate. For anyone blaming their lack of free time."
-            : "The body count. Egos, mostly."
-          : relative
-            ? "Points per game. Another sample of the same tragedy."
-            : "All your points. Still not a personality."}
-      </p>
+      <p className="board-description">{view.description}</p>
       <div className="table-head">
         <span>PLAYER</span>
-        <span>PLAYED</span>
-        <span>
-          {relative
-            ? kind === "wins"
-              ? "WIN %"
-              : "AVG. PTS"
-            : kind === "wins"
-              ? "WINS"
-              : "POINTS"}
-        </span>
+        <span>{view.middle[0]}</span>
+        <span>{view.score[0]}</span>
       </div>
       {!rows.length ? (
         <div className="empty">
@@ -328,7 +401,7 @@ function Board({
           <span>Log a game. Give us something to bury.</span>
         </div>
       ) : (
-        ranked(rows, metric).map((p) => (
+        ranked(rows, view.metric).map((p) => (
           <div className="player-row" key={p.id}>
             <div className="player">
               <span className={`rank ${p.rank === 1 ? "first" : ""}`}>
@@ -340,26 +413,25 @@ function Board({
                 <small>@{p.username}</small>
               </span>
             </div>
-            <span className="played">{p.games}</span>
+            <span className="played">{view.middle[1](p)}</span>
             <strong className="score">
-              {!p.games
-                ? "—"
-                : relative
-                  ? kind === "wins"
-                    ? `${p.winRate.toFixed(1)}%`
-                    : number.format(Math.round(p.average))
-                  : number.format(p[kind])}
+              {p.rank === null ? (
+                <span className="score-value">—</span>
+              ) : (
+                scoreCell(view.score[1](p))
+              )}
             </strong>
           </div>
         ))
       )}
       <div className="board-foot">
         <span className="dot" /> {periodLabels[period]} standings
-        {relative && <span> · No minimum games</span>}
+        {view.foot && <span>{view.foot}</span>}
       </div>
     </section>
   );
 }
+const boardOrder: BoardKind[] = ["club", "points", "wins"];
 function ShameBoard({
   profiles,
   results,
@@ -714,7 +786,10 @@ function PlayerStats({
                 <dd>{row.games}</dd>
                 <dt>Wins</dt>
                 <dd>
-                  {row.wins} <small>{row.winRate.toFixed(1)}%</small>
+                  {row.wins}{" "}
+                  <small>
+                    {row.contested ? `${row.winRate.toFixed(1)}%` : "—"}
+                  </small>
                 </dd>
                 <dt>Average game</dt>
                 <dd>{format(row.average)}</dd>
@@ -1449,8 +1524,9 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
         {standingsControls}
       </div>
       <div className="boards" aria-busy={loading}>
-        <Board rows={rows} kind="wins" period={standingsPeriod} />
-        <Board rows={rows} kind="points" period={standingsPeriod} />
+        {boardOrder.map((kind) => (
+          <Board key={kind} rows={rows} kind={kind} period={standingsPeriod} />
+        ))}
       </div>
     </>
   );
