@@ -23,6 +23,10 @@ export function standings(profiles: Profile[], results: Result[]): Standing[] {
     const wins = contested.filter((r) => r.points === best.get(r.game_id));
     const points = entries.reduce((sum, r) => sum + r.points, 0);
     const clubPoints = contested.reduce((sum, r) => sum + clubPointsFor(r), 0);
+    const clubMax = contested.reduce((sum, r) => {
+      const n = players.get(r.game_id)!;
+      return sum + n - 1 + winnerBonus(n);
+    }, 0);
     return {
       ...p,
       games: entries.length,
@@ -32,12 +36,14 @@ export function standings(profiles: Profile[], results: Result[]): Standing[] {
       winRate: contested.length ? (wins.length / contested.length) * 100 : 0,
       average: entries.length ? points / entries.length : 0,
       clubPoints,
+      clubMax,
+      clubRate: clubMax ? (clubPoints / clubMax) * 100 : 0,
       clubAverage: contested.length ? clubPoints / contested.length : 0,
     };
   });
 }
 export type RankMetric =
-  "wins" | "points" | "winRate" | "average" | "clubPoints" | "clubAverage";
+  "wins" | "points" | "winRate" | "average" | "clubRate" | "clubAverage";
 export function ranked(rows: Standing[], metric: RankMetric) {
   const counts = (row: Standing) =>
     metric !== "points" && metric !== "average"

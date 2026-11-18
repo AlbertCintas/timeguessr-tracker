@@ -104,16 +104,18 @@ test("club points: one per player outscored, half per tie, winner bonus by field
     rows.map((r) => [
       r.id,
       r.clubPoints,
+      r.clubMax,
       r.contested,
+      Number(r.clubRate.toFixed(1)),
       Number(r.clubAverage.toFixed(2)),
     ]),
     [
-      ["a", 6, 2, 3],
-      ["b", 5, 2, 2.5],
-      ["c", 4.5, 2, 2.25],
-      ["d", 3.5, 2, 1.75],
-      ["e", 0, 2, 0],
-      ["f", 0, 0, 0],
+      ["a", 6, 8, 2, 75, 3],
+      ["b", 5, 8, 2, 62.5, 2.5],
+      ["c", 4.5, 9, 2, 50, 2.25],
+      ["d", 3.5, 9, 2, 38.9, 1.75],
+      ["e", 0, 9, 2, 0, 0],
+      ["f", 0, 0, 0, 0, 0],
     ],
   );
   assert.equal(

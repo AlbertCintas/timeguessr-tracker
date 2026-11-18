@@ -260,6 +260,12 @@ interface BoardView {
   score: [label: string, value: (p: Standing) => ReactNode];
   foot: string;
 }
+const scoreCell = (score: ReactNode) =>
+  typeof score === "string" ? (
+    <span className="score-value">{score}</span>
+  ) : (
+    score
+  );
 const withDetail = (value: string, detail: string) => (
   <>
     <span className="score-value">{value}</span>
@@ -273,10 +279,7 @@ const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
       title: "Most wins",
       description: "The body count. Egos, mostly.",
       middle: ["PLAYED", (p) => p.contested],
-      score: [
-        "WINS",
-        (p) => withDetail(number.format(p.wins), `${p.winRate.toFixed(1)}%`),
-      ],
+      score: ["WINS", (p) => number.format(p.wins)],
       foot: " · Solo games don’t count",
     },
     {
@@ -298,14 +301,7 @@ const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
       title: "Most points",
       description: "All your points. Still not a personality.",
       middle: ["PLAYED", (p) => p.games],
-      score: [
-        "POINTS",
-        (p) =>
-          withDetail(
-            number.format(p.points),
-            `${number.format(Math.round(p.average))} avg`,
-          ),
-      ],
+      score: ["POINTS", (p) => number.format(p.points)],
       foot: "",
     },
     {
@@ -313,33 +309,26 @@ const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
       title: "Average points",
       description: "Points per game. Another sample of the same tragedy.",
       middle: ["PLAYED", (p) => p.games],
-      score: [
-        "AVG. PTS",
-        (p) =>
-          withDetail(
-            number.format(Math.round(p.average)),
-            `${number.format(p.points)} total`,
-          ),
-      ],
+      score: ["AVG. PTS", (p) => number.format(Math.round(p.average))],
       foot: " · No minimum games",
     },
   ],
   club: [
     {
-      metric: "clubPoints",
-      title: "Most club points",
+      metric: "clubRate",
+      title: "Club points",
       description:
         "A point per player beaten. Winners +1, or +2 with 5+ players.",
-      middle: ["GAMES", (p) => p.contested],
+      middle: ["MAX", (p) => p.clubMax],
       score: [
-        "CLUB PTS",
+        "SHARE",
         (p) =>
           withDetail(
-            number.format(p.clubPoints),
-            `${p.clubAverage.toFixed(2)} per game`,
+            `${p.clubRate.toFixed(1)}%`,
+            `${p.clubPoints} of ${p.clubMax}`,
           ),
       ],
-      foot: " · Solo games don’t count",
+      foot: " · Share of the most you could have scored",
     },
     {
       metric: "clubAverage",
@@ -426,7 +415,11 @@ function Board({
             </div>
             <span className="played">{view.middle[1](p)}</span>
             <strong className="score">
-              {p.rank === null ? withDetail("—", "\u00a0") : view.score[1](p)}
+              {p.rank === null ? (
+                <span className="score-value">—</span>
+              ) : (
+                scoreCell(view.score[1](p))
+              )}
             </strong>
           </div>
         ))

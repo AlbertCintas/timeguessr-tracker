@@ -52,5 +52,7 @@ export interface Standing extends Profile {
   winRate: number;
   average: number;
   clubPoints: number;
+  clubMax: number;
+  clubRate: number;
   clubAverage: number;
 }
