@@ -25,13 +25,13 @@ test("totals, tied winners, and one-submission games", () => {
   assert.deepEqual(
     rows.map((r) => [r.games, r.wins, r.points, r.winRate, r.average]),
     [
-      [2, 2, 150, 100, 75],
+      [2, 1, 150, 100, 75],
       [1, 1, 100, 100, 100],
       [0, 0, 0, 0, 0],
     ],
   );
 });
-test("win rate weights each win by the opponents beaten and ignores solo games", () => {
+test("solo games count neither as wins nor in the win percentage", () => {
   const four = ["a", "b", "c", "d"].map((id) => ({
     id,
     username: id,
@@ -50,23 +50,26 @@ test("win rate weights each win by the opponents beaten and ignores solo games",
     { game_id: "tie", player_id: "d", points: 7 },
   ]);
   assert.deepEqual(
-    rows.map((r) => [
-      r.id,
-      r.wins,
-      r.beaten,
-      r.contested,
-      Number(r.winRate.toFixed(1)),
-    ]),
+    rows.map((r) => [r.id, r.wins, r.contested, Number(r.winRate.toFixed(1))]),
     [
-      ["a", 2, 2, 3, 66.7],
-      ["b", 1, 1, 3, 33.3],
-      ["c", 1, 1, 3, 33.3],
-      ["d", 2, 1, 1, 100],
+      ["a", 1, 2, 50],
+      ["b", 1, 2, 50],
+      ["c", 1, 2, 50],
+      ["d", 1, 1, 100],
     ],
   );
   const onlySolo = standings(four, [
     { game_id: "s", player_id: "a", points: 1 },
   ]);
+  assert.deepEqual(
+    ranked(onlySolo, "wins").map((r) => [r.id, r.rank]),
+    [
+      ["a", null],
+      ["b", null],
+      ["c", null],
+      ["d", null],
+    ],
+  );
   assert.deepEqual(
     ranked(onlySolo, "winRate").map((r) => [r.id, r.rank]),
     [
@@ -77,15 +80,57 @@ test("win rate weights each win by the opponents beaten and ignores solo games",
     ],
   );
 });
+test("club points: one per player outscored, half per tie, winner bonus by field size", () => {
+  const six = ["a", "b", "c", "d", "e", "f"].map((id) => ({
+    id,
+    username: id,
+    display_name: id,
+    avatar_path: null,
+  }));
+  const rows = standings(six, [
+    ...["a", "b", "c", "d", "e"].map((id, i) => ({
+      game_id: "big",
+      player_id: id,
+      points: 50 - i * 10,
+    })),
+    { game_id: "duel", player_id: "a", points: 1 },
+    { game_id: "duel", player_id: "b", points: 2 },
+    { game_id: "tie", player_id: "c", points: 7 },
+    { game_id: "tie", player_id: "d", points: 7 },
+    { game_id: "tie", player_id: "e", points: 3 },
+    { game_id: "solo", player_id: "f", points: 9 },
+  ]);
+  assert.deepEqual(
+    rows.map((r) => [
+      r.id,
+      r.clubPoints,
+      r.contested,
+      Number(r.clubAverage.toFixed(2)),
+    ]),
+    [
+      ["a", 6, 2, 3],
+      ["b", 5, 2, 2.5],
+      ["c", 4.5, 2, 2.25],
+      ["d", 3.5, 2, 1.75],
+      ["e", 0, 2, 0],
+      ["f", 0, 0, 0],
+    ],
+  );
+  assert.equal(
+    ranked(rows, "clubAverage").find((r) => r.id === "f")!.rank,
+    null,
+  );
+});
 test("late submissions, edits, and deletes recalculate wins", () => {
   let results = [{ game_id: "1", player_id: "a", points: 10 }];
-  assert.equal(standings(profiles, results)[0].wins, 1);
+  assert.equal(standings(profiles, results)[0].wins, 0);
   results.push({ game_id: "1", player_id: "b", points: 20 });
   assert.equal(standings(profiles, results)[0].wins, 0);
+  assert.equal(standings(profiles, results)[1].wins, 1);
   results[0].points = 30;
   assert.equal(standings(profiles, results)[0].wins, 1);
   results = results.filter((r) => r.player_id !== "a");
-  assert.equal(standings(profiles, results)[1].wins, 1);
+  assert.equal(standings(profiles, results)[1].wins, 0);
 });
 test("relative rankings reward averages, preserve tied ranks, and exclude unplayed players", () => {
   const rows = standings(profiles, [
@@ -121,9 +166,9 @@ test("wins ties show higher total points first while keeping shared ranks", () =
   assert.deepEqual(
     ranked(rows, "wins").map((r) => [r.id, r.rank]),
     [
-      ["c", 1],
-      ["b", 2],
-      ["a", 2],
+      ["b", 1],
+      ["a", 1],
+      ["c", null],
     ],
   );
   assert.deepEqual(

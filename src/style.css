@@ -230,8 +230,8 @@ main {
 }
 .boards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
 }
 .board {
   background: var(--surface);
@@ -262,7 +262,8 @@ main {
   background: var(--gold-bg);
   color: var(--gold);
 }
-.points {
+.points,
+.club {
   background: var(--green-bg);
   color: var(--green);
 }
@@ -425,6 +426,49 @@ main {
     sans-serif;
   letter-spacing: 0;
   color: var(--muted);
+}
+.board.compact .board-top {
+  padding: 18px 18px 0;
+}
+.board.compact .icon-box {
+  width: 32px;
+  height: 32px;
+}
+.board.compact .board-heading {
+  padding: 14px 18px 0;
+}
+.board.compact .board-heading h2 {
+  font-size: 19px;
+}
+.board.compact .board-description {
+  padding: 0 18px;
+  margin: 8px 0 16px;
+}
+.board.compact .table-head {
+  padding: 10px 18px 10px 24px;
+  grid-template-columns: 1fr 44px 74px;
+}
+.board.compact .player-row {
+  padding: 11px 18px;
+  grid-template-columns: 1fr 44px 74px;
+}
+.board.compact .player small {
+  display: none;
+}
+.board.compact .player .avatar {
+  width: 28px;
+  height: 28px;
+}
+.board.compact .score {
+  font-size: 15px;
+}
+.board.compact .board-foot {
+  padding: 12px 18px;
+}
+@media (max-width: 1100px) {
+  .boards {
+    grid-template-columns: 1fr;
+  }
 }
 .board-foot {
   font-size: 9px;

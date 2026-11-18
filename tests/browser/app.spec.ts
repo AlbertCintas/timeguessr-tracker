@@ -176,7 +176,7 @@ test("leaderboards, independent fairness switches, history and login keyboard en
   });
   await page.goto("./");
   await expect(
-    page.getByRole("heading", { name: "Opponents beaten" }),
+    page.getByRole("heading", { name: "Win percentage" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await openSection(page, "History");
@@ -193,11 +193,11 @@ test("leaderboards, independent fairness switches, history and login keyboard en
   await page.getByRole("switch", { name: "Dark mode" }).click();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  const boards = page.locator(".board");
-  await expect(boards.nth(0).locator(".player-row").first()).toContainText(
+  const boards = page.locator(".boards .board");
+  await expect(boards.nth(2).locator(".player-row").first()).toContainText(
     "Bob",
   );
-  await expect(boards.nth(0).locator(".player-row").first()).toContainText(
+  await expect(boards.nth(2).locator(".player-row").first()).toContainText(
     "100.0%",
   );
   await expect(boards.nth(1).locator(".player-row").first()).toContainText(
@@ -208,9 +208,9 @@ test("leaderboards, independent fairness switches, history and login keyboard en
     "Alice",
   );
   await expect(
-    page.getByRole("heading", { name: "Opponents beaten" }),
+    page.getByRole("heading", { name: "Win percentage" }),
   ).toBeVisible();
-  await boards.nth(0).getByRole("switch").uncheck();
+  await boards.nth(2).getByRole("switch").uncheck();
   await expect(page.getByRole("heading", { name: "Most wins" })).toBeVisible();
   await openSection(page, "History");
   await page.locator(".game > summary").first().click();
@@ -625,30 +625,30 @@ test("standings periods update both boards and their per-game denominators", asy
   const bob = (board: number) =>
     boards.nth(board).locator(".player-row").filter({ hasText: "Bob" });
   await expect(picker).toHaveValue("all");
-  await expect(alice(1).locator(".score")).toHaveText("567");
-  await boards.nth(0).getByRole("switch").uncheck();
+  await expect(alice(1).locator(".score-value")).toHaveText("567");
+  await boards.nth(2).getByRole("switch").uncheck();
   await boards.nth(1).getByRole("switch").uncheck();
-  await expect(alice(1).locator(".score")).toHaveText("1,700");
+  await expect(alice(1).locator(".score-value")).toHaveText("1,700");
   await picker.selectOption("week");
-  await expect(alice(0).locator(".score")).toHaveText("2");
-  await expect(alice(1).locator(".score")).toHaveText("700");
+  await expect(alice(2).locator(".score-value")).toHaveText("—");
+  await expect(alice(1).locator(".score-value")).toHaveText("700");
   await expect(alice(1).locator(".played")).toHaveText("2");
-  await expect(boards.nth(0).locator(".board-foot")).toContainText("This week");
+  await expect(boards.nth(2).locator(".board-foot")).toContainText("This week");
   await boards.nth(1).getByRole("switch").check();
   await expect(boards.nth(1).locator(".player-row").first()).toContainText(
     "Bob",
   );
-  await expect(alice(1).locator(".score")).toHaveText("350");
-  await boards.nth(0).getByRole("switch").check();
-  await expect(alice(0).locator(".score")).toHaveText("—");
+  await expect(alice(1).locator(".score-value")).toHaveText("350");
+  await boards.nth(2).getByRole("switch").check();
+  await expect(alice(2).locator(".score-value")).toHaveText("—");
   await picker.selectOption("today");
-  await expect(alice(1).locator(".score")).toHaveText("300");
-  await expect(bob(0)).toHaveCount(0);
+  await expect(alice(1).locator(".score-value")).toHaveText("300");
+  await expect(bob(2)).toHaveCount(0);
   await openSection(page, "History");
   await expect(page.locator(".history .game")).toHaveCount(4);
   await openSection(page, "Standings");
   await picker.selectOption("month");
-  await expect(alice(1).locator(".score")).toHaveText("350");
+  await expect(alice(1).locator(".score-value")).toHaveText("350");
   await picker.selectOption("year");
   await expect(alice(1).locator(".played")).toHaveText("3");
   await picker.selectOption("last7");
@@ -657,7 +657,7 @@ test("standings periods update both boards and their per-game denominators", asy
   await expect(alice(1).locator(".played")).toHaveText("3");
   await boards.nth(1).getByRole("switch").uncheck();
   await picker.selectOption("all");
-  await expect(alice(1).locator(".score")).toHaveText("1,700");
+  await expect(alice(1).locator(".score-value")).toHaveText("1,700");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

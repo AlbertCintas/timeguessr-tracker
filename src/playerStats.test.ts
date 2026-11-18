@@ -25,7 +25,7 @@ test("player stats combine game totals with picture details", () => {
   assert.equal(rest.length, 0);
   assert.deepEqual(
     [a.id, a.games, a.wins, a.bestGame, a.worstGame, a.pictures],
-    ["a", 2, 1, 30000, 20000, 2],
+    ["a", 2, 0, 30000, 20000, 2],
   );
   assert.deepEqual(
     [a.avgPicture, a.avgYears, a.avgDistance, a.closest],
