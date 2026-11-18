@@ -424,7 +424,7 @@ test("atlas tabs count each picture once per game, remember the tab and follow t
   ).toBeVisible();
 });
 
-test("history picture breakdowns hide the answers and fit a mobile page", async ({
+test("history picture breakdowns stay locked for visitors and fit a mobile page", async ({
   page,
 }) => {
   await page.route("https://club-test.supabase.co/**", async (route) => {
@@ -454,12 +454,14 @@ test("history picture breakdowns hide the answers and fit a mobile page", async 
   });
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
+  await expect(page.locator(".result")).toContainText("30,000");
   await page.getByText("Alice’s picture breakdown", { exact: true }).click();
-  const table = page.getByRole("table", { name: "Picture breakdown" });
-  await expect(table).toContainText("Km off");
-  await expect(table).not.toContainText("Correct year");
-  await expect(table).not.toContainText("1990");
-  await expect(table).not.toContainText("48.8");
+  await expect(page.getByText("Play to unlock")).toBeVisible();
+  await expect(
+    page.getByRole("table", { name: "Picture breakdown" }),
+  ).toHaveCount(0);
+  await expect(page.locator(".result-breakdown")).not.toContainText("6,000");
+  await expect(page.locator(".result-breakdown")).not.toContainText("1990");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -574,6 +576,11 @@ test("guess maps appear only to signed-in players of that game", async ({
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
   await page.getByText("Alice’s picture breakdown").click();
+  await expect(
+    page
+      .locator("details.game", { hasText: "Daily · 08/10/26" })
+      .getByText("Play to unlock"),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: /^Guess for/ })).toHaveCount(0);
 
   await page.goto("./");
@@ -591,7 +598,15 @@ test("guess maps appear only to signed-in players of that game", async ({
     hasText: "Daily · 09/10/26",
   });
   await unplayedGame.getByText("Daily · 09/10/26", { exact: true }).click();
+  await expect(unplayedGame.locator(".result")).toContainText("24,000");
   await unplayedGame.getByText("Bob’s picture breakdown").click();
+  await expect(unplayedGame.getByText("Play to unlock")).toBeVisible();
+  await expect(
+    unplayedGame.getByRole("table", { name: "Picture breakdown" }),
+  ).toHaveCount(0);
+  await expect(unplayedGame.locator(".result-breakdown")).not.toContainText(
+    "6,000",
+  );
   await expect(
     unplayedGame.getByRole("button", { name: /^Guess for/ }),
   ).toHaveCount(0);
