@@ -27,6 +27,7 @@ import {
   UserRound,
   Skull,
   Globe,
+  Lock,
 } from "lucide-react";
 import { accountAction, configured, db, emailFor, readAll } from "./api";
 import {
@@ -1569,6 +1570,9 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
             const entries = results
               .filter((r) => r.game_id === game.id)
               .sort((a, b) => b.points - a.points);
+            const viewerPlayed =
+              !!session &&
+              entries.some((entry) => entry.player_id === session.user.id);
             return (
               <details className="game" key={game.id}>
                 <summary>
@@ -1584,22 +1588,18 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                         : "players"}
                       {game.kind === "custom" ? " · non-daily" : ""}
                     </small>
-                    {session &&
-                      replayUrl &&
-                      !entries.some(
-                        (entry) => entry.player_id === session.user.id,
-                      ) && (
-                        <a
-                          className="game-play-link"
-                          href={replayUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(event) => event.stopPropagation()}
-                          aria-label={`Play ${gameTitle(game)} on Timeguessr`}
-                        >
-                          Play game <ArrowUpRight size={14} />
-                        </a>
-                      )}
+                    {session && replayUrl && !viewerPlayed && (
+                      <a
+                        className="game-play-link"
+                        href={replayUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(event) => event.stopPropagation()}
+                        aria-label={`Play ${gameTitle(game)} on Timeguessr`}
+                      >
+                        Play game <ArrowUpRight size={14} />
+                      </a>
+                    )}
                   </span>
                   <span className="winner">
                     <Trophy size={15} />
@@ -1617,16 +1617,12 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                   </span>
                 </summary>
                 <div className="game-results">
-                  {session &&
-                    game.correct_answers &&
-                    entries.some(
-                      (entry) => entry.player_id === session.user.id,
-                    ) && (
-                      <CorrectAnswerBreakdown
-                        answers={game.correct_answers}
-                        source={game.answers_source_url ?? null}
-                      />
-                    )}
+                  {viewerPlayed && game.correct_answers && (
+                    <CorrectAnswerBreakdown
+                      answers={game.correct_answers}
+                      source={game.answers_source_url ?? null}
+                    />
+                  )}
                   {entries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,
@@ -1665,40 +1661,35 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                               {entry.daily_number
                                 ? ` · #${entry.daily_number}`
                                 : ""}
+                              {!viewerPlayed && (
+                                <Lock size={11} className="lock-icon" />
+                              )}
                             </summary>
                             <PictureBreakdown
                               rounds={entry.rounds}
                               answers={game.correct_answers}
-                              showGuesses={
-                                !!session &&
-                                entries.some(
-                                  (r) => r.player_id === session.user.id,
-                                )
-                              }
+                              showGuesses={viewerPlayed}
+                              locked={!viewerPlayed}
+                              playUrl={replayUrl}
                             />
                           </details>
                         )}
                       </div>
                     );
                   })}
-                  {session &&
-                    !entries.some((r) => r.player_id === session.user.id) && (
-                      <button
-                        className="subtle-button"
-                        onClick={() => {
-                          openScore();
-                          setKind(game.kind);
-                          setDate(
-                            europeanDate(game.daily_date || madridToday()),
-                          );
-                          setSelectedGame(
-                            game.kind === "custom" ? game.id : "",
-                          );
-                        }}
-                      >
-                        Add my score <Plus size={16} />
-                      </button>
-                    )}
+                  {session && !viewerPlayed && (
+                    <button
+                      className="subtle-button"
+                      onClick={() => {
+                        openScore();
+                        setKind(game.kind);
+                        setDate(europeanDate(game.daily_date || madridToday()));
+                        setSelectedGame(game.kind === "custom" ? game.id : "");
+                      }}
+                    >
+                      Add my score <Plus size={16} />
+                    </button>
+                  )}
                 </div>
               </details>
             );

@@ -2164,3 +2164,33 @@ textarea:focus-visible {
   height: 8px;
   border-radius: 50%;
 }
+.lock-icon {
+  margin-left: 6px;
+  vertical-align: -1px;
+}
+.locked-overlay .game-play-link {
+  margin-top: 0;
+}
+.locked-breakdown {
+  position: relative;
+}
+.redacted {
+  display: inline-block;
+  width: 42px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--raised);
+  vertical-align: middle;
+}
+.locked-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
