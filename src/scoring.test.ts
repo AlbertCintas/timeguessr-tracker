@@ -80,7 +80,7 @@ test("solo games count neither as wins nor in the win percentage", () => {
     ],
   );
 });
-test("club points: one per player outscored, half per tie, winner bonus by field size", () => {
+test("club points: one per player outscored, half per tie, one extra for the winner", () => {
   const six = ["a", "b", "c", "d", "e", "f"].map((id) => ({
     id,
     username: id,
@@ -110,11 +110,11 @@ test("club points: one per player outscored, half per tie, winner bonus by field
       Number(r.clubAverage.toFixed(2)),
     ]),
     [
-      ["a", 6, 8, 2, 75, 3],
-      ["b", 5, 8, 2, 62.5, 2.5],
-      ["c", 4.5, 9, 2, 50, 2.25],
-      ["d", 3.5, 9, 2, 38.9, 1.75],
-      ["e", 0, 9, 2, 0, 0],
+      ["a", 5, 7, 2, 71.4, 2.5],
+      ["b", 5, 7, 2, 71.4, 2.5],
+      ["c", 4.5, 8, 2, 56.3, 2.25],
+      ["d", 3.5, 8, 2, 43.8, 1.75],
+      ["e", 0, 8, 2, 0, 0],
       ["f", 0, 0, 0, 0, 0],
     ],
   );

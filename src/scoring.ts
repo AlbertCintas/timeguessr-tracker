@@ -8,14 +8,12 @@ export function standings(profiles: Profile[], results: Result[]): Standing[] {
     scores.set(r.game_id, [...(scores.get(r.game_id) ?? []), r.points]);
   }
   const players = new Map([...scores].map(([id, s]) => [id, s.length]));
-  const winnerBonus = (n: number) => (n >= 5 ? 2 : n >= 2 ? 1 : 0);
   const clubPointsFor = (r: Result) => {
     const others = scores.get(r.game_id)!;
     const outscored =
       others.filter((s) => s < r.points).length +
       (others.filter((s) => s === r.points).length - 1) / 2;
-    const n = others.length;
-    return outscored + (r.points === best.get(r.game_id) ? winnerBonus(n) : 0);
+    return outscored + (r.points === best.get(r.game_id) ? 1 : 0);
   };
   return profiles.map((p) => {
     const entries = results.filter((r) => r.player_id === p.id);
@@ -23,10 +21,10 @@ export function standings(profiles: Profile[], results: Result[]): Standing[] {
     const wins = contested.filter((r) => r.points === best.get(r.game_id));
     const points = entries.reduce((sum, r) => sum + r.points, 0);
     const clubPoints = contested.reduce((sum, r) => sum + clubPointsFor(r), 0);
-    const clubMax = contested.reduce((sum, r) => {
-      const n = players.get(r.game_id)!;
-      return sum + n - 1 + winnerBonus(n);
-    }, 0);
+    const clubMax = contested.reduce(
+      (sum, r) => sum + players.get(r.game_id)!,
+      0,
+    );
     return {
       ...p,
       games: entries.length,
