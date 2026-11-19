@@ -1573,6 +1573,20 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
             const viewerPlayed =
               !!session &&
               entries.some((entry) => entry.player_id === session.user.id);
+            const nameOf = (playerId: string) =>
+              profiles.find((p) => p.id === playerId)?.display_name ?? "";
+            const shownEntries = viewerPlayed
+              ? entries
+              : [...entries].sort((a, b) =>
+                  nameOf(a.player_id).localeCompare(nameOf(b.player_id)),
+                );
+            const hiddenScore = (
+              <span
+                className="redacted"
+                role="img"
+                aria-label="Score hidden until you play"
+              />
+            );
             return (
               <details className="game" key={game.id}>
                 <summary>
@@ -1603,17 +1617,18 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                   </span>
                   <span className="winner">
                     <Trophy size={15} />
-                    {entries
-                      .filter((r) => r.points === entries[0].points)
-                      .map(
-                        (r) =>
-                          profiles.find((p) => p.id === r.player_id)
-                            ?.display_name,
-                      )
-                      .join(", ")}
+                    {viewerPlayed
+                      ? entries
+                          .filter((r) => r.points === entries[0].points)
+                          .map((r) => nameOf(r.player_id))
+                          .join(", ")
+                      : hiddenScore}
                   </span>
                   <span className="game-points">
-                    {number.format(entries[0].points)} <small>pts</small>
+                    {viewerPlayed
+                      ? number.format(entries[0].points)
+                      : hiddenScore}{" "}
+                    <small>pts</small>
                   </span>
                 </summary>
                 <div className="game-results">
@@ -1623,7 +1638,7 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                       source={game.answers_source_url ?? null}
                     />
                   )}
-                  {entries.map((entry) => {
+                  {shownEntries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,
                     );
@@ -1632,7 +1647,11 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                         <div className="result">
                           <Avatar profile={profile} />
                           <span>{profile?.display_name}</span>
-                          <strong>{number.format(entry.points)}</strong>
+                          <strong>
+                            {viewerPlayed
+                              ? number.format(entry.points)
+                              : hiddenScore}
+                          </strong>
                           {(admin || entry.player_id === session?.user.id) && (
                             <>
                               <button

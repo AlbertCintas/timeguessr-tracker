@@ -454,7 +454,14 @@ test("history picture breakdowns stay locked for visitors and fit a mobile page"
   });
   await page.goto("./#history");
   await page.getByText("Daily · 08/10/26", { exact: true }).click();
-  await expect(page.locator(".result")).toContainText("30,000");
+  await expect(page.locator(".result")).toContainText("Alice");
+  await expect(page.locator(".history")).not.toContainText("30,000");
+  await expect(page.locator(".game > summary .winner")).not.toContainText(
+    "Alice",
+  );
+  await expect(
+    page.getByRole("img", { name: "Score hidden until you play" }),
+  ).toHaveCount(3);
   await page.getByText("Alice’s picture breakdown", { exact: true }).click();
   await expect(page.getByText("Play to unlock")).toBeVisible();
   await expect(
@@ -598,7 +605,11 @@ test("guess maps appear only to signed-in players of that game", async ({
     hasText: "Daily · 09/10/26",
   });
   await unplayedGame.getByText("Daily · 09/10/26", { exact: true }).click();
-  await expect(unplayedGame.locator(".result")).toContainText("24,000");
+  await expect(unplayedGame.locator(".result")).toContainText("Bob");
+  await expect(unplayedGame).not.toContainText("24,000");
+  await expect(unplayedGame.locator("summary .winner")).not.toContainText(
+    "Bob",
+  );
   await unplayedGame.getByText("Bob’s picture breakdown").click();
   await expect(unplayedGame.getByText("Play to unlock")).toBeVisible();
   await expect(
@@ -615,6 +626,9 @@ test("guess maps appear only to signed-in players of that game", async ({
     hasText: "Daily · 08/10/26",
   });
   await playedGame.getByText("Daily · 08/10/26", { exact: true }).click();
+  await expect(playedGame.locator("summary .winner")).toContainText("Alice");
+  await expect(playedGame.locator(".game-points")).toContainText("24,000");
+  await expect(playedGame.locator(".result")).toContainText("24,000");
   await playedGame.getByText("Alice’s picture breakdown").click();
   const table = playedGame.getByRole("table", { name: "Picture breakdown" });
   await expect(table.getByRole("button", { name: /^Guess for/ })).toHaveCount(
