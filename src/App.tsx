@@ -319,7 +319,7 @@ const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
       metric: "clubRate",
       title: "Club points",
       description:
-        "A point per player beaten. Winners +1, or +2 with 5+ players.",
+        "A point per player beaten. Winners +1.",
       middle: ["MAX", (p) => p.clubMax],
       score: [
         "SHARE",
@@ -335,7 +335,7 @@ const boardViews: Record<BoardKind, [total: BoardView, perGame: BoardView]> = {
       metric: "clubAverage",
       title: "Club points per game",
       description:
-        "A point per player beaten. Winners +1, or +2 with 5+ players.",
+        "A point per player beaten. Winners +1.",
       middle: ["GAMES", (p) => p.contested],
       score: [
         "AVG.",

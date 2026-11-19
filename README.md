@@ -2,7 +2,7 @@
 
 A shared tracker for a group of friends, with club points, cumulative wins and points, win percentages, average points per game, daily challenges, and named non-daily games.
 
-The highest submitted score wins; ties award one win to each leader. Club points give 1 per player outscored (½ per tie), plus 1 to the winner, or 2 when five or more played. Scores count immediately. A game with a single submission counts for points but not for wins, win percentage or club points. Each player has one score per game and can correct their own results. Administrators can correct any result.
+The highest submitted score wins; ties award one win to each leader. Club points give 1 per player outscored (½ per tie), plus 1 to the winner. Scores count immediately. A game with a single submission counts for points but not for wins, win percentage or club points. Each player has one score per game and can correct their own results. Administrators can correct any result.
 
 New entries automatically read text pasted from Timeguessr’s **Share results** menu. Manual score entry is also available. Use **Detailed** to include picture scores, year errors, and distances; emoji-grid shares import the total only. Confirm the challenge date before saving. Picture scores and errors appear in game history and feed the hall of shame, the hall of fame and player stats. The club page has five tabs: Standings, Hall of shame, Hall of fame, Player stats and History. The period picker applies to the standings, both halls and player stats. The top bar's **Club | Atlas** switch opens the Atlas, a separate page about the pictures themselves. Average and rate records need 5 detailed games.
 
