@@ -1573,13 +1573,6 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
             const viewerPlayed =
               !!session &&
               entries.some((entry) => entry.player_id === session.user.id);
-            const nameOf = (playerId: string) =>
-              profiles.find((p) => p.id === playerId)?.display_name ?? "";
-            const shownEntries = viewerPlayed
-              ? entries
-              : [...entries].sort((a, b) =>
-                  nameOf(a.player_id).localeCompare(nameOf(b.player_id)),
-                );
             const hiddenScore = (
               <span
                 className="redacted"
@@ -1617,12 +1610,14 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                   </span>
                   <span className="winner">
                     <Trophy size={15} />
-                    {viewerPlayed
-                      ? entries
-                          .filter((r) => r.points === entries[0].points)
-                          .map((r) => nameOf(r.player_id))
-                          .join(", ")
-                      : hiddenScore}
+                    {entries
+                      .filter((r) => r.points === entries[0].points)
+                      .map(
+                        (r) =>
+                          profiles.find((p) => p.id === r.player_id)
+                            ?.display_name,
+                      )
+                      .join(", ")}
                   </span>
                   <span className="game-points">
                     {viewerPlayed
@@ -1638,7 +1633,7 @@ export default function App({ page = "club" }: { page?: "club" | "atlas" }) {
                       source={game.answers_source_url ?? null}
                     />
                   )}
-                  {shownEntries.map((entry) => {
+                  {entries.map((entry) => {
                     const profile = profiles.find(
                       (p) => p.id === entry.player_id,
                     );
